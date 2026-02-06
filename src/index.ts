@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+// @ts-expect-error - z is used in commented example code below
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import * as z from "zod";
 
 /**
  * MCP Server for interlock_mcp
@@ -13,83 +15,45 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprot
  */
 
 // Initialize the MCP server
-const server = new Server(
-  {
-    name: "interlock_mcp",
-    version: "1.0.0",
-  },
-  {
-    capabilities: {
-      tools: {},
-    },
-  }
-);
-
-/**
- * Handler for listing available tools
- */
-// eslint-disable-next-line @typescript-eslint/require-await
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return {
-    tools: [
-      // Example tool definition (uncomment and modify as needed):
-      // {
-      //   name: "example_tool",
-      //   description: "An example tool that does something useful",
-      //   inputSchema: {
-      //     type: "object",
-      //     properties: {
-      //       argument: {
-      //         type: "string",
-      //         description: "An example argument",
-      //       },
-      //     },
-      //     required: ["argument"],
-      //   },
-      // },
-    ],
-  };
+const mcpServer = new McpServer({
+  name: "interlock_mcp",
+  version: "1.0.0",
 });
 
 /**
- * Handler for tool execution
+ * Register tools using the high-level McpServer API
+ *
+ * Example tool registration (uncomment and modify as needed):
+ *
+ * mcpServer.registerTool(
+ *   "example_tool",
+ *   {
+ *     description: "An example tool that does something useful",
+ *     inputSchema: {
+ *       argument: z.string().describe("An example argument"),
+ *     },
+ *   },
+ *   async (args) => {
+ *     // Your tool logic here
+ *     // Args are automatically validated and type-safe
+ *     return {
+ *       content: [
+ *         {
+ *           type: "text",
+ *           text: `Tool executed with argument: ${args.argument}`,
+ *         },
+ *       ],
+ *     };
+ *   }
+ * );
  */
-// eslint-disable-next-line @typescript-eslint/require-await
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name } = request.params;
-
-  try {
-    switch (name) {
-      // Example tool implementation (uncomment and modify as needed):
-      // case "example_tool": {
-      //   const { argument } = args as { argument: string };
-      //   // Your tool logic here
-      //   return {
-      //     content: [
-      //       {
-      //         type: "text",
-      //         text: `Tool executed with argument: ${argument}`,
-      //       },
-      //     ],
-      //   };
-      // }
-
-      default:
-        throw new Error(`Unknown tool: ${name}`);
-    }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`Error executing tool ${name}:`, errorMessage);
-    throw error;
-  }
-});
 
 /**
  * Start the server using STDIO transport
  */
 async function main() {
   const transport = new StdioServerTransport();
-  await server.connect(transport);
+  await mcpServer.connect(transport);
   console.error("interlock_mcp MCP server running on stdio");
 }
 
