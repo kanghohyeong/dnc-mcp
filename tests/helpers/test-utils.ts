@@ -1,14 +1,14 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { vi } from 'vitest';
-import { HelloWorldWebServer } from '../../src/services/web-server.js';
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { vi } from "vitest";
+import { HelloWorldWebServer } from "../../src/services/web-server.js";
 
 /**
  * MCP 서버 테스트 인스턴스 생성
  */
 export function createTestMcpServer() {
   return new McpServer({
-    name: 'test-server',
-    version: '1.0.0',
+    name: "test-server",
+    version: "1.0.0",
   });
 }
 
@@ -49,15 +49,12 @@ export function sleep(ms: number): Promise<void> {
  * @param server - 웹 서버 인스턴스
  * @param maxAttempts - 최대 재시도 횟수
  */
-export async function waitForServer(
-  server: HelloWorldWebServer,
-  maxAttempts = 10,
-): Promise<void> {
+export async function waitForServer(server: HelloWorldWebServer, maxAttempts = 10): Promise<void> {
   for (let i = 0; i < maxAttempts; i++) {
     if (server.getIsRunning()) {
       return;
     }
     await sleep(100);
   }
-  throw new Error('Server did not start in time');
+  throw new Error("Server did not start in time");
 }

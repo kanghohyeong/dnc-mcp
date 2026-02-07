@@ -1,30 +1,30 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { HelloWorldWebServer } from '../../src/services/web-server.js';
-import { Readable, Writable } from 'node:stream';
-import { sleep } from '../helpers/test-utils.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { HelloWorldWebServer } from "../../src/services/web-server.js";
+import { Readable, Writable } from "node:stream";
+import { sleep } from "../helpers/test-utils.js";
 
-describe('MCP Server Lifecycle - Web Server Integration', () => {
+describe("MCP Server Lifecycle - Web Server Integration", () => {
   let mcpServer: McpServer;
   let webServer: HelloWorldWebServer;
-  let mockStdin: Readable;
-  let mockStdout: Writable;
+  let _mockStdin: Readable;
+  let _mockStdout: Writable;
   let transport: StdioServerTransport;
 
   beforeEach(() => {
     // Mock stdio streams
-    mockStdin = new Readable({ read() {} });
-    mockStdout = new Writable({
+    _mockStdin = new Readable({ read() {} });
+    _mockStdout = new Writable({
       write(chunk, encoding, callback) {
         callback();
-      }
+      },
     });
 
     // Initialize servers
     mcpServer = new McpServer({
-      name: 'test-server',
-      version: '1.0.0'
+      name: "test-server",
+      version: "1.0.0",
     });
     webServer = new HelloWorldWebServer();
   });
@@ -44,7 +44,7 @@ describe('MCP Server Lifecycle - Web Server Integration', () => {
     }
   });
 
-  it('should stop web server when client disconnects', async () => {
+  it("should stop web server when client disconnects", async () => {
     // Setup onclose handler (simulating production code)
     transport = new StdioServerTransport();
     await mcpServer.connect(transport);
@@ -75,12 +75,12 @@ describe('MCP Server Lifecycle - Web Server Integration', () => {
     expect(webServer.getIsRunning()).toBe(false);
   });
 
-  it('should handle disconnect gracefully when web server is not running', async () => {
+  it("should handle disconnect gracefully when web server is not running", async () => {
     transport = new StdioServerTransport();
     await mcpServer.connect(transport);
 
     // Setup onclose handler
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     mcpServer.server.onclose = () => {
       void (async () => {
@@ -104,7 +104,7 @@ describe('MCP Server Lifecycle - Web Server Integration', () => {
     consoleSpy.mockRestore();
   });
 
-  it('should handle disconnect during web server startup', async () => {
+  it("should handle disconnect during web server startup", async () => {
     transport = new StdioServerTransport();
     await mcpServer.connect(transport);
 
@@ -136,14 +136,14 @@ describe('MCP Server Lifecycle - Web Server Integration', () => {
     expect(webServer.getIsRunning()).toBe(false);
   });
 
-  it('should handle multiple close calls safely', async () => {
+  it("should handle multiple close calls safely", async () => {
     transport = new StdioServerTransport();
     await mcpServer.connect(transport);
 
-    let closeCallCount = 0;
+    let _closeCallCount = 0;
     mcpServer.server.onclose = () => {
       void (async () => {
-        closeCallCount++;
+        _closeCallCount++;
         if (webServer.getIsRunning()) {
           await webServer.stop();
         }
@@ -165,7 +165,7 @@ describe('MCP Server Lifecycle - Web Server Integration', () => {
     expect(webServer.getIsRunning()).toBe(false);
   });
 
-  it('should not throw error when receiving signals after disconnect', async () => {
+  it("should not throw error when receiving signals after disconnect", async () => {
     transport = new StdioServerTransport();
     await mcpServer.connect(transport);
 
