@@ -35,7 +35,7 @@ export class HelloWorldWebServer {
   private server: Server | null = null;
   private port: number = 3331;
   private readonly startPort: number = 3331;
-  private readonly maxPortAttempts: number = 10;
+  private readonly maxPortAttempts: number = 100;
   private isRunning: boolean = false;
   // SSE 연결 추적을 위한 Set (O(1) 추가/삭제)
   private sseConnections: Set<SseConnection> = new Set();
