@@ -1,5 +1,6 @@
 import express, { Express, Request, Response } from "express";
 import { Server } from "http";
+import { Socket } from "net";
 import path from "path";
 import { fileURLToPath } from "url";
 import { openBrowser } from "../utils/browser-launcher.js";
@@ -7,6 +8,14 @@ import { HistoryService, type HistoryEntry } from "./history-service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+/**
+ * SSE 연결과 연관된 EventEmitter 리스너를 묶어서 관리
+ */
+interface SseConnection {
+  response: Response;
+  listener: (entry: HistoryEntry) => void;
+}
 
 /**
  * "Hello World" 웹 서버 클래스
@@ -21,6 +30,10 @@ export class HelloWorldWebServer {
   private readonly startPort: number = 3331;
   private readonly maxPortAttempts: number = 10;
   private isRunning: boolean = false;
+  // SSE 연결 추적을 위한 Set (O(1) 추가/삭제)
+  private sseConnections: Set<SseConnection> = new Set();
+  // HTTP 소켓 연결 추적 (정상 종료를 위한 강제 close용)
+  private httpConnections: Set<Socket> = new Set();
 
   constructor() {
     this.app = express();
@@ -107,15 +120,25 @@ export class HelloWorldWebServer {
 
       const listener = (entry: HistoryEntry) => {
         if (entry.toolName === "get_kst_time") {
-          console.error(`Sending SSE for history entry: [${entry.toolName}] at ${entry.timestampKst}`);
+          console.error(
+            `Sending SSE for history entry: [${entry.toolName}] at ${entry.timestampKst}`
+          );
           res.write(`data: ${JSON.stringify(entry)}\n\n`);
         }
       };
 
       HistoryService.getInstance().on("historyAdded", listener);
 
+      // 연결 추적 시작
+      const connection: SseConnection = { response: res, listener };
+      this.sseConnections.add(connection);
+      console.error(`SSE connection established (total: ${this.sseConnections.size})`);
+
+      // 클라이언트가 연결을 끊으면 정리
       req.on("close", () => {
         HistoryService.getInstance().off("historyAdded", listener);
+        this.sseConnections.delete(connection);
+        console.error(`SSE client disconnected (remaining: ${this.sseConnections.size})`);
       });
     });
   }
@@ -181,6 +204,15 @@ export class HelloWorldWebServer {
 
       server.on("listening", () => {
         this.server = server;
+
+        // HTTP 연결 추적 (정상 종료를 위해)
+        server.on("connection", (socket: Socket) => {
+          this.httpConnections.add(socket);
+          socket.on("close", () => {
+            this.httpConnections.delete(socket);
+          });
+        });
+
         resolve();
       });
 
@@ -199,6 +231,65 @@ export class HelloWorldWebServer {
   }
 
   /**
+   * 모든 활성 SSE 연결을 graceful하게 종료합니다.
+   * - 클라이언트에게 종료 이벤트 전송
+   * - EventEmitter 리스너 제거
+   * - Response 스트림 닫기
+   */
+  private async closeAllSseConnections(): Promise<void> {
+    console.error(`Closing ${this.sseConnections.size} active SSE connection(s)...`);
+
+    if (this.sseConnections.size === 0) {
+      return;
+    }
+
+    const closePromises: Promise<void>[] = [];
+
+    for (const connection of this.sseConnections) {
+      const closePromise = new Promise<void>((resolve) => {
+        // 개별 연결에 대한 타임아웃 (2초)
+        const timeout = setTimeout(() => {
+          console.error("SSE connection close timeout, forcing close");
+          resolve();
+        }, 2000);
+
+        try {
+          // 클라이언트에게 종료 알림 (재연결 방지)
+          connection.response.write('event: shutdown\ndata: {"reason":"server_stopping"}\n\n');
+
+          // EventEmitter 리스너 제거
+          HistoryService.getInstance().off("historyAdded", connection.listener);
+
+          // Response 스트림 종료
+          // Note: end() 콜백은 호출되지 않을 수 있으므로 즉시 resolve
+          connection.response.end();
+
+          // end()는 동기적으로 처리되므로 바로 resolve
+          clearTimeout(timeout);
+          resolve();
+        } catch (error) {
+          // Response가 이미 닫혔을 수 있음 (클라이언트가 먼저 연결 해제)
+          console.error("Error closing SSE connection:", error);
+          clearTimeout(timeout);
+          resolve(); // 에러가 나도 계속 진행
+        }
+      });
+
+      closePromises.push(closePromise);
+    }
+
+    // 모든 연결이 닫힐 때까지 대기 (최대 5초 타임아웃)
+    await Promise.race([
+      Promise.all(closePromises),
+      new Promise((resolve) => setTimeout(resolve, 5000)),
+    ]);
+
+    // Set 비우기
+    this.sseConnections.clear();
+    console.error("All SSE connections closed");
+  }
+
+  /**
    * 웹 서버를 gracefully 종료합니다.
    */
   async stop(): Promise<void> {
@@ -207,9 +298,31 @@ export class HelloWorldWebServer {
       return;
     }
 
+    // Step 1: SSE 연결 먼저 정리
+    console.error("Closing SSE connections before stopping web server...");
+    await this.closeAllSseConnections();
+
+    // Step 2: 모든 HTTP 소켓 연결 강제 종료
+    console.error(`Closing ${this.httpConnections.size} HTTP connection(s)...`);
+    for (const socket of this.httpConnections) {
+      socket.destroy();
+    }
+    this.httpConnections.clear();
+
     console.error("Stopping web server...");
+    // Step 3: HTTP 서버 종료 (모든 연결이 닫혔으므로 즉시 종료됨)
     return new Promise((resolve, reject) => {
+      // 서버 종료에 타임아웃 추가 (5초로 단축 - 연결이 모두 닫혔으므로)
+      const timeout = setTimeout(() => {
+        console.error("Server close timeout, forcing shutdown");
+        this.server = null;
+        this.isRunning = false;
+        resolve();
+      }, 5000);
+
       this.server!.close((error) => {
+        clearTimeout(timeout);
+
         if (error) {
           console.error("Error stopping web server:", error);
           reject(error);

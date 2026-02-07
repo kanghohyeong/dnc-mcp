@@ -175,8 +175,16 @@
       addHistoryRow(entry);
     };
 
+    // 서버 종료 이벤트 처리
+    eventSource.addEventListener('shutdown', (event) => {
+      const data = JSON.parse(event.data);
+      console.log('Server shutting down:', data.reason);
+      eventSource.close(); // 재연결 시도 중단
+    });
+
     eventSource.onerror = (error) => {
       console.error('SSE connection error:', error);
+      // EventSource는 기본적으로 자동 재연결을 시도함
     };
 
     function addHistoryRow(entry) {
