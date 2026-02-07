@@ -51,6 +51,25 @@ mcpServer.server.oninitialized = () => {
 };
 
 /**
+ * Setup client disconnection handler
+ *
+ * 클라이언트가 MCP 서버에서 연결 해제되면 웹 서버를 종료합니다.
+ */
+mcpServer.server.onclose = () => {
+  void (async () => {
+    console.error("Client disconnected from MCP server");
+    if (webServer.getIsRunning()) {
+      try {
+        await webServer.stop();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error("Failed to stop web server:", errorMessage);
+      }
+    }
+  })();
+};
+
+/**
  * Start the server using STDIO transport
  */
 async function main() {
@@ -62,23 +81,4 @@ async function main() {
 main().catch((error) => {
   console.error("Fatal error in main():", error);
   process.exit(1);
-});
-
-/**
- * Graceful shutdown handlers
- */
-process.on("SIGINT", () => {
-  void (async () => {
-    console.error("Received SIGINT, shutting down...");
-    await webServer.stop();
-    process.exit(0);
-  })();
-});
-
-process.on("SIGTERM", () => {
-  void (async () => {
-    console.error("Received SIGTERM, shutting down...");
-    await webServer.stop();
-    process.exit(0);
-  })();
 });
