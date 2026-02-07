@@ -63,41 +63,7 @@ export class HelloWorldWebServer {
   private setupRoutes(): void {
     // 메인 페이지: "hello world" 표시
     this.app.get("/", (_req: Request, res: Response) => {
-      res.send(`
-        <!DOCTYPE html>
-        <html lang="ko">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Interlock MCP Server</title>
-          <style>
-            body {
-              margin: 0;
-              padding: 0;
-              height: 100vh;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            }
-            h1 {
-              color: white;
-              font-size: 4rem;
-              text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-              animation: fadeIn 1s ease-in;
-            }
-            @keyframes fadeIn {
-              from { opacity: 0; transform: translateY(-20px); }
-              to { opacity: 1; transform: translateY(0); }
-            }
-          </style>
-        </head>
-        <body>
-          <h1>hello world</h1>
-        </body>
-        </html>
-      `);
+      res.render("index");
     });
 
     // 헬스 체크 엔드포인트
@@ -145,7 +111,6 @@ export class HelloWorldWebServer {
 
       // 클라이언트가 연결을 끊으면 정리
       req.on("close", () => {
-        HistoryService.getInstance().off("historyAdded", listener);
         this.sseConnections.delete(connection);
         console.error(`SSE client disconnected (remaining: ${this.sseConnections.size})`);
       });
