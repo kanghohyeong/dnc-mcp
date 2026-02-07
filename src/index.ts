@@ -3,6 +3,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerGetKstTimeTool } from "./tools/get-kst-time.js";
+import { HelloWorldWebServer } from "./services/web-server.js";
 
 /**
  * MCP Server for interlock_mcp
@@ -18,6 +19,9 @@ const mcpServer = new McpServer({
   version: "1.0.0",
 });
 
+// Initialize the web server
+const webServer = new HelloWorldWebServer();
+
 /**
  * Register all tools
  *
@@ -26,6 +30,25 @@ const mcpServer = new McpServer({
  * 2. 여기에 import 및 등록 함수 호출 추가
  */
 registerGetKstTimeTool(mcpServer);
+
+/**
+ * Setup client connection handler
+ *
+ * 클라이언트가 MCP 서버에 연결되면 웹 서버를 시작하고 브라우저를 엽니다.
+ */
+mcpServer.server.oninitialized = () => {
+  console.error("Client connected to MCP server");
+  if (!webServer.getIsRunning()) {
+    void (async () => {
+      try {
+        await webServer.start();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error("Failed to start web server:", errorMessage);
+      }
+    })();
+  }
+};
 
 /**
  * Start the server using STDIO transport
@@ -39,4 +62,23 @@ async function main() {
 main().catch((error) => {
   console.error("Fatal error in main():", error);
   process.exit(1);
+});
+
+/**
+ * Graceful shutdown handlers
+ */
+process.on("SIGINT", () => {
+  void (async () => {
+    console.error("Received SIGINT, shutting down...");
+    await webServer.stop();
+    process.exit(0);
+  })();
+});
+
+process.on("SIGTERM", () => {
+  void (async () => {
+    console.error("Received SIGTERM, shutting down...");
+    await webServer.stop();
+    process.exit(0);
+  })();
 });
