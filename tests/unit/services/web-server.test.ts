@@ -11,7 +11,7 @@ describe("HelloWorldWebServer", () => {
   let server: HelloWorldWebServer;
 
   beforeEach(() => {
-    server = new HelloWorldWebServer();
+    server = new HelloWorldWebServer({ autoOpenBrowser: false });
   });
 
   afterEach(async () => {
@@ -50,12 +50,16 @@ describe("HelloWorldWebServer", () => {
       expect(server.getIsRunning()).toBe(true);
     });
 
-    it("should open browser automatically", async () => {
+    it("should open browser automatically when autoOpenBrowser is true", async () => {
       const { openBrowser } = await import("../../../src/utils/browser-launcher.js");
+      vi.mocked(openBrowser).mockClear();
 
-      await server.start();
+      const testServer = new HelloWorldWebServer({ autoOpenBrowser: true });
+      await testServer.start();
 
-      expect(openBrowser).toHaveBeenCalledWith(`http://localhost:${server.getPort()}`);
+      expect(openBrowser).toHaveBeenCalledWith(`http://localhost:${testServer.getPort()}`);
+
+      await testServer.stop();
     });
 
     it("should handle browser launch failure gracefully", async () => {
@@ -105,6 +109,76 @@ describe("HelloWorldWebServer", () => {
       await server.start();
       await server.stop();
       expect(server.getIsRunning()).toBe(false);
+    });
+  });
+
+  describe("브라우저 자동 실행 제어", () => {
+    it("should not open browser when NODE_ENV is test", async () => {
+      const { openBrowser } = await import("../../../src/utils/browser-launcher.js");
+      vi.mocked(openBrowser).mockClear();
+
+      const testServer = new HelloWorldWebServer();
+      await testServer.start();
+
+      expect(openBrowser).not.toHaveBeenCalled();
+
+      await testServer.stop();
+    });
+
+    it("should open browser when NODE_ENV is production", async () => {
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = "production";
+
+      const { openBrowser } = await import("../../../src/utils/browser-launcher.js");
+      vi.mocked(openBrowser).mockClear();
+
+      const testServer = new HelloWorldWebServer();
+      await testServer.start();
+
+      expect(openBrowser).toHaveBeenCalledWith(`http://localhost:${testServer.getPort()}`);
+
+      await testServer.stop();
+      process.env.NODE_ENV = originalEnv;
+    });
+
+    it("should not open browser when autoOpenBrowser is false", async () => {
+      const { openBrowser } = await import("../../../src/utils/browser-launcher.js");
+      vi.mocked(openBrowser).mockClear();
+
+      const testServer = new HelloWorldWebServer({ autoOpenBrowser: false });
+      await testServer.start();
+
+      expect(openBrowser).not.toHaveBeenCalled();
+
+      await testServer.stop();
+    });
+
+    it("should open browser when autoOpenBrowser is true (overrides NODE_ENV)", async () => {
+      const { openBrowser } = await import("../../../src/utils/browser-launcher.js");
+      vi.mocked(openBrowser).mockClear();
+
+      const testServer = new HelloWorldWebServer({ autoOpenBrowser: true });
+      await testServer.start();
+
+      expect(openBrowser).toHaveBeenCalledWith(`http://localhost:${testServer.getPort()}`);
+
+      await testServer.stop();
+    });
+
+    it("should open browser by default when NODE_ENV is not set", async () => {
+      const originalEnv = process.env.NODE_ENV;
+      delete process.env.NODE_ENV;
+
+      const { openBrowser } = await import("../../../src/utils/browser-launcher.js");
+      vi.mocked(openBrowser).mockClear();
+
+      const testServer = new HelloWorldWebServer();
+      await testServer.start();
+
+      expect(openBrowser).toHaveBeenCalledWith(`http://localhost:${testServer.getPort()}`);
+
+      await testServer.stop();
+      process.env.NODE_ENV = originalEnv;
     });
   });
 

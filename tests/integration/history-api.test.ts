@@ -15,7 +15,7 @@ describe("History API Integration", () => {
     historyService.clearHistory();
 
     // 웹 서버 시작
-    webServer = new HelloWorldWebServer();
+    webServer = new HelloWorldWebServer({ autoOpenBrowser: false });
     await webServer.start();
     baseURL = `http://localhost:${webServer.getPort()}`;
   });

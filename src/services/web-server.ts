@@ -18,6 +18,13 @@ interface SseConnection {
 }
 
 /**
+ * HelloWorldWebServer 생성자 옵션
+ */
+export interface HelloWorldWebServerOptions {
+  autoOpenBrowser?: boolean;
+}
+
+/**
  * "Hello World" 웹 서버 클래스
  *
  * MCP 클라이언트 연결 시 자동으로 시작되어 localhost에서
@@ -34,8 +41,10 @@ export class HelloWorldWebServer {
   private sseConnections: Set<SseConnection> = new Set();
   // HTTP 소켓 연결 추적 (정상 종료를 위한 강제 close용)
   private httpConnections: Set<Socket> = new Set();
+  private autoOpenBrowser: boolean;
 
-  constructor() {
+  constructor(options?: HelloWorldWebServerOptions) {
+    this.autoOpenBrowser = options?.autoOpenBrowser ?? process.env.NODE_ENV !== "test";
     this.app = express();
 
     // EJS 뷰 엔진 설정
@@ -167,12 +176,14 @@ export class HelloWorldWebServer {
         console.error(`Web server started at ${url}`);
 
         // 브라우저 자동 열기
-        try {
-          await openBrowser(url);
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          console.error(`Failed to open browser: ${errorMessage}`);
-          console.error(`Please open ${url} manually in your browser`);
+        if (this.autoOpenBrowser) {
+          try {
+            await openBrowser(url);
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`Failed to open browser: ${errorMessage}`);
+            console.error(`Please open ${url} manually in your browser`);
+          }
         }
 
         return;

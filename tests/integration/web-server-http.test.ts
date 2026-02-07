@@ -9,7 +9,7 @@ describe("웹 서버 HTTP 엔드포인트", () => {
   let app: express.Express;
 
   beforeAll(async () => {
-    server = new HelloWorldWebServer();
+    server = new HelloWorldWebServer({ autoOpenBrowser: false });
     await server.start();
 
     // Express 앱 인스턴스 가져오기
@@ -74,7 +74,7 @@ describe("웹 서버 HTTP 엔드포인트", () => {
     let historyService: HistoryService;
 
     beforeEach(async () => {
-      testServer = new HelloWorldWebServer();
+      testServer = new HelloWorldWebServer({ autoOpenBrowser: false });
       await testServer.start();
       testApp = (testServer as never)["app"] as express.Express;
       historyService = HistoryService.getInstance();

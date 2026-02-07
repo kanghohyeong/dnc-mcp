@@ -7,7 +7,7 @@ let baseURL: string;
 
 test.beforeAll(async () => {
   // 모든 테스트 시작 전 서버 시작
-  webServer = new HelloWorldWebServer();
+  webServer = new HelloWorldWebServer({ autoOpenBrowser: false });
   await webServer.start();
   baseURL = `http://localhost:${webServer.getPort()}`;
 });

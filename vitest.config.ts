@@ -5,6 +5,11 @@ export default defineConfig({
     // Node 환경 지정
     environment: 'node',
 
+    // 환경 변수 설정
+    env: {
+      NODE_ENV: 'test',
+    },
+
     // 글로벌 테스트 유틸리티 활성화
     globals: true,
 

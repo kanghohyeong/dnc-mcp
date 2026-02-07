@@ -26,7 +26,7 @@ describe("MCP Server Lifecycle - Web Server Integration", () => {
       name: "test-server",
       version: "1.0.0",
     });
-    webServer = new HelloWorldWebServer();
+    webServer = new HelloWorldWebServer({ autoOpenBrowser: false });
   });
 
   afterEach(async () => {

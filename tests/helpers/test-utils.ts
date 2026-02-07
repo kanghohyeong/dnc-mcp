@@ -16,7 +16,7 @@ export function createTestMcpServer() {
  * 웹 서버 테스트 인스턴스 생성 및 시작
  */
 export async function createTestWebServer() {
-  const server = new HelloWorldWebServer();
+  const server = new HelloWorldWebServer({ autoOpenBrowser: false });
   await server.start();
   return server;
 }
