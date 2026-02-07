@@ -38,12 +38,14 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
+    "ejs": "^3.1.10",
     "express": "^5.2.1",
     "open": "^11.0.0",
     "zod": "^3.22.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
+    "@types/ejs": "^3.1.5",
     "@types/express": "^5.0.6",
     "@types/node": "^22.0.0",
     "@types/supertest": "^6.0.3",

@@ -1,6 +1,12 @@
 import express, { Express, Request, Response } from "express";
 import { Server } from "http";
+import path from "path";
+import { fileURLToPath } from "url";
 import { openBrowser } from "../utils/browser-launcher.js";
+import { HistoryService, type HistoryEntry } from "./history-service.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * "Hello World" 웹 서버 클래스
@@ -18,6 +24,14 @@ export class HelloWorldWebServer {
 
   constructor() {
     this.app = express();
+
+    // EJS 뷰 엔진 설정
+    this.app.set("view engine", "ejs");
+    this.app.set("views", path.join(__dirname, "../../views"));
+
+    // 정적 파일 제공 설정 (선택사항)
+    this.app.use(express.static(path.join(__dirname, "../../public")));
+
     this.setupRoutes();
   }
 
@@ -69,6 +83,39 @@ export class HelloWorldWebServer {
       res.json({
         status: "ok",
         message: "MCP server is running",
+      });
+    });
+
+    // 히스토리 JSON API
+    this.app.get("/api/history", (req: Request, res: Response) => {
+      const toolName = req.query.toolName as string | undefined;
+      const history = HistoryService.getInstance().getHistory(toolName);
+      res.json(history);
+    });
+
+    // 히스토리 페이지 (EJS 렌더링)
+    this.app.get("/history", (_req: Request, res: Response) => {
+      const history = HistoryService.getInstance().getHistory("get_kst_time");
+      res.render("history", { history });
+    });
+
+    // SSE 엔드포인트
+    this.app.get("/api/history/stream", (req: Request, res: Response) => {
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+
+      const listener = (entry: HistoryEntry) => {
+        if (entry.toolName === "get_kst_time") {
+          console.error(`Sending SSE for history entry: [${entry.toolName}] at ${entry.timestampKst}`);
+          res.write(`data: ${JSON.stringify(entry)}\n\n`);
+        }
+      };
+
+      HistoryService.getInstance().on("historyAdded", listener);
+
+      req.on("close", () => {
+        HistoryService.getInstance().off("historyAdded", listener);
       });
     });
   }
@@ -156,12 +203,15 @@ export class HelloWorldWebServer {
    */
   async stop(): Promise<void> {
     if (!this.server) {
+      console.error("Web server is not running");
       return;
     }
 
+    console.error("Stopping web server...");
     return new Promise((resolve, reject) => {
       this.server!.close((error) => {
         if (error) {
+          console.error("Error stopping web server:", error);
           reject(error);
         } else {
           this.server = null;

@@ -1,4 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { HistoryService } from "../services/history-service.js";
 
 /**
  * KST 시간 조회 도구 등록
@@ -13,7 +14,7 @@ export function registerGetKstTimeTool(mcpServer: McpServer) {
       description: "현재 시간을 한국 표준시(KST, UTC+9)로 반환하는 디버깅 도구입니다.",
       inputSchema: {}, // 파라미터 없음
     },
-    () => {
+    (args) => {
       try {
         // 현재 시간 가져오기
         const now = new Date();
@@ -40,10 +41,10 @@ export function registerGetKstTimeTool(mcpServer: McpServer) {
           timeZone: "Asia/Seoul",
         });
 
-        return {
+        const result = {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `현재 한국 표준시 (KST, UTC+9):
 ${kstTimeString}
 
@@ -53,18 +54,28 @@ UTC Time: ${now.toISOString()}`,
             },
           ],
         };
+
+        // 히스토리 서비스에 기록
+        HistoryService.getInstance().addHistory("get_kst_time", args, result);
+
+        return result;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
 
-        return {
+        const errorResult = {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: `KST 시간을 가져오는 중 오류가 발생했습니다: ${errorMessage}`,
             },
           ],
           isError: true,
         };
+
+        // 에러도 히스토리에 기록
+        HistoryService.getInstance().addHistory("get_kst_time", args, errorResult);
+
+        return errorResult;
       }
     }
   );
