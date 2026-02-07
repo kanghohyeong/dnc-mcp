@@ -2,9 +2,6 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-// @ts-expect-error - z is used in commented example code below
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import * as z from "zod";
 import { registerGetKstTimeTool } from "./tools/get-kst-time.js";
 
 /**
@@ -22,35 +19,11 @@ const mcpServer = new McpServer({
 });
 
 /**
- * Register tools using the high-level McpServer API
- *
- * Example tool registration (uncomment and modify as needed):
- *
- * mcpServer.registerTool(
- *   "example_tool",
- *   {
- *     description: "An example tool that does something useful",
- *     inputSchema: {
- *       argument: z.string().describe("An example argument"),
- *     },
- *   },
- *   async (args) => {
- *     // Your tool logic here
- *     // Args are automatically validated and type-safe
- *     return {
- *       content: [
- *         {
- *           type: "text",
- *           text: `Tool executed with argument: ${args.argument}`,
- *         },
- *       ],
- *     };
- *   }
- * );
- */
-
-/**
  * Register all tools
+ *
+ * 새로운 도구를 추가하려면:
+ * 1. src/tools/ 디렉토리에 도구 파일 생성 (예시: src/tools/example-tool.ts 참고)
+ * 2. 여기에 import 및 등록 함수 호출 추가
  */
 registerGetKstTimeTool(mcpServer);
 
