@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { HistoryService } from "../../../src/services/history-service.js";
+import { HistoryService, type HistoryEntry } from "../../../src/services/history-service.js";
 
 describe("HistoryService", () => {
   let historyService: HistoryService;
@@ -21,7 +21,7 @@ describe("HistoryService", () => {
 
   describe("addHistory()", () => {
     it("히스토리를 추가하고 historyAdded 이벤트를 발생시켜야 함", () => {
-      const eventSpy = vi.fn();
+      const eventSpy = vi.fn<[HistoryEntry]>();
       historyService.on("historyAdded", eventSpy);
 
       const request = {};
@@ -152,7 +152,7 @@ describe("HistoryService", () => {
 
   describe("timestampKst 포맷", () => {
     it("KST 타임스탬프는 '년. 월. 일. 시:분:초' 형식이어야 함", () => {
-      const eventSpy = vi.fn();
+      const eventSpy = vi.fn<[HistoryEntry]>();
       historyService.on("historyAdded", eventSpy);
 
       historyService.addHistory("get_kst_time", {}, { kst: "time1" });

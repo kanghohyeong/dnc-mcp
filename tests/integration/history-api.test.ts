@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import request from "supertest";
+import type { IncomingMessage } from "http";
 import { HelloWorldWebServer } from "../../src/services/web-server.js";
-import { HistoryService } from "../../src/services/history-service.js";
+import { HistoryService, type HistoryEntry } from "../../src/services/history-service.js";
 
 describe("History API Integration", () => {
   let webServer: HelloWorldWebServer;
@@ -38,9 +39,10 @@ describe("History API Integration", () => {
       const response = await request(baseURL).get("/api/history");
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(2);
-      expect(response.body[0].toolName).toBe("get_kst_time");
-      expect(response.body[1].toolName).toBe("other_tool");
+      const body = response.body as HistoryEntry[];
+      expect(body).toHaveLength(2);
+      expect(body[0].toolName).toBe("get_kst_time");
+      expect(body[1].toolName).toBe("other_tool");
     });
 
     it("toolName으로 필터링할 수 있어야 함", async () => {
@@ -51,10 +53,9 @@ describe("History API Integration", () => {
       const response = await request(baseURL).get("/api/history?toolName=get_kst_time");
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(2);
-      expect(
-        response.body.every((entry: { toolName: string }) => entry.toolName === "get_kst_time")
-      ).toBe(true);
+      const body = response.body as HistoryEntry[];
+      expect(body).toHaveLength(2);
+      expect(body.every((entry) => entry.toolName === "get_kst_time")).toBe(true);
     });
 
     it("각 히스토리 엔트리는 필수 필드를 포함해야 함", async () => {
@@ -63,9 +64,10 @@ describe("History API Integration", () => {
       const response = await request(baseURL).get("/api/history");
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(1);
+      const body = response.body as HistoryEntry[];
+      expect(body).toHaveLength(1);
 
-      const entry = response.body[0];
+      const entry = body[0];
       expect(entry).toHaveProperty("id");
       expect(entry).toHaveProperty("toolName", "get_kst_time");
       expect(entry).toHaveProperty("timestamp");
@@ -116,18 +118,21 @@ describe("History API Integration", () => {
       const agent = request(baseURL);
       const req = agent.get("/api/history/stream").buffer(false);
 
-      req.on("response", (res) => {
-        expect(res.status).toBe(200);
-        expect(res.headers["content-type"]).toBe("text/event-stream");
-        expect(res.headers["cache-control"]).toBe("no-cache");
-        expect(res.headers["connection"]).toBe("keep-alive");
+      void req.on(
+        "response",
+        (res: IncomingMessage & { status: number; headers: Record<string, string> }) => {
+          expect(res.status).toBe(200);
+          expect(res.headers["content-type"]).toBe("text/event-stream");
+          expect(res.headers["cache-control"]).toBe("no-cache");
+          expect(res.headers["connection"]).toBe("keep-alive");
 
-        // 헤더 검증 후 연결 종료
-        req.abort();
-        done();
-      });
+          // 헤더 검증 후 연결 종료
+          void req.abort();
+          done();
+        }
+      );
 
-      req.on("error", (err) => {
+      void req.on("error", (err) => {
         // abort로 인한 에러는 무시
         if ((err as { code?: string }).code !== "ECONNRESET") {
           done(err);
@@ -138,10 +143,10 @@ describe("History API Integration", () => {
     it("새 히스토리 추가 시 SSE 이벤트를 발송해야 함", (done) => {
       const agent = request.agent(baseURL);
 
-      agent
+      void agent
         .get("/api/history/stream")
         .buffer(false)
-        .parse((res, callback) => {
+        .parse((res: IncomingMessage, callback) => {
           let buffer = "";
 
           res.on("data", (chunk: Buffer) => {
@@ -151,7 +156,7 @@ describe("History API Integration", () => {
               try {
                 const dataMatch = buffer.match(/data: (.+)\n\n/);
                 if (dataMatch) {
-                  const entry = JSON.parse(dataMatch[1]);
+                  const entry = JSON.parse(dataMatch[1]) as HistoryEntry;
 
                   expect(entry.toolName).toBe("get_kst_time");
                   expect(entry.response).toEqual({ kst: "test_time" });
@@ -179,10 +184,10 @@ describe("History API Integration", () => {
       const agent = request.agent(baseURL);
       let eventCount = 0;
 
-      agent
+      void agent
         .get("/api/history/stream")
         .buffer(false)
-        .parse((res, callback) => {
+        .parse((res: IncomingMessage, callback) => {
           let buffer = "";
 
           res.on("data", (chunk: Buffer) => {

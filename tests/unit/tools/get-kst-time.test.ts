@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { registerGetKstTimeTool } from "../../../src/tools/get-kst-time.js";
 import { createTestMcpServer, mockKstTime } from "../../helpers/test-utils.js";
-import { HistoryService } from "../../../src/services/history-service.js";
+import { HistoryService, type HistoryEntry } from "../../../src/services/history-service.js";
 
 describe("get-kst-time tool", () => {
   beforeEach(() => {
@@ -160,7 +160,7 @@ describe("get-kst-time tool", () => {
       const handler = registerToolSpy.mock.calls[0][2];
 
       const historyService = HistoryService.getInstance();
-      const eventSpy = vi.fn();
+      const eventSpy = vi.fn<[HistoryEntry]>();
       historyService.on("historyAdded", eventSpy);
 
       const result = handler({});
