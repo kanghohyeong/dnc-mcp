@@ -19,5 +19,13 @@
   "env": {
     "node": true,
     "es2022": true
-  }
+  },
+  "ignorePatterns": [
+    "tests/**/*",
+    "test-setup.ts",
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "build/**/*",
+    "node_modules/**/*"
+  ]
 }

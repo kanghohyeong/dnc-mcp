@@ -13,8 +13,105 @@
 1. **타입 검사**: `npm run typecheck`로 TypeScript 타입 오류가 없는지 확인
 2. **린팅**: `npm run lint`로 코드 스타일 검사 (필요시 `npm run lint:fix`로 자동 수정)
 3. **포맷팅**: `npm run format:check`로 코드 포맷팅 확인 (필요시 `npm run format`으로 포맷 적용)
+4. **테스트**: `npm run test`로 모든 테스트 통과 확인
 
 모든 검증을 통과한 후에만 작업을 완료한 것으로 간주합니다.
+
+## 테스트 규칙
+
+### TDD 워크플로우
+
+새로운 기능 구현 시 **반드시 테스트를 먼저 작성**해야 합니다 (Test-Driven Development):
+
+1. **Red**: 실패하는 테스트 작성
+   - 테스트 파일: `tests/unit/` 또는 `tests/integration/`
+   - Watch 모드 활용: `npm run test:watch`
+
+2. **Green**: 테스트를 통과하는 최소 코드 작성
+   - 소스 파일: `src/` 디렉토리
+   - Watch 모드가 자동으로 재실행됨
+
+3. **Refactor**: 코드 개선 및 커버리지 확인
+   - `npm run test:coverage`로 커버리지 80% 이상 유지
+
+### 테스트 작성 규칙
+
+#### 테스트 파일 위치
+
+- **단위 테스트**: `tests/unit/` - 개별 함수/클래스 테스트
+  - 도구: `tests/unit/tools/`
+  - 서비스: `tests/unit/services/`
+  - 유틸리티: `tests/unit/utils/`
+
+- **통합 테스트**: `tests/integration/` - 모듈 간 상호작용 테스트
+
+- **UI 테스트**: `tests/ui/` - Playwright로 웹 페이지 UI 검증
+
+- **E2E 테스트**: `tests/e2e/` - 전체 시스템 플로우 테스트
+
+#### 테스트 파일 명명 규칙
+
+- Vitest: `*.test.ts` (예: `get-kst-time.test.ts`)
+- Playwright: `*.spec.ts` (예: `web-ui.spec.ts`)
+
+#### 필수 테스트 항목
+
+새로운 코드 작성 시 다음을 반드시 테스트해야 합니다:
+
+1. **정상 동작 케이스**: 기대하는 입력에 대한 정상 출력
+2. **에러 처리**: 잘못된 입력 또는 예외 상황 처리
+3. **경계값 테스트**: 최소값, 최대값, 빈 값 등
+4. **모킹**: 외부 의존성은 `vi.mock()`으로 격리
+
+#### 테스트 헬퍼 활용
+
+반복되는 테스트 설정은 `tests/helpers/test-utils.ts`의 헬퍼 함수를 사용:
+
+- `createTestMcpServer()`: MCP 서버 테스트 인스턴스 생성
+- `createTestWebServer()`: 웹 서버 테스트 인스턴스 생성
+- `mockKstTime(isoString)`: Date 모킹
+- `waitForServer(server)`: 서버 준비 대기
+
+### 테스트 명령어
+
+#### 개발 중 (빠른 피드백)
+
+```bash
+npm run test:watch         # Watch 모드 (파일 변경 시 자동 재실행)
+npm run test:vitest:ui     # 브라우저 UI 모드
+npm run test:unit          # 단위 테스트만
+npm run test:integration   # 통합 테스트만
+```
+
+#### 검증 (커밋 전)
+
+```bash
+npm run test              # 전체 테스트 (Vitest + Playwright)
+npm run test:coverage     # 커버리지 확인 (80% 이상 필수)
+```
+
+#### Playwright 테스트
+
+```bash
+npm run test:playwright   # 모든 Playwright 테스트
+npm run test:ui           # UI 테스트만
+npm run test:e2e          # E2E 테스트만
+npm run test:playwright:ui # Playwright UI 모드
+npm run test:playwright:debug # 디버그 모드
+```
+
+### 커버리지 목표
+
+- **Lines/Functions/Statements**: 80% 이상
+- **Branches**: 75% 이상
+
+
+### 테스트 작성 금지 사항
+
+- ❌ `eslint-disable` 주석 사용하지 않음
+- ❌ 테스트 없이 새로운 함수/클래스 추가하지 않음
+- ❌ 실패하는 테스트를 커밋하지 않음
+- ❌ 커버리지를 낮추는 코드 작성하지 않음
 
 ## 프로젝트 구조
 

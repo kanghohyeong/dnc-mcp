@@ -29,3 +29,12 @@ Thumbs.db
 # agent
 .claude/
 .serena/
+
+# Test coverage and reports
+coverage/
+build-test/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/

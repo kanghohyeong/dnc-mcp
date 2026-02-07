@@ -20,5 +20,12 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "build"]
+  "exclude": [
+    "node_modules",
+    "build",
+    "tests",
+    "test-setup.ts",
+    "vitest.config.ts",
+    "playwright.config.ts"
+  ]
 }

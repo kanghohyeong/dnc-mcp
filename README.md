@@ -91,18 +91,108 @@ npm run typecheck
 npm run inspector
 ```
 
+### 테스트
+
+#### 전체 테스트 실행
+
+Vitest와 Playwright 테스트를 모두 실행:
+
+```bash
+npm run test
+```
+
+#### 단위 및 통합 테스트 (Vitest)
+
+단위 테스트만 실행:
+
+```bash
+npm run test:unit
+```
+
+통합 테스트만 실행:
+
+```bash
+npm run test:integration
+```
+
+Watch 모드로 실행 (파일 변경 시 자동 재실행):
+
+```bash
+npm run test:watch
+```
+
+브라우저 UI 모드로 실행:
+
+```bash
+npm run test:vitest:ui
+```
+
+커버리지 리포트 생성:
+
+```bash
+npm run test:coverage
+```
+
+#### E2E 테스트 (Playwright)
+
+모든 Playwright 테스트 실행:
+
+```bash
+npm run test:playwright
+```
+
+UI 테스트만 실행:
+
+```bash
+npm run test:ui
+```
+
+E2E 테스트만 실행:
+
+```bash
+npm run test:e2e
+```
+
+Playwright UI 모드로 실행:
+
+```bash
+npm run test:playwright:ui
+```
+
+디버그 모드로 실행:
+
+```bash
+npm run test:playwright:debug
+```
+
+
 ## 프로젝트 구조
 
 ```
 interlock_mcp/
 ├── src/              # TypeScript 소스 파일
 │   ├── index.ts      # 메인 서버 진입점
-│   └── tools/        # MCP 도구 구현 디렉토리
-│       └── get-kst-time.ts  # KST 시간 조회 도구
+│   ├── tools/        # MCP 도구 구현 디렉토리
+│   │   └── get-kst-time.ts  # KST 시간 조회 도구
+│   ├── services/     # 서비스 계층 (웹 서버 등)
+│   └── utils/        # 유틸리티 함수
+├── tests/            # 테스트 파일
+│   ├── unit/         # 단위 테스트
+│   ├── integration/  # 통합 테스트
+│   ├── ui/           # UI 테스트 (Playwright)
+│   ├── e2e/          # E2E 테스트 (Playwright)
+│   └── helpers/      # 테스트 헬퍼 유틸리티
 ├── build/            # 컴파일된 JavaScript 출력 (git 무시됨)
+├── coverage/         # 테스트 커버리지 리포트 (git 무시됨)
+├── test-results/     # Playwright 테스트 결과 (git 무시됨)
+├── playwright-report/ # Playwright HTML 리포트 (git 무시됨)
 ├── node_modules/     # 의존성 (git 무시됨)
 ├── package.json      # 프로젝트 메타데이터 및 의존성
 ├── tsconfig.json     # TypeScript 설정
+├── tsconfig.test.json # 테스트용 TypeScript 설정
+├── vitest.config.ts  # Vitest 테스트 설정
+├── playwright.config.ts # Playwright 테스트 설정
+├── test-setup.ts     # 글로벌 테스트 설정
 ├── .eslintrc.json    # ESLint 설정
 ├── .prettierrc       # Prettier 설정
 ├── CLAUDE.md         # AI 코딩 어시스턴트용 프로젝트 지침
@@ -111,12 +201,35 @@ interlock_mcp/
 
 ## 개발 워크플로우
 
+### 일반 개발
+
 1. **빌드**: `npm run build`로 TypeScript 코드 컴파일
-2. **테스트**: `npm start`로 서버 실행 또는 `npm run inspector`로 디버깅
-3. **포맷**: `npm run format`으로 코드가 올바르게 포맷되었는지 확인
+2. **테스트**: `npm run test`로 모든 테스트 실행
+3. **포맷**: `npm run format`으로 코드 포맷 적용
 4. **린트**: `npm run lint`로 코드 품질 검사
+5. **타입 검사**: `npm run typecheck`로 타입 오류 확인
 
 활발한 개발을 위해서는 `npm run watch`를 사용하여 변경 시 자동으로 재빌드하세요.
+
+### TDD (Test-Driven Development) 워크플로우
+
+1. **Red**: 실패하는 테스트 작성
+   ```bash
+   npm run test:watch  # 실시간 피드백
+   ```
+
+2. **Green**: 테스트를 통과하는 최소 코드 작성
+   - Watch 모드가 자동으로 재실행
+
+3. **Refactor**: 코드 개선
+   ```bash
+   npm run test:coverage  # 커버리지 확인
+   ```
+
+4. **검증**: 모든 검사 통과 확인
+   ```bash
+   npm run typecheck && npm run lint && npm run test
+   ```
 
 ## 중요 사항
 
