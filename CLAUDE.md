@@ -164,3 +164,13 @@ npm run test:playwright:debug # 디버그 모드
 - 각 도구는 하나의 파일에 하나의 등록 함수만 export
 - 도구 로직이 복잡한 경우 내부 헬퍼 함수를 같은 파일에 작성 가능
 - 여러 도구가 공유하는 유틸리티는 `src/utils/` 디렉토리에 별도 관리
+
+## 코드베이스 탐색
+
+### Serena MCP 도구 활용
+
+코드베이스 탐색 시 Serena MCP의 semantic 도구를 우선적으로 사용해야 합니다.
+
+- **금지**: Read 도구로 전체 파일을 무분별하게 읽기
+- **권장**: Serena 도구(`get_symbols_overview`, `find_symbol` 등)로 필요한 심볼만 선택적으로 읽기
+- **원칙**: 토큰 효율적이고 단계적인 정보 수집
