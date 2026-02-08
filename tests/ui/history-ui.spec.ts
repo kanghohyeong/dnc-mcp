@@ -1,14 +1,14 @@
 import { test, expect } from "@playwright/test";
-import { HelloWorldWebServer } from "../../src/services/web-server.js";
+import { UIWebServer } from "../../src/services/web-server.js";
 import { HistoryService } from "../../src/services/history-service.js";
 import { waitForSseConnection } from "../helpers/playwright-utils.js";
 
-let webServer: HelloWorldWebServer;
+let webServer: UIWebServer;
 let baseURL: string;
 
 test.beforeAll(async () => {
   // 모든 테스트 시작 전 서버 시작
-  webServer = new HelloWorldWebServer({ autoOpenBrowser: false });
+  webServer = new UIWebServer({ autoOpenBrowser: false });
   await webServer.start();
   baseURL = `http://localhost:${webServer.getPort()}`;
 });

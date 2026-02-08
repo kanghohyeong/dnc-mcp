@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import request from "supertest";
 import type { IncomingMessage } from "http";
-import { HelloWorldWebServer } from "../../src/services/web-server.js";
+import { UIWebServer } from "../../src/services/web-server.js";
 import { HistoryService, type HistoryEntry } from "../../src/services/history-service.js";
 
 describe("History API Integration", () => {
-  let webServer: HelloWorldWebServer;
+  let webServer: UIWebServer;
   let historyService: HistoryService;
   let baseURL: string;
 
@@ -15,7 +15,7 @@ describe("History API Integration", () => {
     historyService.clearHistory();
 
     // 웹 서버 시작
-    webServer = new HelloWorldWebServer({ autoOpenBrowser: false });
+    webServer = new UIWebServer({ autoOpenBrowser: false });
     await webServer.start();
     baseURL = `http://localhost:${webServer.getPort()}`;
   });

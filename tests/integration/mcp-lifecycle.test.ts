@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { HelloWorldWebServer } from "../../src/services/web-server.js";
+import { UIWebServer } from "../../src/services/web-server.js";
 import { Readable, Writable } from "node:stream";
 import { sleep } from "../helpers/test-utils.js";
 
 describe("MCP Server Lifecycle - Web Server Integration", () => {
   let mcpServer: McpServer;
-  let webServer: HelloWorldWebServer;
+  let webServer: UIWebServer;
   let _mockStdin: Readable;
   let _mockStdout: Writable;
   let transport: StdioServerTransport;
@@ -26,7 +26,7 @@ describe("MCP Server Lifecycle - Web Server Integration", () => {
       name: "test-server",
       version: "1.0.0",
     });
-    webServer = new HelloWorldWebServer({ autoOpenBrowser: false });
+    webServer = new UIWebServer({ autoOpenBrowser: false });
   });
 
   afterEach(async () => {

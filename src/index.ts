@@ -3,7 +3,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerGetKstTimeTool } from "./tools/get-kst-time.js";
-import { HelloWorldWebServer } from "./services/web-server.js";
+import { UIWebServer } from "./services/web-server.js";
 
 /**
  * MCP Server for interlock_mcp
@@ -20,7 +20,7 @@ const mcpServer = new McpServer({
 });
 
 // Initialize the web server
-const webServer = new HelloWorldWebServer();
+const webServer = new UIWebServer();
 
 /**
  * Register all tools

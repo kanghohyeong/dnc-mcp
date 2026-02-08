@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import request from "supertest";
-import { HelloWorldWebServer } from "../../src/services/web-server.js";
+import { UIWebServer } from "../../src/services/web-server.js";
 import { HistoryService } from "../../src/services/history-service.js";
 import express from "express";
 
 describe("웹 서버 HTTP 엔드포인트", () => {
-  let server: HelloWorldWebServer;
+  let server: UIWebServer;
   let app: express.Express;
 
   beforeAll(async () => {
-    server = new HelloWorldWebServer({ autoOpenBrowser: false });
+    server = new UIWebServer({ autoOpenBrowser: false });
     await server.start();
 
     // Express 앱 인스턴스 가져오기
@@ -69,12 +69,12 @@ describe("웹 서버 HTTP 엔드포인트", () => {
   });
 
   describe("SSE 연결 정리", () => {
-    let testServer: HelloWorldWebServer;
+    let testServer: UIWebServer;
     let testApp: express.Express;
     let historyService: HistoryService;
 
     beforeEach(async () => {
-      testServer = new HelloWorldWebServer({ autoOpenBrowser: false });
+      testServer = new UIWebServer({ autoOpenBrowser: false });
       await testServer.start();
       testApp = (testServer as never)["app"] as express.Express;
       historyService = HistoryService.getInstance();

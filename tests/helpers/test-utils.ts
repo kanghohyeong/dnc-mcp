@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { vi } from "vitest";
-import { HelloWorldWebServer } from "../../src/services/web-server.js";
+import { UIWebServer } from "../../src/services/web-server.js";
 
 /**
  * MCP 서버 테스트 인스턴스 생성
@@ -16,7 +16,7 @@ export function createTestMcpServer() {
  * 웹 서버 테스트 인스턴스 생성 및 시작
  */
 export async function createTestWebServer() {
-  const server = new HelloWorldWebServer({ autoOpenBrowser: false });
+  const server = new UIWebServer({ autoOpenBrowser: false });
   await server.start();
   return server;
 }
@@ -49,7 +49,7 @@ export function sleep(ms: number): Promise<void> {
  * @param server - 웹 서버 인스턴스
  * @param maxAttempts - 최대 재시도 횟수
  */
-export async function waitForServer(server: HelloWorldWebServer, maxAttempts = 10): Promise<void> {
+export async function waitForServer(server: UIWebServer, maxAttempts = 10): Promise<void> {
   for (let i = 0; i < maxAttempts; i++) {
     if (server.getIsRunning()) {
       return;

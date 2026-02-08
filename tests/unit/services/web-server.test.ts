@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { HelloWorldWebServer } from "../../../src/services/web-server.js";
+import { UIWebServer } from "../../../src/services/web-server.js";
 import { HistoryService } from "../../../src/services/history-service.js";
 
 // browser-launcher 모킹
@@ -8,10 +8,10 @@ vi.mock("../../../src/utils/browser-launcher.js", () => ({
 }));
 
 describe("HelloWorldWebServer", () => {
-  let server: HelloWorldWebServer;
+  let server: UIWebServer;
 
   beforeEach(() => {
-    server = new HelloWorldWebServer({ autoOpenBrowser: false });
+    server = new UIWebServer({ autoOpenBrowser: false });
   });
 
   afterEach(async () => {
@@ -54,7 +54,7 @@ describe("HelloWorldWebServer", () => {
       const { openBrowser } = await import("../../../src/utils/browser-launcher.js");
       vi.mocked(openBrowser).mockClear();
 
-      const testServer = new HelloWorldWebServer({ autoOpenBrowser: true });
+      const testServer = new UIWebServer({ autoOpenBrowser: true });
       await testServer.start();
 
       expect(openBrowser).toHaveBeenCalledWith(`http://localhost:${testServer.getPort()}`);
@@ -117,7 +117,7 @@ describe("HelloWorldWebServer", () => {
       const { openBrowser } = await import("../../../src/utils/browser-launcher.js");
       vi.mocked(openBrowser).mockClear();
 
-      const testServer = new HelloWorldWebServer();
+      const testServer = new UIWebServer();
       await testServer.start();
 
       expect(openBrowser).not.toHaveBeenCalled();
@@ -132,7 +132,7 @@ describe("HelloWorldWebServer", () => {
       const { openBrowser } = await import("../../../src/utils/browser-launcher.js");
       vi.mocked(openBrowser).mockClear();
 
-      const testServer = new HelloWorldWebServer();
+      const testServer = new UIWebServer();
       await testServer.start();
 
       expect(openBrowser).toHaveBeenCalledWith(`http://localhost:${testServer.getPort()}`);
@@ -145,7 +145,7 @@ describe("HelloWorldWebServer", () => {
       const { openBrowser } = await import("../../../src/utils/browser-launcher.js");
       vi.mocked(openBrowser).mockClear();
 
-      const testServer = new HelloWorldWebServer({ autoOpenBrowser: false });
+      const testServer = new UIWebServer({ autoOpenBrowser: false });
       await testServer.start();
 
       expect(openBrowser).not.toHaveBeenCalled();
@@ -157,7 +157,7 @@ describe("HelloWorldWebServer", () => {
       const { openBrowser } = await import("../../../src/utils/browser-launcher.js");
       vi.mocked(openBrowser).mockClear();
 
-      const testServer = new HelloWorldWebServer({ autoOpenBrowser: true });
+      const testServer = new UIWebServer({ autoOpenBrowser: true });
       await testServer.start();
 
       expect(openBrowser).toHaveBeenCalledWith(`http://localhost:${testServer.getPort()}`);
@@ -172,7 +172,7 @@ describe("HelloWorldWebServer", () => {
       const { openBrowser } = await import("../../../src/utils/browser-launcher.js");
       vi.mocked(openBrowser).mockClear();
 
-      const testServer = new HelloWorldWebServer();
+      const testServer = new UIWebServer();
       await testServer.start();
 
       expect(openBrowser).toHaveBeenCalledWith(`http://localhost:${testServer.getPort()}`);

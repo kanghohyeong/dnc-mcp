@@ -7,12 +7,12 @@ import { HistoryService } from "./history-service.js";
 import { PortFinder } from "./port-finder.js";
 import { RouteRegistrar } from "./route-registrar.js";
 
-export interface HelloWorldWebServerOptions {
+export interface UIWebServerOptions {
   autoOpenBrowser?: boolean;
 }
 
 /**
- * "Hello World" 웹 서버 (리팩토링 버전)
+ * "UI Web Server" 웹 서버 (리팩토링 버전)
  *
  * 단일 책임 원칙을 따라 4개의 전문 클래스로 책임을 분리:
  * - ExpressAppConfigurator: 앱 설정 (view engine, static files)
@@ -20,7 +20,7 @@ export interface HelloWorldWebServerOptions {
  * - PortFinder: 사용 가능한 포트 검색 및 서버 시작
  * - ConnectionManager: SSE 및 HTTP 연결 관리
  */
-export class HelloWorldWebServer {
+export class UIWebServer {
   private app: Express;
   private server: Server | null = null;
   private port: number = 3331;
@@ -32,7 +32,7 @@ export class HelloWorldWebServer {
   private routeRegistrar: RouteRegistrar;
   private portFinder: PortFinder;
 
-  constructor(options?: HelloWorldWebServerOptions) {
+  constructor(options?: UIWebServerOptions) {
     this.app = express();
     this.autoOpenBrowser = options?.autoOpenBrowser ?? process.env.NODE_ENV !== "test";
 
