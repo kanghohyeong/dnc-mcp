@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { ConnectionManager } from "./connection-manager.js";
 import { HistoryService, type HistoryEntry } from "./history-service.js";
+import { DncJobService } from "./dnc-job-service.js";
 
 /**
  * Express 라우트를 등록하는 클래스
@@ -8,10 +9,12 @@ import { HistoryService, type HistoryEntry } from "./history-service.js";
 export class RouteRegistrar {
   private historyService: HistoryService;
   private connectionManager: ConnectionManager;
+  private dncJobService: DncJobService;
 
   constructor(historyService: HistoryService, connectionManager: ConnectionManager) {
     this.historyService = historyService;
     this.connectionManager = connectionManager;
+    this.dncJobService = new DncJobService();
   }
 
   /**
@@ -23,6 +26,7 @@ export class RouteRegistrar {
     this.registerHistoryApiRoute(app);
     this.registerHistoryPageRoute(app);
     this.registerHistoryStreamRoute(app);
+    this.registerDncJobsRoute(app);
   }
 
   /**
@@ -91,6 +95,16 @@ export class RouteRegistrar {
 
       // ConnectionManager를 통해 SSE 연결 추적
       this.connectionManager.trackSseConnection(res, listener);
+    });
+  }
+
+  /**
+   * GET /dnc/jobs - DnC jobs 목록 페이지
+   */
+  private registerDncJobsRoute(app: Express): void {
+    app.get("/dnc/jobs", async (_req: Request, res: Response) => {
+      const jobs = await this.dncJobService.getAllRootJobs();
+      res.render("dnc-jobs", { jobs });
     });
   }
 }
