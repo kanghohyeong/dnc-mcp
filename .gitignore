@@ -27,8 +27,9 @@ Thumbs.db
 *~
 
 # agent
-.claude/
+.claude/settings.local.json
 .serena/
+.dnc/
 
 # Test coverage and reports
 coverage/
