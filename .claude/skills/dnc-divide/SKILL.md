@@ -21,9 +21,9 @@ disable-model-invocation: true
 
 ```
 .dnc/
-├── {root_job_id}.json
-└── specs/
-    └── {root_job_id}/
+└── {root_job_id}/
+    ├── job_relation.json
+    └── specs/
         ├── {root_job_id}.md
         ├── {child_job_slug}.md
         └── ...
@@ -33,7 +33,8 @@ disable-model-invocation: true
 
 ### 1단계: 기존 Job 스캔
 
-- `.dnc/` 디렉토리에서 `*.json` 파일들을 스캔합니다.
+- `.dnc/` 디렉토리에서 `*/job_relation.json` 패턴으로 파일들을 스캔합니다.
+- 디렉토리명에서 root job ID를 추출합니다.
 - 디렉토리가 없거나 JSON 파일이 없으면 사용자에게 안내합니다: "아직 생성된 job이 없습니다. `/dnc-new`로 먼저 root job을 생성하세요."
 
 ### 2단계: 분할할 Job 선택
@@ -59,7 +60,7 @@ disable-model-invocation: true
 
 1. job ID를 생성합니다 (`job-{slug}` 형식).
 2. 사용자와 함께 spec 마크다운 파일을 작성합니다.
-   - 파일 경로: `.dnc/specs/{root_job_id}/{child_job_slug}.md`
+   - 파일 경로: `.dnc/{root_job_id}/specs/{child_job_slug}.md`
    - root_job_id는 해당 root job의 ID입니다 (최상위 job).
    - child_job_slug는 `job-` prefix를 제거한 slug입니다.
 3. spec 파일의 구조:
@@ -92,7 +93,7 @@ disable-model-invocation: true
 {
     "id": "{child_job_id}",
     "goal": "{child_goal}",
-    "spec": ".dnc/specs/{root_job_id}/{child_job_slug}.md",
+    "spec": ".dnc/{root_job_id}/specs/{child_job_slug}.md",
     "status": "pending",
     "divided_jobs": []
 }

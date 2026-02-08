@@ -26,7 +26,8 @@ disable-model-invocation: true
 
 ### 1단계: 기존 Job 스캔
 
-- `.dnc/` 디렉토리에서 `*.json` 파일들을 스캔합니다.
+- `.dnc/` 디렉토리에서 `*/job_relation.json` 패턴으로 파일들을 스캔합니다.
+- 디렉토리명에서 root job ID를 추출합니다.
 - 디렉토리가 없거나 JSON 파일이 없으면 사용자에게 안내합니다: "아직 생성된 job이 없습니다. `/dnc-new`로 먼저 root job을 생성하세요."
 
 ### 2단계: 실행할 Leaf Job 선택

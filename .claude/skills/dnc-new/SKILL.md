@@ -11,13 +11,13 @@ disable-model-invocation: true
 
 ## 데이터 구조
 
-### JSON 파일 (`.dnc/{root_job_id}.json`)
+### JSON 파일 (`.dnc/{root_job_id}/job_relation.json`)
 
 ```json
 {
     "id": "job-{slug}",
     "goal": "목표 설명",
-    "spec": ".dnc/specs/{root_job_id}/{root_job_id}.md",
+    "spec": ".dnc/{root_job_id}/specs/{root_job_id}.md",
     "status": "pending",
     "divided_jobs": []
 }
@@ -41,16 +41,17 @@ disable-model-invocation: true
 - `$ARGUMENTS`에서 goal(최상위 목표)을 추출합니다.
 - goal이 없으면 사용자에게 AskUserQuestion 도구로 입력을 요청합니다: "최상위 목표(goal)를 입력해 주세요."
 - goal을 영문 kebab-case slug로 변환하여 job ID를 생성합니다 (예: "인증 기능 구현" → `job-implement-auth`).
-- `.dnc/{root_job_id}.json` 파일이 이미 존재하면, 덮어쓸지 사용자에게 AskUserQuestion으로 확인합니다.
+- `.dnc/{root_job_id}/job_relation.json` 파일이 이미 존재하면, 덮어쓸지 사용자에게 AskUserQuestion으로 확인합니다.
 
 ### 2단계: 디렉토리 구조 생성
 
 - `.dnc/` 디렉토리를 생성합니다 (없으면).
-- `.dnc/specs/{root_job_id}/` 디렉토리를 생성합니다.
+- `.dnc/{root_job_id}/` 디렉토리를 생성합니다.
+- `.dnc/{root_job_id}/specs/` 디렉토리를 생성합니다.
 
 ### 3단계: Spec 마크다운 작성
 
-사용자와 함께 `.dnc/specs/{root_job_id}/{root_job_id}.md` 파일을 작성합니다.
+사용자와 함께 `.dnc/{root_job_id}/specs/{root_job_id}.md` 파일을 작성합니다.
 
 사용자에게 AskUserQuestion 도구로 다음 항목들을 순차적으로 질문합니다:
 
@@ -83,13 +84,13 @@ disable-model-invocation: true
 
 ### 4단계: JSON 파일 생성
 
-`.dnc/{root_job_id}.json` 파일을 생성합니다:
+`.dnc/{root_job_id}/job_relation.json` 파일을 생성합니다:
 
 ```json
 {
     "id": "{root_job_id}",
     "goal": "{사용자가 입력한 goal}",
-    "spec": ".dnc/specs/{root_job_id}/{root_job_id}.md",
+    "spec": ".dnc/{root_job_id}/specs/{root_job_id}.md",
     "status": "pending",
     "divided_jobs": []
 }
@@ -99,6 +100,6 @@ disable-model-invocation: true
 
 사용자에게 다음 정보를 출력합니다:
 
-- 생성된 JSON 파일 경로: `.dnc/{root_job_id}.json`
-- 생성된 Spec 파일 경로: `.dnc/specs/{root_job_id}/{root_job_id}.md`
+- 생성된 JSON 파일 경로: `.dnc/{root_job_id}/job_relation.json`
+- 생성된 Spec 파일 경로: `.dnc/{root_job_id}/specs/{root_job_id}.md`
 - 다음 단계 안내: `/dnc-divide`로 하위 작업 분할을 진행하세요.
