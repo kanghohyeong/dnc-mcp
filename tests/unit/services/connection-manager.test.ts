@@ -98,7 +98,9 @@ describe("ConnectionManager", () => {
 
       await connectionManager.closeAllSseConnections();
 
-      expect(response.write).toHaveBeenCalledWith('event: shutdown\ndata: {"reason":"server_stopping"}\n\n');
+      expect(response.write).toHaveBeenCalledWith(
+        'event: shutdown\ndata: {"reason":"server_stopping"}\n\n'
+      );
       expect(response.end).toHaveBeenCalledTimes(1);
     });
 

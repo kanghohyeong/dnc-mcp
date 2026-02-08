@@ -85,7 +85,9 @@ describe("RouteRegistrar", () => {
       expect(response.status).toBe(200);
       expect(response.body).toBeInstanceOf(Array);
       expect(response.body.length).toBe(2);
-      expect(response.body.every((entry: { toolName: string }) => entry.toolName === "get_kst_time")).toBe(true);
+      expect(
+        response.body.every((entry: { toolName: string }) => entry.toolName === "get_kst_time")
+      ).toBe(true);
     });
 
     it("5. GET /history 라우트 및 EJS 렌더링", async () => {

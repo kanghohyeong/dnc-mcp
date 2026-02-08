@@ -94,12 +94,16 @@ export class UIWebServer {
     console.error("Closing SSE connections before stopping web server...");
 
     // SSE 연결 정리
-    console.error(`Closing ${this.connectionManager.getSseConnectionCount()} active SSE connection(s)...`);
+    console.error(
+      `Closing ${this.connectionManager.getSseConnectionCount()} active SSE connection(s)...`
+    );
     await this.connectionManager.closeAllSseConnections();
     console.error("All SSE connections closed");
 
     // HTTP 연결 정리
-    console.error(`Closing ${this.connectionManager.getHttpConnectionCount()} HTTP connection(s)...`);
+    console.error(
+      `Closing ${this.connectionManager.getHttpConnectionCount()} HTTP connection(s)...`
+    );
     this.connectionManager.closeAllHttpSockets();
 
     // 서버 종료

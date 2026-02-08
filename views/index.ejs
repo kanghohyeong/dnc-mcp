@@ -10,6 +10,7 @@
       padding: 0;
       height: 100vh;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -20,14 +21,68 @@
       font-size: 4rem;
       text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
       animation: fadeIn 1s ease-in;
+      margin-bottom: 2rem;
+    }
+    #history-button {
+      padding: 1rem 2rem;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #667eea;
+      background: white;
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      animation: fadeIn 1s ease-in 0.3s both;
+    }
+    #history-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+      background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+    }
+    #history-button:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    #history-button:focus {
+      outline: 3px solid rgba(255, 255, 255, 0.5);
+      outline-offset: 2px;
     }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-20px); }
       to { opacity: 1; transform: translateY(0); }
     }
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2.5rem;
+      }
+      #history-button {
+        padding: 0.875rem 1.75rem;
+        font-size: 1rem;
+      }
+    }
   </style>
 </head>
 <body>
   <h1>hello world</h1>
+  <button id="history-button" type="button">히스토리</button>
+
+  <script>
+    // DOM이 로드된 후 이벤트 리스너 등록
+    document.addEventListener('DOMContentLoaded', () => {
+      const historyButton = document.getElementById('history-button');
+
+      if (!historyButton) {
+        console.warn('히스토리 버튼을 찾을 수 없습니다.');
+        return;
+      }
+
+      // 버튼 클릭 시 히스토리 페이지로 이동
+      historyButton.addEventListener('click', () => {
+        window.location.href = '/history';
+      });
+    });
+  </script>
 </body>
 </html>
