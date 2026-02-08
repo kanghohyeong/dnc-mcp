@@ -9,6 +9,11 @@ export interface DncJob {
   divided_jobs: DncJob[];
 }
 
+export interface DncJobWithDetails extends Omit<DncJob, "divided_jobs"> {
+  specContent: string;
+  divided_jobs: DncJobWithDetails[];
+}
+
 export class DncJobService {
   private dncDir: string;
 

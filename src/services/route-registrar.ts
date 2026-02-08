@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { ConnectionManager } from "./connection-manager.js";
 import { HistoryService, type HistoryEntry } from "./history-service.js";
 import { DncJobService } from "./dnc-job-service.js";
+import { DncJobDetailLoader } from "./dnc-job-detail-loader.js";
 
 /**
  * Express 라우트를 등록하는 클래스
@@ -10,11 +11,13 @@ export class RouteRegistrar {
   private historyService: HistoryService;
   private connectionManager: ConnectionManager;
   private dncJobService: DncJobService;
+  private dncJobDetailLoader: DncJobDetailLoader;
 
   constructor(historyService: HistoryService, connectionManager: ConnectionManager) {
     this.historyService = historyService;
     this.connectionManager = connectionManager;
     this.dncJobService = new DncJobService();
+    this.dncJobDetailLoader = new DncJobDetailLoader();
   }
 
   /**
@@ -27,6 +30,7 @@ export class RouteRegistrar {
     this.registerHistoryPageRoute(app);
     this.registerHistoryStreamRoute(app);
     this.registerDncJobsRoute(app);
+    this.registerDncJobDetailRoute(app);
   }
 
   /**
@@ -105,6 +109,34 @@ export class RouteRegistrar {
     app.get("/dnc/jobs", async (_req: Request, res: Response) => {
       const jobs = await this.dncJobService.getAllRootJobs();
       res.render("dnc-jobs", { jobs });
+    });
+  }
+
+  /**
+   * GET /dnc/jobs/:jobId - DnC job 상세 페이지 (JSON API)
+   */
+  private registerDncJobDetailRoute(app: Express): void {
+    app.get("/dnc/jobs/:jobId", async (req: Request, res: Response) => {
+      const jobId = req.params.jobId as string;
+
+      try {
+        const job = await this.dncJobDetailLoader.loadJobByIdWithDetails(jobId);
+
+        if (!job) {
+          res.status(404).json({
+            error: "Job not found",
+            jobId,
+          });
+          return;
+        }
+
+        res.json(job);
+      } catch (error) {
+        res.status(500).json({
+          error: "Failed to load job details",
+          message: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
     });
   }
 }
