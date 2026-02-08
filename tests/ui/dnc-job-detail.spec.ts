@@ -34,11 +34,27 @@ test.describe("DnC Job Detail Page", () => {
       divided_jobs: [],
     };
 
+    const specContent = `# UI Test Spec
+
+This is a test spec for UI.
+
+## 요구사항
+
+- 첫 번째 요구사항
+- 두 번째 요구사항
+
+## 코드 예제
+
+\`\`\`typescript
+function example() {
+  return "test";
+}
+\`\`\`
+
+**강조된 텍스트**와 *이탤릭 텍스트*가 있습니다.`;
+
     await fs.writeFile(path.join(jobDir, "job_relation.json"), JSON.stringify(job, null, 2));
-    await fs.writeFile(
-      path.join(jobDir, "spec.md"),
-      "# UI Test Spec\n\nThis is a test spec for UI."
-    );
+    await fs.writeFile(path.join(jobDir, "spec.md"), specContent);
   });
 
   test.afterEach(async () => {
@@ -147,5 +163,115 @@ test.describe("DnC Job Detail Page", () => {
     await expect(page.getByTestId("job-id")).toBeVisible();
     await expect(page.getByTestId("job-goal")).toBeVisible();
     await expect(page.getByTestId("job-status")).toBeVisible();
+  });
+
+  // TC1: Spec 섹션이 페이지에 표시됨
+  test("should display spec section on page", async ({ page }) => {
+    await page.goto(`${baseURL}/dnc/jobs/job-ui-test`);
+
+    const specSection = page.getByTestId("job-spec-section");
+    await expect(specSection).toBeVisible();
+  });
+
+  // TC2: Spec 내용이 마크다운으로 렌더링됨
+  test("should render spec content as markdown", async ({ page }) => {
+    await page.goto(`${baseURL}/dnc/jobs/job-ui-test`);
+
+    // 토글 버튼을 클릭하여 내용을 펼침
+    const toggleButton = page.getByTestId("spec-toggle-button");
+    await toggleButton.click();
+
+    const specContent = page.getByTestId("spec-content");
+
+    // 마크다운 제목이 h1 태그로 렌더링되는지 확인
+    const h1 = specContent.locator("h1");
+    await expect(h1).toContainText("UI Test Spec");
+
+    // 마크다운 제목이 h2 태그로 렌더링되는지 확인
+    const h2 = specContent.locator("h2").first();
+    await expect(h2).toContainText("요구사항");
+
+    // 목록이 렌더링되는지 확인
+    const listItems = specContent.locator("li");
+    await expect(listItems).toHaveCount(2);
+
+    // 코드 블록이 렌더링되는지 확인
+    const codeBlock = specContent.locator("pre code");
+    await expect(codeBlock).toBeVisible();
+    await expect(codeBlock).toContainText("function example()");
+
+    // 강조 텍스트가 렌더링되는지 확인
+    const strong = specContent.locator("strong");
+    await expect(strong).toContainText("강조된 텍스트");
+
+    // 이탤릭 텍스트가 렌더링되는지 확인
+    const em = specContent.locator("em");
+    await expect(em).toContainText("이탤릭 텍스트");
+  });
+
+  // TC3: 초기 상태에서 Spec이 접혀있음
+  test("should have spec collapsed by default", async ({ page }) => {
+    await page.goto(`${baseURL}/dnc/jobs/job-ui-test`);
+
+    const specContent = page.getByTestId("spec-content");
+    await expect(specContent).toBeHidden();
+  });
+
+  // TC4: 토글 버튼 클릭 시 Spec이 펼쳐짐
+  test("should expand spec when toggle button is clicked", async ({ page }) => {
+    await page.goto(`${baseURL}/dnc/jobs/job-ui-test`);
+
+    const toggleButton = page.getByTestId("spec-toggle-button");
+    const specContent = page.getByTestId("spec-content");
+
+    // 초기에는 접혀있음
+    await expect(specContent).toBeHidden();
+
+    // 토글 버튼 클릭
+    await toggleButton.click();
+
+    // 펼쳐짐
+    await expect(specContent).toBeVisible();
+  });
+
+  // TC5: 다시 토글 버튼 클릭 시 Spec이 접힘
+  test("should collapse spec when toggle button is clicked again", async ({ page }) => {
+    await page.goto(`${baseURL}/dnc/jobs/job-ui-test`);
+
+    const toggleButton = page.getByTestId("spec-toggle-button");
+    const specContent = page.getByTestId("spec-content");
+
+    // 펼침
+    await toggleButton.click();
+    await expect(specContent).toBeVisible();
+
+    // 다시 토글
+    await toggleButton.click();
+
+    // 접힘
+    await expect(specContent).toBeHidden();
+  });
+
+  // TC6: 마크다운 스타일이 적용됨
+  test("should apply markdown styles", async ({ page }) => {
+    await page.goto(`${baseURL}/dnc/jobs/job-ui-test`);
+
+    const toggleButton = page.getByTestId("spec-toggle-button");
+    await toggleButton.click();
+
+    const specContent = page.getByTestId("spec-content");
+
+    // 코드 블록 스타일 확인
+    const codeBlock = specContent.locator("pre");
+    const bgColor = await codeBlock.evaluate((el) => window.getComputedStyle(el).backgroundColor);
+    expect(bgColor).not.toBe("rgba(0, 0, 0, 0)"); // 배경색이 있어야 함
+
+    // 제목 스타일 확인
+    const h2 = specContent.locator("h2").first();
+    const fontSize = await h2.evaluate((el) => window.getComputedStyle(el).fontSize);
+    const defaultFontSize = await page.evaluate(
+      () => window.getComputedStyle(document.body).fontSize
+    );
+    expect(fontSize).not.toBe(defaultFontSize); // 기본 폰트 사이즈와 달라야 함
   });
 });

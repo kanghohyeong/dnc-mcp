@@ -40,14 +40,18 @@
     "@modelcontextprotocol/sdk": "^1.26.0",
     "ejs": "^3.1.10",
     "express": "^5.2.1",
+    "marked": "^17.0.1",
     "open": "^11.0.0",
+    "sanitize-html": "^2.17.0",
     "zod": "^3.22.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "@types/ejs": "^3.1.5",
     "@types/express": "^5.0.6",
+    "@types/marked": "^5.0.2",
     "@types/node": "^22.0.0",
+    "@types/sanitize-html": "^2.16.0",
     "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",

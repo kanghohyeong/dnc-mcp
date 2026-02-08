@@ -3,6 +3,8 @@ import { ConnectionManager } from "./connection-manager.js";
 import { HistoryService, type HistoryEntry } from "./history-service.js";
 import { DncJobService } from "./dnc-job-service.js";
 import { DncJobDetailLoader } from "./dnc-job-detail-loader.js";
+import { marked } from "marked";
+import sanitizeHtml from "sanitize-html";
 
 /**
  * Express 라우트를 등록하는 클래스
@@ -130,7 +132,22 @@ export class RouteRegistrar {
           return;
         }
 
-        res.render("dnc-job-detail", { job });
+        // 마크다운을 HTML로 변환
+        const rawHtml = await marked.parse(job.specContent, {
+          breaks: true,
+          gfm: true,
+        });
+
+        // XSS 방지를 위해 sanitize
+        const specContentHtml = sanitizeHtml(rawHtml, {
+          allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img", "h1", "h2", "h3"]),
+          allowedAttributes: {
+            ...sanitizeHtml.defaults.allowedAttributes,
+            code: ["class"],
+          },
+        });
+
+        res.render("dnc-job-detail", { job, specContentHtml });
       } catch (error) {
         res.status(500).render("error", {
           message: "Failed to load job details",
