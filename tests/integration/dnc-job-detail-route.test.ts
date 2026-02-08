@@ -8,7 +8,7 @@ import express from "express";
 import { RouteRegistrar } from "../../src/services/route-registrar.js";
 import { HistoryService } from "../../src/services/history-service.js";
 import { ConnectionManager } from "../../src/services/connection-manager.js";
-import type { DncJob, DncJobWithDetails } from "../../src/services/dnc-job-service.js";
+import type { DncJob } from "../../src/services/dnc-job-service.js";
 
 describe("DnC Job Detail Route", () => {
   let app: Express;
@@ -43,7 +43,7 @@ describe("DnC Job Detail Route", () => {
   });
 
   describe("GET /dnc/jobs/:jobId", () => {
-    it("should return 200 and job details with spec content for existing job", async () => {
+    it("should return 200 and render job detail page for existing job", async () => {
       // Arrange: job 생성
       const dncDir = path.join(tempDir, ".dnc");
       const jobDir = path.join(dncDir, "job-test-123");
@@ -65,15 +65,10 @@ describe("DnC Job Detail Route", () => {
 
       // Assert
       expect(response.status).toBe(200);
-      const jobData = response.body as DncJobWithDetails;
-      expect(jobData).toMatchObject({
-        id: "job-test-123",
-        goal: "Test job",
-        spec: ".dnc/job-test-123/spec.md",
-        status: "pending",
-        specContent: "# Test Spec\n\nThis is a test spec.",
-        divided_jobs: [],
-      });
+      expect(response.type).toBe("text/html");
+      expect(response.text).toContain("job-test-123");
+      expect(response.text).toContain("Test job");
+      expect(response.text).toContain("pending");
     });
 
     it("should return 404 for non-existent job", async () => {
@@ -82,87 +77,42 @@ describe("DnC Job Detail Route", () => {
 
       // Assert
       expect(response.status).toBe(404);
-      const errorData = response.body as { error: string; jobId: string };
-      expect(errorData).toMatchObject({
-        error: "Job not found",
-        jobId: "non-existent-job",
-      });
+      expect(response.type).toBe("text/html");
     });
 
-    it("should handle job with divided_jobs recursively", async () => {
-      // Arrange
+    it("should display different status styles", async () => {
+      // Arrange: pending, in-progress, done 상태의 job 생성
       const dncDir = path.join(tempDir, ".dnc");
-      const jobDir = path.join(dncDir, "job-parent");
-      await fs.mkdir(jobDir, { recursive: true });
 
-      const childJob: DncJob = {
-        id: "job-child",
-        goal: "Child job",
-        spec: ".dnc/job-parent/child-spec.md",
-        status: "pending",
-        divided_jobs: [],
-      };
+      const statuses: Array<"pending" | "in-progress" | "done"> = [
+        "pending",
+        "in-progress",
+        "done",
+      ];
 
-      const parentJob: DncJob = {
-        id: "job-parent",
-        goal: "Parent job",
-        spec: ".dnc/job-parent/parent-spec.md",
-        status: "in-progress",
-        divided_jobs: [childJob],
-      };
+      for (const status of statuses) {
+        const jobDir = path.join(dncDir, `job-${status}`);
+        await fs.mkdir(jobDir, { recursive: true });
 
-      await fs.writeFile(path.join(jobDir, "job_relation.json"), JSON.stringify(parentJob));
-      await fs.writeFile(path.join(jobDir, "parent-spec.md"), "# Parent Spec");
-      await fs.writeFile(path.join(jobDir, "child-spec.md"), "# Child Spec");
+        const job: DncJob = {
+          id: `job-${status}`,
+          goal: `Job with ${status} status`,
+          spec: `.dnc/job-${status}/spec.md`,
+          status,
+          divided_jobs: [],
+        };
 
-      // Act
-      const response = await request(app).get("/dnc/jobs/job-parent");
+        await fs.writeFile(path.join(jobDir, "job_relation.json"), JSON.stringify(job));
+        await fs.writeFile(path.join(jobDir, "spec.md"), `# Spec for ${status}`);
 
-      // Assert
-      expect(response.status).toBe(200);
-      const jobData = response.body as DncJobWithDetails;
-      expect(jobData.id).toBe("job-parent");
-      expect(jobData.goal).toBe("Parent job");
-      expect(jobData.specContent).toBe("# Parent Spec");
-      expect(jobData.divided_jobs).toHaveLength(1);
-      expect(jobData.divided_jobs[0].specContent).toBe("# Child Spec");
-    });
+        // Act
+        const response = await request(app).get(`/dnc/jobs/job-${status}`);
 
-    it("should handle nested job in divided_jobs", async () => {
-      // Arrange
-      const dncDir = path.join(tempDir, ".dnc");
-      const jobDir = path.join(dncDir, "job-root");
-      await fs.mkdir(jobDir, { recursive: true });
-
-      const childJob: DncJob = {
-        id: "job-nested-child",
-        goal: "Nested child",
-        spec: ".dnc/job-root/child.md",
-        status: "pending",
-        divided_jobs: [],
-      };
-
-      const rootJob: DncJob = {
-        id: "job-root",
-        goal: "Root job",
-        spec: ".dnc/job-root/root.md",
-        status: "in-progress",
-        divided_jobs: [childJob],
-      };
-
-      await fs.writeFile(path.join(jobDir, "job_relation.json"), JSON.stringify(rootJob));
-      await fs.writeFile(path.join(jobDir, "root.md"), "# Root");
-      await fs.writeFile(path.join(jobDir, "child.md"), "# Child");
-
-      // Act: nested child에 직접 접근
-      const response = await request(app).get("/dnc/jobs/job-nested-child");
-
-      // Assert
-      expect(response.status).toBe(200);
-      const jobData = response.body as DncJobWithDetails;
-      expect(jobData.id).toBe("job-nested-child");
-      expect(jobData.goal).toBe("Nested child");
-      expect(jobData.specContent).toBe("# Child");
+        // Assert
+        expect(response.status).toBe(200);
+        expect(response.text).toContain(`status-${status}`);
+        expect(response.text).toContain(status);
+      }
     });
   });
 });

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Detail - <%= job.id %></title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 40px 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    .header {
+      margin-bottom: 30px;
+    }
+
+    .back-link {
+      display: inline-block;
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      margin-bottom: 16px;
+      transition: opacity 0.2s ease;
+    }
+
+    .back-link:hover {
+      opacity: 0.8;
+    }
+
+    h1 {
+      color: white;
+      font-size: 2.5rem;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      text-align: center;
+    }
+
+    .job-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+
+    .job-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid #f3f4f6;
+    }
+
+    .job-id {
+      font-family: 'Courier New', monospace;
+      color: #6366f1;
+      font-weight: 600;
+      font-size: 1.25rem;
+    }
+
+    .job-status {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-pending {
+      background-color: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-in-progress {
+      background-color: #dbeafe;
+      color: #1e40af;
+    }
+
+    .status-done {
+      background-color: #d1fae5;
+      color: #065f46;
+    }
+
+    .job-info {
+      margin-bottom: 24px;
+    }
+
+    .info-label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    .info-value {
+      font-size: 1.125rem;
+      color: #374151;
+      line-height: 1.6;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 20px 16px;
+      }
+
+      h1 {
+        font-size: 1.75rem;
+      }
+
+      .job-card {
+        padding: 20px;
+      }
+
+      .job-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .job-id {
+        font-size: 1rem;
+      }
+
+      .info-value {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <a href="/dnc/jobs" class="back-link">← 목록으로 돌아가기</a>
+      <h1>Job Detail</h1>
+    </div>
+
+    <div class="job-card">
+      <div class="job-header">
+        <div class="job-id" data-testid="job-id">
+          <%= job.id %>
+        </div>
+        <div class="job-status status-<%= job.status %>" data-testid="job-status">
+          <%= job.status %>
+        </div>
+      </div>
+
+      <div class="job-info">
+        <div class="info-label">Goal</div>
+        <div class="info-value" data-testid="job-goal">
+          <%= job.goal %>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

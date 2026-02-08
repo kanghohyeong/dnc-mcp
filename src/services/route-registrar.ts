@@ -113,7 +113,7 @@ export class RouteRegistrar {
   }
 
   /**
-   * GET /dnc/jobs/:jobId - DnC job 상세 페이지 (JSON API)
+   * GET /dnc/jobs/:jobId - DnC job 상세 페이지
    */
   private registerDncJobDetailRoute(app: Express): void {
     app.get("/dnc/jobs/:jobId", async (req: Request, res: Response) => {
@@ -123,18 +123,21 @@ export class RouteRegistrar {
         const job = await this.dncJobDetailLoader.loadJobByIdWithDetails(jobId);
 
         if (!job) {
-          res.status(404).json({
-            error: "Job not found",
-            jobId,
+          res.status(404).render("error", {
+            message: "Job not found",
+            error: { status: 404, stack: "" },
           });
           return;
         }
 
-        res.json(job);
+        res.render("dnc-job-detail", { job });
       } catch (error) {
-        res.status(500).json({
-          error: "Failed to load job details",
-          message: error instanceof Error ? error.message : "Unknown error",
+        res.status(500).render("error", {
+          message: "Failed to load job details",
+          error: {
+            status: 500,
+            stack: error instanceof Error ? error.stack : "",
+          },
         });
       }
     });
