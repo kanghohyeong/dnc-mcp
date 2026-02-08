@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from "vitest";
 import express, { type Express } from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import request from "supertest";
 import { ExpressAppConfigurator } from "../../../src/services/express-app-configurator.js";
 
 const __filename = fileURLToPath(import.meta.url);

@@ -36,12 +36,8 @@
 #### TDD 사이클
 
 1. **Red**: 실패하는 테스트 작성
-   - 테스트 파일: `tests/unit/` 또는 `tests/integration/`
-   - Watch 모드 활용: `npm run test:watch`
 
 2. **Green**: 테스트를 통과하는 최소 코드 작성
-   - 소스 파일: `src/` 디렉토리
-   - Watch 모드가 자동으로 재실행됨
 
 3. **Refactor**: 코드 개선 및 커버리지 확인
    - `npm run test:coverage`로 커버리지 80% 이상 유지

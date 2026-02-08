@@ -86,7 +86,6 @@ describe("ConnectionManager", () => {
 
     it("6. SSE 클라이언트에게 shutdown 이벤트 전송 확인", async () => {
       const response = new EventEmitter() as Response;
-      const endCallback = vi.fn();
       response.end = vi.fn((cb?: () => void) => {
         if (cb) {
           setImmediate(cb);
@@ -99,7 +98,7 @@ describe("ConnectionManager", () => {
 
       await connectionManager.closeAllSseConnections();
 
-      expect(response.write).toHaveBeenCalledWith("event: shutdown\ndata: Server is shutting down\n\n");
+      expect(response.write).toHaveBeenCalledWith('event: shutdown\ndata: {"reason":"server_stopping"}\n\n');
       expect(response.end).toHaveBeenCalledTimes(1);
     });
 

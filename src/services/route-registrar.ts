@@ -39,7 +39,10 @@ export class RouteRegistrar {
    */
   private registerHealthRoute(app: Express): void {
     app.get("/health", (_req: Request, res: Response) => {
-      res.json({ status: "ok" });
+      res.json({
+        status: "ok",
+        message: "MCP server is running",
+      });
     });
   }
 
@@ -78,10 +81,11 @@ export class RouteRegistrar {
       res.write(": connected\n\n");
 
       // historyAdded 이벤트 리스너 생성
-      const listener = (entry: HistoryEntry) => {
+      const listener = (entry: unknown) => {
+        const historyEntry = entry as HistoryEntry;
         // get_kst_time만 필터링
-        if (entry.toolName === "get_kst_time") {
-          res.write(`data: ${JSON.stringify(entry)}\n\n`);
+        if (historyEntry.toolName === "get_kst_time") {
+          res.write(`data: ${JSON.stringify(historyEntry)}\n\n`);
         }
       };
 

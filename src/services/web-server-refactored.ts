@@ -23,7 +23,7 @@ export interface HelloWorldWebServerOptions {
 export class HelloWorldWebServer {
   private app: Express;
   private server: Server | null = null;
-  private port: number = 3331;
+  private port: number = 0;
   private isRunning: boolean = false;
   private autoOpenBrowser: boolean;
 

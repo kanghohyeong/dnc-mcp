@@ -53,10 +53,10 @@ export class ConnectionManager {
   }
 
   /**
-   * SSE 연결 리스너 생성
+   * SSE 연결 리스너 생성 (사용되지 않음 - RouteRegistrar에서 직접 생성)
    */
   createSseListener(): (entry: unknown) => void {
-    return (entry: unknown) => {
+    return (_entry: unknown) => {
       // 리스너 로직은 RouteRegistrar에서 구현
     };
   }
@@ -78,7 +78,7 @@ export class ConnectionManager {
         }, 2000);
 
         try {
-          response.write("event: shutdown\ndata: Server is shutting down\n\n");
+          response.write('event: shutdown\ndata: {"reason":"server_stopping"}\n\n');
         } catch (error) {
           // Write 실패는 graceful하게 처리
         }

@@ -48,7 +48,10 @@ describe("RouteRegistrar", () => {
 
       expect(response.status).toBe(200);
       expect(response.headers["content-type"]).toMatch(/application\/json/);
-      expect(response.body).toEqual({ status: "ok" });
+      expect(response.body).toEqual({
+        status: "ok",
+        message: "MCP server is running",
+      });
     });
 
     it("3. GET /api/history 라우트 등록", async () => {
