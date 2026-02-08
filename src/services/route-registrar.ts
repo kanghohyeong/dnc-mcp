@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { ConnectionManager } from "./connection-manager.js";
 import { HistoryService, type HistoryEntry } from "./history-service.js";
-import { DncJobService } from "./dnc-job-service.js";
+import { DncJobService, type DncJobWithDetails } from "./dnc-job-service.js";
 import { DncJobDetailLoader } from "./dnc-job-detail-loader.js";
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
@@ -115,6 +115,43 @@ export class RouteRegistrar {
   }
 
   /**
+   * 마크다운을 HTML로 변환
+   */
+  private async convertMarkdownToHtml(markdown: string): Promise<string> {
+    const rawHtml = await marked.parse(markdown, {
+      breaks: true,
+      gfm: true,
+    });
+
+    return sanitizeHtml(rawHtml, {
+      allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img", "h1", "h2", "h3"]),
+      allowedAttributes: {
+        ...sanitizeHtml.defaults.allowedAttributes,
+        code: ["class"],
+      },
+    });
+  }
+
+  /**
+   * Job 객체에 재귀적으로 specContentHtml 추가
+   */
+  private async addHtmlToJob(
+    job: DncJobWithDetails
+  ): Promise<DncJobWithDetails & { specContentHtml: string }> {
+    const specContentHtml = await this.convertMarkdownToHtml(job.specContent);
+
+    const dividedJobsWithHtml = await Promise.all(
+      job.divided_jobs.map((childJob) => this.addHtmlToJob(childJob))
+    );
+
+    return {
+      ...job,
+      specContentHtml,
+      divided_jobs: dividedJobsWithHtml,
+    };
+  }
+
+  /**
    * GET /dnc/jobs/:jobId - DnC job 상세 페이지
    */
   private registerDncJobDetailRoute(app: Express): void {
@@ -132,22 +169,13 @@ export class RouteRegistrar {
           return;
         }
 
-        // 마크다운을 HTML로 변환
-        const rawHtml = await marked.parse(job.specContent, {
-          breaks: true,
-          gfm: true,
-        });
+        // 재귀적으로 마크다운을 HTML로 변환
+        const jobWithHtml = await this.addHtmlToJob(job);
 
-        // XSS 방지를 위해 sanitize
-        const specContentHtml = sanitizeHtml(rawHtml, {
-          allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img", "h1", "h2", "h3"]),
-          allowedAttributes: {
-            ...sanitizeHtml.defaults.allowedAttributes,
-            code: ["class"],
-          },
+        res.render("dnc-job-detail", {
+          job: jobWithHtml,
+          specContentHtml: jobWithHtml.specContentHtml,
         });
-
-        res.render("dnc-job-detail", { job, specContentHtml });
       } catch (error) {
         res.status(500).render("error", {
           message: "Failed to load job details",
