@@ -1,16 +1,138 @@
 import { test, expect } from "@playwright/test";
-import fs from "fs/promises";
-import path from "path";
 import { UIWebServer } from "../../src/services/web-server.js";
-import type { DncJob } from "../../src/services/dnc-job-service.js";
+import { DncJobService, type DncJob } from "../../src/services/dnc-job-service.js";
+import {
+  DncJobDetailLoader,
+  type DncJobWithDetails,
+} from "../../src/services/dnc-job-detail-loader.js";
+
+/**
+ * 테스트용 메모리 기반 DncJobService
+ */
+class MockDncJobService extends DncJobService {
+  private jobs: Map<string, DncJob> = new Map();
+
+  constructor() {
+    super();
+  }
+
+  addJob(job: DncJob): void {
+    this.jobs.set(job.id, job);
+  }
+
+  removeJob(jobId: string): void {
+    this.jobs.delete(jobId);
+  }
+
+  clearJobs(): void {
+    this.jobs.clear();
+  }
+
+  getAllRootJobs(): Promise<DncJob[]> {
+    return Promise.resolve(Array.from(this.jobs.values()));
+  }
+
+  getJobById(jobId: string): Promise<DncJob | null> {
+    const job = this.jobs.get(jobId);
+    if (job) {
+      return Promise.resolve(job);
+    }
+
+    // divided_jobs에서 재귀 검색
+    for (const rootJob of this.jobs.values()) {
+      const found = this.findJobInTreeHelper(rootJob, jobId);
+      if (found) {
+        return Promise.resolve(found);
+      }
+    }
+
+    return Promise.resolve(null);
+  }
+
+  private findJobInTreeHelper(job: DncJob, targetId: string): DncJob | null {
+    if (job.id === targetId) {
+      return job;
+    }
+
+    for (const childJob of job.divided_jobs) {
+      const found = this.findJobInTreeHelper(childJob, targetId);
+      if (found) {
+        return found;
+      }
+    }
+
+    return null;
+  }
+}
+
+/**
+ * 테스트용 메모리 기반 DncJobDetailLoader
+ */
+class MockDncJobDetailLoader extends DncJobDetailLoader {
+  private specContents: Map<string, string> = new Map();
+  private mockJobService: MockDncJobService;
+
+  constructor(mockJobService: MockDncJobService) {
+    super();
+    this.mockJobService = mockJobService;
+  }
+
+  setSpecContent(specPath: string, content: string): void {
+    this.specContents.set(specPath, content);
+  }
+
+  clearSpecContents(): void {
+    this.specContents.clear();
+  }
+
+  async loadJobWithDetails(job: DncJob): Promise<DncJobWithDetails> {
+    // 메모리에서 spec 내용 가져오기
+    const specContent = this.specContents.get(job.spec) || "# Default Spec";
+
+    // divided_jobs 재귀 변환
+    const dividedJobsWithDetails = await Promise.all(
+      job.divided_jobs.map((childJob) => this.loadJobWithDetails(childJob))
+    );
+
+    return {
+      id: job.id,
+      goal: job.goal,
+      spec: job.spec,
+      status: job.status,
+      specContent,
+      divided_jobs: dividedJobsWithDetails,
+    };
+  }
+
+  async loadJobByIdWithDetails(jobId: string): Promise<DncJobWithDetails | null> {
+    // MockDncJobService에서 job 찾기
+    const job = await this.mockJobService.getJobById(jobId);
+    if (!job) {
+      return null;
+    }
+
+    // details로 변환
+    return this.loadJobWithDetails(job);
+  }
+}
 
 let webServer: UIWebServer;
 let baseURL: string;
+let mockJobService: MockDncJobService;
+let mockDetailLoader: MockDncJobDetailLoader;
 
 test.describe("DnC Job Detail Page", () => {
   test.beforeAll(async () => {
-    // 모든 테스트 시작 전 서버 시작
-    webServer = new UIWebServer({ autoOpenBrowser: false });
+    // Mock 서비스 생성
+    mockJobService = new MockDncJobService();
+    mockDetailLoader = new MockDncJobDetailLoader(mockJobService);
+
+    // Mock 서비스로 서버 시작
+    webServer = new UIWebServer({
+      autoOpenBrowser: false,
+      dncJobService: mockJobService,
+      dncJobDetailLoader: mockDetailLoader,
+    });
     await webServer.start();
     baseURL = `http://localhost:${webServer.getPort()}`;
   });
@@ -20,12 +142,12 @@ test.describe("DnC Job Detail Page", () => {
     await webServer.stop();
   });
 
-  test.beforeEach(async () => {
-    // 테스트용 job 생성
-    const dncDir = path.join(process.cwd(), ".dnc");
-    const jobDir = path.join(dncDir, "job-ui-test");
-    await fs.mkdir(jobDir, { recursive: true });
+  test.beforeEach(() => {
+    // 이전 데이터 정리
+    mockJobService.clearJobs();
+    mockDetailLoader.clearSpecContents();
 
+    // 테스트용 job 추가 (메모리)
     const job: DncJob = {
       id: "job-ui-test",
       goal: "UI 테스트용 job입니다",
@@ -53,14 +175,14 @@ function example() {
 
 **강조된 텍스트**와 *이탤릭 텍스트*가 있습니다.`;
 
-    await fs.writeFile(path.join(jobDir, "job_relation.json"), JSON.stringify(job, null, 2));
-    await fs.writeFile(path.join(jobDir, "spec.md"), specContent);
+    mockJobService.addJob(job);
+    mockDetailLoader.setSpecContent(job.spec, specContent);
   });
 
-  test.afterEach(async () => {
-    // 테스트용 job 삭제
-    const jobDir = path.join(process.cwd(), ".dnc", "job-ui-test");
-    await fs.rm(jobDir, { recursive: true, force: true });
+  test.afterEach(() => {
+    // 메모리 데이터만 정리
+    mockJobService.clearJobs();
+    mockDetailLoader.clearSpecContents();
   });
 
   test("should display job basic information", async ({ page }) => {
@@ -83,11 +205,6 @@ function example() {
   });
 
   test("should display correct status style for pending", async ({ page }) => {
-    // 테스트용 pending job 생성
-    const dncDir = path.join(process.cwd(), ".dnc");
-    const jobDir = path.join(dncDir, "job-pending-test");
-    await fs.mkdir(jobDir, { recursive: true });
-
     const job: DncJob = {
       id: "job-pending-test",
       goal: "Pending job",
@@ -96,24 +213,16 @@ function example() {
       divided_jobs: [],
     };
 
-    await fs.writeFile(path.join(jobDir, "job_relation.json"), JSON.stringify(job, null, 2));
-    await fs.writeFile(path.join(jobDir, "spec.md"), "# Pending Spec");
+    mockJobService.addJob(job);
+    mockDetailLoader.setSpecContent(job.spec, "# Pending Spec");
 
     await page.goto(`${baseURL}/dnc/jobs/job-pending-test`);
 
     const jobStatus = page.getByTestId("job-status");
     await expect(jobStatus).toHaveClass(/status-pending/);
-
-    // 정리
-    await fs.rm(jobDir, { recursive: true, force: true });
   });
 
   test("should display correct status style for done", async ({ page }) => {
-    // 테스트용 done job 생성
-    const dncDir = path.join(process.cwd(), ".dnc");
-    const jobDir = path.join(dncDir, "job-done-test");
-    await fs.mkdir(jobDir, { recursive: true });
-
     const job: DncJob = {
       id: "job-done-test",
       goal: "Done job",
@@ -122,16 +231,13 @@ function example() {
       divided_jobs: [],
     };
 
-    await fs.writeFile(path.join(jobDir, "job_relation.json"), JSON.stringify(job, null, 2));
-    await fs.writeFile(path.join(jobDir, "spec.md"), "# Done Spec");
+    mockJobService.addJob(job);
+    mockDetailLoader.setSpecContent(job.spec, "# Done Spec");
 
     await page.goto(`${baseURL}/dnc/jobs/job-done-test`);
 
     const jobStatus = page.getByTestId("job-status");
     await expect(jobStatus).toHaveClass(/status-done/);
-
-    // 정리
-    await fs.rm(jobDir, { recursive: true, force: true });
   });
 
   test("should have back to list link", async ({ page }) => {
@@ -277,11 +383,6 @@ function example() {
 
   test.describe("Subtasks Tree UI", () => {
     test("should display subtasks section when job has divided_jobs", async ({ page }) => {
-      // divided_jobs가 있는 job 생성
-      const dncDir = path.join(process.cwd(), ".dnc");
-      const jobDir = path.join(dncDir, "job-with-subtasks");
-      await fs.mkdir(jobDir, { recursive: true });
-
       const job: DncJob = {
         id: "job-with-subtasks",
         goal: "Parent job with subtasks",
@@ -305,18 +406,21 @@ function example() {
         ],
       };
 
-      await fs.writeFile(path.join(jobDir, "job_relation.json"), JSON.stringify(job, null, 2));
-      await fs.writeFile(path.join(jobDir, "spec.md"), "# Parent Spec");
-      await fs.writeFile(path.join(jobDir, "subtask-1-spec.md"), "# Subtask 1 Spec");
-      await fs.writeFile(path.join(jobDir, "subtask-2-spec.md"), "# Subtask 2 Spec");
+      mockJobService.addJob(job);
+      mockDetailLoader.setSpecContent(job.spec, "# Parent Spec");
+      mockDetailLoader.setSpecContent(
+        ".dnc/job-with-subtasks/subtask-1-spec.md",
+        "# Subtask 1 Spec"
+      );
+      mockDetailLoader.setSpecContent(
+        ".dnc/job-with-subtasks/subtask-2-spec.md",
+        "# Subtask 2 Spec"
+      );
 
       await page.goto(`${baseURL}/dnc/jobs/job-with-subtasks`);
 
       const subtasksSection = page.getByTestId("subtasks-section");
       await expect(subtasksSection).toBeVisible();
-
-      // 정리
-      await fs.rm(jobDir, { recursive: true, force: true });
     });
 
     test("should not display subtasks section when job has no divided_jobs", async ({ page }) => {
@@ -327,10 +431,6 @@ function example() {
     });
 
     test("should display subtask information correctly", async ({ page }) => {
-      const dncDir = path.join(process.cwd(), ".dnc");
-      const jobDir = path.join(dncDir, "job-with-subtasks");
-      await fs.mkdir(jobDir, { recursive: true });
-
       const job: DncJob = {
         id: "job-with-subtasks",
         goal: "Parent job",
@@ -347,9 +447,12 @@ function example() {
         ],
       };
 
-      await fs.writeFile(path.join(jobDir, "job_relation.json"), JSON.stringify(job, null, 2));
-      await fs.writeFile(path.join(jobDir, "spec.md"), "# Parent Spec");
-      await fs.writeFile(path.join(jobDir, "subtask-1-spec.md"), "# Subtask 1 Spec");
+      mockJobService.addJob(job);
+      mockDetailLoader.setSpecContent(job.spec, "# Parent Spec");
+      mockDetailLoader.setSpecContent(
+        ".dnc/job-with-subtasks/subtask-1-spec.md",
+        "# Subtask 1 Spec"
+      );
 
       await page.goto(`${baseURL}/dnc/jobs/job-with-subtasks`);
 
@@ -364,16 +467,9 @@ function example() {
 
       const subtaskStatus = subtaskItem.getByTestId("subtask-status");
       await expect(subtaskStatus).toContainText("done");
-
-      // 정리
-      await fs.rm(jobDir, { recursive: true, force: true });
     });
 
     test("should apply correct status styles to subtasks", async ({ page }) => {
-      const dncDir = path.join(process.cwd(), ".dnc");
-      const jobDir = path.join(dncDir, "job-with-subtasks");
-      await fs.mkdir(jobDir, { recursive: true });
-
       const job: DncJob = {
         id: "job-with-subtasks",
         goal: "Parent job",
@@ -404,11 +500,17 @@ function example() {
         ],
       };
 
-      await fs.writeFile(path.join(jobDir, "job_relation.json"), JSON.stringify(job, null, 2));
-      await fs.writeFile(path.join(jobDir, "spec.md"), "# Parent Spec");
-      await fs.writeFile(path.join(jobDir, "subtask-pending-spec.md"), "# Pending Spec");
-      await fs.writeFile(path.join(jobDir, "subtask-in-progress-spec.md"), "# In-progress Spec");
-      await fs.writeFile(path.join(jobDir, "subtask-done-spec.md"), "# Done Spec");
+      mockJobService.addJob(job);
+      mockDetailLoader.setSpecContent(job.spec, "# Parent Spec");
+      mockDetailLoader.setSpecContent(
+        ".dnc/job-with-subtasks/subtask-pending-spec.md",
+        "# Pending Spec"
+      );
+      mockDetailLoader.setSpecContent(
+        ".dnc/job-with-subtasks/subtask-in-progress-spec.md",
+        "# In-progress Spec"
+      );
+      mockDetailLoader.setSpecContent(".dnc/job-with-subtasks/subtask-done-spec.md", "# Done Spec");
 
       await page.goto(`${baseURL}/dnc/jobs/job-with-subtasks`);
 
@@ -426,18 +528,11 @@ function example() {
         .getByTestId("subtask-item-subtask-done")
         .getByTestId("subtask-status");
       await expect(doneStatus).toHaveClass(/status-done/);
-
-      // 정리
-      await fs.rm(jobDir, { recursive: true, force: true });
     });
 
     test("should display subtasks with correct indentation for nested structure", async ({
       page,
     }) => {
-      const dncDir = path.join(process.cwd(), ".dnc");
-      const jobDir = path.join(dncDir, "job-with-nested-subtasks");
-      await fs.mkdir(jobDir, { recursive: true });
-
       const job: DncJob = {
         id: "job-with-nested-subtasks",
         goal: "Parent job",
@@ -462,10 +557,16 @@ function example() {
         ],
       };
 
-      await fs.writeFile(path.join(jobDir, "job_relation.json"), JSON.stringify(job, null, 2));
-      await fs.writeFile(path.join(jobDir, "spec.md"), "# Parent Spec");
-      await fs.writeFile(path.join(jobDir, "subtask-level-1-spec.md"), "# Level 1 Spec");
-      await fs.writeFile(path.join(jobDir, "subtask-level-2-spec.md"), "# Level 2 Spec");
+      mockJobService.addJob(job);
+      mockDetailLoader.setSpecContent(job.spec, "# Parent Spec");
+      mockDetailLoader.setSpecContent(
+        ".dnc/job-with-nested-subtasks/subtask-level-1-spec.md",
+        "# Level 1 Spec"
+      );
+      mockDetailLoader.setSpecContent(
+        ".dnc/job-with-nested-subtasks/subtask-level-2-spec.md",
+        "# Level 2 Spec"
+      );
 
       await page.goto(`${baseURL}/dnc/jobs/job-with-nested-subtasks`);
 
@@ -485,16 +586,9 @@ function example() {
 
       // Level 2의 패딩이 Level 1보다 커야 함
       expect(Number(level2Padding)).toBeGreaterThan(Number(level1Padding));
-
-      // 정리
-      await fs.rm(jobDir, { recursive: true, force: true });
     });
 
     test("should render deeply nested subtasks recursively", async ({ page }) => {
-      const dncDir = path.join(process.cwd(), ".dnc");
-      const jobDir = path.join(dncDir, "job-with-deep-subtasks");
-      await fs.mkdir(jobDir, { recursive: true });
-
       const job: DncJob = {
         id: "job-with-deep-subtasks",
         goal: "Parent job",
@@ -527,11 +621,20 @@ function example() {
         ],
       };
 
-      await fs.writeFile(path.join(jobDir, "job_relation.json"), JSON.stringify(job, null, 2));
-      await fs.writeFile(path.join(jobDir, "spec.md"), "# Parent Spec");
-      await fs.writeFile(path.join(jobDir, "subtask-level-1-spec.md"), "# Level 1 Spec");
-      await fs.writeFile(path.join(jobDir, "subtask-level-2-spec.md"), "# Level 2 Spec");
-      await fs.writeFile(path.join(jobDir, "subtask-level-3-spec.md"), "# Level 3 Spec");
+      mockJobService.addJob(job);
+      mockDetailLoader.setSpecContent(job.spec, "# Parent Spec");
+      mockDetailLoader.setSpecContent(
+        ".dnc/job-with-deep-subtasks/subtask-level-1-spec.md",
+        "# Level 1 Spec"
+      );
+      mockDetailLoader.setSpecContent(
+        ".dnc/job-with-deep-subtasks/subtask-level-2-spec.md",
+        "# Level 2 Spec"
+      );
+      mockDetailLoader.setSpecContent(
+        ".dnc/job-with-deep-subtasks/subtask-level-3-spec.md",
+        "# Level 3 Spec"
+      );
 
       await page.goto(`${baseURL}/dnc/jobs/job-with-deep-subtasks`);
 
@@ -539,16 +642,9 @@ function example() {
       await expect(page.getByTestId("subtask-item-subtask-level-1")).toBeVisible();
       await expect(page.getByTestId("subtask-item-subtask-level-2")).toBeVisible();
       await expect(page.getByTestId("subtask-item-subtask-level-3")).toBeVisible();
-
-      // 정리
-      await fs.rm(jobDir, { recursive: true, force: true });
     });
 
     test("should toggle subtask spec independently", async ({ page }) => {
-      const dncDir = path.join(process.cwd(), ".dnc");
-      const jobDir = path.join(dncDir, "job-with-subtasks");
-      await fs.mkdir(jobDir, { recursive: true });
-
       const job: DncJob = {
         id: "job-with-subtasks",
         goal: "Parent job",
@@ -572,14 +668,14 @@ function example() {
         ],
       };
 
-      await fs.writeFile(path.join(jobDir, "job_relation.json"), JSON.stringify(job, null, 2));
-      await fs.writeFile(path.join(jobDir, "spec.md"), "# Parent Spec");
-      await fs.writeFile(
-        path.join(jobDir, "subtask-1-spec.md"),
+      mockJobService.addJob(job);
+      mockDetailLoader.setSpecContent(job.spec, "# Parent Spec");
+      mockDetailLoader.setSpecContent(
+        ".dnc/job-with-subtasks/subtask-1-spec.md",
         "# Subtask 1 Spec\n\nContent for subtask 1"
       );
-      await fs.writeFile(
-        path.join(jobDir, "subtask-2-spec.md"),
+      mockDetailLoader.setSpecContent(
+        ".dnc/job-with-subtasks/subtask-2-spec.md",
         "# Subtask 2 Spec\n\nContent for subtask 2"
       );
 
@@ -616,16 +712,9 @@ function example() {
       await subtask1Toggle.click();
       await expect(subtask1Content).toBeHidden();
       await expect(subtask2Content).toBeVisible();
-
-      // 정리
-      await fs.rm(jobDir, { recursive: true, force: true });
     });
 
     test("should display subtask spec content as markdown", async ({ page }) => {
-      const dncDir = path.join(process.cwd(), ".dnc");
-      const jobDir = path.join(dncDir, "job-with-subtasks");
-      await fs.mkdir(jobDir, { recursive: true });
-
       const job: DncJob = {
         id: "job-with-subtasks",
         goal: "Parent job",
@@ -651,9 +740,12 @@ function example() {
 
 **Bold text** and *italic text*`;
 
-      await fs.writeFile(path.join(jobDir, "job_relation.json"), JSON.stringify(job, null, 2));
-      await fs.writeFile(path.join(jobDir, "spec.md"), "# Parent Spec");
-      await fs.writeFile(path.join(jobDir, "subtask-1-spec.md"), subtaskSpecContent);
+      mockJobService.addJob(job);
+      mockDetailLoader.setSpecContent(job.spec, "# Parent Spec");
+      mockDetailLoader.setSpecContent(
+        ".dnc/job-with-subtasks/subtask-1-spec.md",
+        subtaskSpecContent
+      );
 
       await page.goto(`${baseURL}/dnc/jobs/job-with-subtasks`);
 
@@ -672,16 +764,9 @@ function example() {
       await expect(subtaskContent.locator("li")).toHaveCount(2);
       await expect(subtaskContent.locator("strong")).toContainText("Bold text");
       await expect(subtaskContent.locator("em")).toContainText("italic text");
-
-      // 정리
-      await fs.rm(jobDir, { recursive: true, force: true });
     });
 
     test("should toggle nested subtask specs independently", async ({ page }) => {
-      const dncDir = path.join(process.cwd(), ".dnc");
-      const jobDir = path.join(dncDir, "job-with-nested-subtasks");
-      await fs.mkdir(jobDir, { recursive: true });
-
       const job: DncJob = {
         id: "job-with-nested-subtasks",
         goal: "Parent job",
@@ -706,10 +791,16 @@ function example() {
         ],
       };
 
-      await fs.writeFile(path.join(jobDir, "job_relation.json"), JSON.stringify(job, null, 2));
-      await fs.writeFile(path.join(jobDir, "spec.md"), "# Parent Spec");
-      await fs.writeFile(path.join(jobDir, "subtask-level-1-spec.md"), "# Level 1 Spec Content");
-      await fs.writeFile(path.join(jobDir, "subtask-level-2-spec.md"), "# Level 2 Spec Content");
+      mockJobService.addJob(job);
+      mockDetailLoader.setSpecContent(job.spec, "# Parent Spec");
+      mockDetailLoader.setSpecContent(
+        ".dnc/job-with-nested-subtasks/subtask-level-1-spec.md",
+        "# Level 1 Spec Content"
+      );
+      mockDetailLoader.setSpecContent(
+        ".dnc/job-with-nested-subtasks/subtask-level-2-spec.md",
+        "# Level 2 Spec Content"
+      );
 
       await page.goto(`${baseURL}/dnc/jobs/job-with-nested-subtasks`);
 
@@ -740,9 +831,6 @@ function example() {
       await level1Toggle.click();
       await expect(level1Content).toBeHidden();
       await expect(level2Content).toBeVisible();
-
-      // 정리
-      await fs.rm(jobDir, { recursive: true, force: true });
     });
   });
 });

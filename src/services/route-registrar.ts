@@ -15,11 +15,16 @@ export class RouteRegistrar {
   private dncJobService: DncJobService;
   private dncJobDetailLoader: DncJobDetailLoader;
 
-  constructor(historyService: HistoryService, connectionManager: ConnectionManager) {
+  constructor(
+    historyService: HistoryService,
+    connectionManager: ConnectionManager,
+    dncJobService?: DncJobService,
+    dncJobDetailLoader?: DncJobDetailLoader
+  ) {
     this.historyService = historyService;
     this.connectionManager = connectionManager;
-    this.dncJobService = new DncJobService();
-    this.dncJobDetailLoader = new DncJobDetailLoader();
+    this.dncJobService = dncJobService || new DncJobService();
+    this.dncJobDetailLoader = dncJobDetailLoader || new DncJobDetailLoader();
   }
 
   /**
