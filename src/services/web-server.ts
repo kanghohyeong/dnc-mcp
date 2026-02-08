@@ -93,10 +93,14 @@ export class HelloWorldWebServer {
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
+      // 연결 수립을 위한 초기 주석 전송 (클라이언트가 연결 성공을 인식하도록 함)
+      res.write(": connected\n\n");
+
       const listener = (entry: HistoryEntry) => {
+        console.error(`Listener triggered for history(${entry.id}) entry: [${entry.toolName}] at ${entry.timestampKst} response: ${JSON.stringify(entry.response)}`);
         if (entry.toolName === "get_kst_time") {
           console.error(
-            `Sending SSE for history entry: [${entry.toolName}] at ${entry.timestampKst}`
+            `Sending SSE for history(${entry.id}) entry: [${entry.toolName}] at ${entry.timestampKst}`
           );
           res.write(`data: ${JSON.stringify(entry)}\n\n`);
         }

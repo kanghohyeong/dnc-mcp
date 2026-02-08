@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -113,6 +114,7 @@
         opacity: 0;
         transform: translateY(-10px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
@@ -136,6 +138,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="container">
     <h1>get-kst-time 호출 히스토리</h1>
@@ -149,31 +152,56 @@
         </tr>
       </thead>
       <tbody id="history-tbody">
-        <% if (history.length === 0) { %>
+        <% if (history.length===0) { %>
           <tr class="empty-row">
             <td colspan="3">아직 호출 히스토리가 없습니다.</td>
           </tr>
-        <% } else { %>
-          <% history.forEach(entry => { %>
-            <tr data-id="<%= entry.id %>">
-              <td><%= entry.id.substring(0, 8) %></td>
-              <td><%= entry.timestampKst %></td>
-              <td><pre><%= JSON.stringify(entry.response, null, 2) %></pre></td>
-            </tr>
-          <% }) %>
-        <% } %>
+          <% } else { %>
+            <% history.forEach(entry=> { %>
+              <tr data-id="<%= entry.id %>">
+                <td>
+                  <%= entry.id.substring(0, 8) %>
+                </td>
+                <td>
+                  <%= entry.timestampKst %>
+                </td>
+                <td>
+                  <pre><%= JSON.stringify(entry.response, null, 2) %></pre>
+                </td>
+              </tr>
+              <% }) %>
+                <% } %>
       </tbody>
     </table>
   </div>
 
   <script>
+    // SSE 연결 상태 플래그 (Playwright 테스트용)
+    window.sseReady = false;
+
     // EventSource를 사용한 SSE 수신
     const eventSource = new EventSource('/api/history/stream');
 
+    // SSE 연결이 수립되면 플래그 설정 (onopen 이벤트)
+    eventSource.onopen = () => {
+      if (!window.sseReady) {
+        window.sseReady = true;
+        console.log('SSE connection established (onopen)');
+      }
+    };
+
     eventSource.onmessage = (event) => {
+      // 첫 메시지 수신 시에도 연결이 수립된 것으로 간주
+      if (!window.sseReady) {
+        window.sseReady = true;
+        console.log('SSE connection established (onmessage)');
+      }
+
       const entry = JSON.parse(event.data);
       addHistoryRow(entry);
     };
+
+
 
     // 서버 종료 이벤트 처리
     eventSource.addEventListener('shutdown', (event) => {
@@ -210,4 +238,5 @@
     }
   </script>
 </body>
+
 </html>

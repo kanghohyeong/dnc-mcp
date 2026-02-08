@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { HelloWorldWebServer } from "../../src/services/web-server.js";
 import { HistoryService } from "../../src/services/history-service.js";
+import { waitForSseConnection } from "../helpers/playwright-utils.js";
 
 let webServer: HelloWorldWebServer;
 let baseURL: string;
@@ -59,6 +60,9 @@ test.describe("History UI", () => {
 
     await page.goto(`${baseURL}/history`);
 
+    // SSE 연결 대기 (방어적 체크)
+    await waitForSseConnection(page);
+
     // 빈 상태 메시지가 없어야 함
     await expect(page.locator(".empty-row")).not.toBeVisible();
 
@@ -73,6 +77,9 @@ test.describe("History UI", () => {
   test("실시간으로 새 히스토리가 추가되어야 함", async ({ page }) => {
     await page.goto(`${baseURL}/history`);
 
+    // SSE 연결 대기
+    await waitForSseConnection(page);
+
     // 초기 상태: 빈 상태
     await expect(page.locator(".empty-row")).toBeVisible();
 
@@ -86,7 +93,7 @@ test.describe("History UI", () => {
     );
 
     // SSE로 실시간 업데이트되어야 함
-    await expect(page.locator("tbody tr").first()).toBeVisible({ timeout: 2000 });
+    await expect(page.locator("tbody tr").first()).toBeVisible({ timeout: 1000 });
     await expect(page.locator(".empty-row")).not.toBeVisible();
 
     // 내용 확인
@@ -95,6 +102,9 @@ test.describe("History UI", () => {
 
   test("여러 히스토리를 순서대로 표시해야 함 (최신순)", async ({ page }) => {
     await page.goto(`${baseURL}/history`);
+
+    // SSE 연결 대기
+    await waitForSseConnection(page);
 
     // 첫 번째 히스토리 추가
     HistoryService.getInstance().addHistory(
@@ -106,7 +116,7 @@ test.describe("History UI", () => {
     );
 
     // SSE 이벤트 전달 대기
-    await expect(page.locator("tbody tr")).toHaveCount(1, { timeout: 3000 });
+    await expect(page.locator("tbody tr")).toHaveCount(1, { timeout: 1000 });
 
     // 두 번째 히스토리 추가
     HistoryService.getInstance().addHistory(
@@ -118,7 +128,7 @@ test.describe("History UI", () => {
     );
 
     // SSE 이벤트 전달 대기
-    await expect(page.locator("tbody tr")).toHaveCount(2, { timeout: 3000 });
+    await expect(page.locator("tbody tr")).toHaveCount(2, { timeout: 1000 });
 
     // 최신 항목이 맨 위에 있어야 함
     await expect(page.locator("tbody tr").first()).toContainText("Second Entry");
@@ -136,6 +146,10 @@ test.describe("History UI", () => {
     );
 
     await page.goto(`${baseURL}/history`);
+
+    // SSE 연결 대기
+    await waitForSseConnection(page);
+
     await expect(page.locator("tbody tr")).toHaveCount(1);
 
     // 다른 도구 히스토리 추가 (SSE로 전송되지만 UI에는 표시되지 않아야 함)
@@ -148,7 +162,7 @@ test.describe("History UI", () => {
     );
 
     // 여전히 1개만 표시되어야 함 (SSE 필터링 확인)
-    await page.waitForTimeout(1000);
+    await expect(page.locator("tbody tr")).toHaveCount(1, { timeout: 500 });
     await expect(page.locator("tbody tr")).toHaveCount(1);
     await expect(page.locator("tbody tr").first()).toContainText("KST Time");
   });

@@ -19,6 +19,7 @@ export class HistoryService extends EventEmitter {
 
   static getInstance(): HistoryService {
     if (!HistoryService.instance) {
+      console.error("Creating HistoryService singleton instance");
       HistoryService.instance = new HistoryService();
     }
     return HistoryService.instance;
@@ -36,7 +37,7 @@ export class HistoryService extends EventEmitter {
     };
 
     this.history.push(entry);
-    console.error(`History added: [${toolName}] at ${entry.timestampKst}`);
+    console.error(`History(${entry.id}) added: [${toolName}] at ${entry.timestampKst} / response: ${JSON.stringify(response)}`);
     this.emit("historyAdded", entry);
   }
 
