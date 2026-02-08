@@ -15,10 +15,7 @@ declare global {
  * @param timeout - 최대 대기 시간 (ms, 기본값: 5000)
  * @throws SSE 연결이 timeout 내에 수립되지 않으면 에러
  */
-export async function waitForSseConnection(
-  page: Page,
-  timeout = 5000
-): Promise<void> {
+export async function waitForSseConnection(page: Page, timeout = 5000): Promise<void> {
   try {
     // 스크립트가 로드되고 window.sseReady가 true가 될 때까지 대기
     // 문자열로 전달하여 ESLint 타입 체크 우회
@@ -33,7 +30,7 @@ export async function waitForSseConnection(
     );
     throw new Error(
       `SSE connection not established within ${timeout}ms. ` +
-      `window.sseReady = ${JSON.stringify(sseReadyValue)}`
+        `window.sseReady = ${JSON.stringify(sseReadyValue)}`
     );
   }
 }

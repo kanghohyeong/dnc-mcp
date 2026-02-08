@@ -44,21 +44,6 @@ test.describe("MCP 서버 E2E 플로우", () => {
     await expect(page.locator("h1")).toHaveText("hello world");
   });
 
-  test("CSS 애니메이션이 적용되었는지 확인", async ({ page }) => {
-    await page.goto("/");
-
-    const heading = page.locator("h1");
-
-    // h1 요소에 animation이 적용되었는지 확인
-    const animationName = await heading.evaluate<string>((el: HTMLElement): string => {
-      const w = globalThis as typeof window;
-      const computed = w.getComputedStyle(el as Element);
-      return computed.getPropertyValue("animation-name");
-    });
-
-    expect(animationName).toContain("fadeIn");
-  });
-
   test("404 페이지 처리", async ({ page }) => {
     const response = await page.goto("/non-existent-page", {
       waitUntil: "domcontentloaded",

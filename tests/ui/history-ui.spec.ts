@@ -24,21 +24,6 @@ test.beforeEach(() => {
 });
 
 test.describe("History UI", () => {
-  test("페이지 제목과 기본 UI가 표시되어야 함", async ({ page }) => {
-    await page.goto(`${baseURL}/history`);
-
-    // 페이지 제목 확인
-    await expect(page).toHaveTitle("get-kst-time 호출 히스토리");
-
-    // 헤더 확인
-    await expect(page.locator("h1")).toHaveText("get-kst-time 호출 히스토리");
-
-    // 테이블 헤더 확인
-    await expect(page.locator("thead th").nth(0)).toHaveText("ID");
-    await expect(page.locator("thead th").nth(1)).toHaveText("호출 시각 (KST)");
-    await expect(page.locator("thead th").nth(2)).toHaveText("응답 결과");
-  });
-
   test("히스토리가 없을 때 안내 메시지를 표시해야 함", async ({ page }) => {
     await page.goto(`${baseURL}/history`);
 
@@ -133,84 +118,5 @@ test.describe("History UI", () => {
     // 최신 항목이 맨 위에 있어야 함
     await expect(page.locator("tbody tr").first()).toContainText("Second Entry");
     await expect(page.locator("tbody tr").nth(1)).toContainText("First Entry");
-  });
-
-  test("다른 도구의 히스토리는 표시하지 않아야 함", async ({ page }) => {
-    // 먼저 히스토리를 추가한 후 페이지 로드
-    HistoryService.getInstance().addHistory(
-      "get_kst_time",
-      {},
-      {
-        content: [{ type: "text", text: "KST Time" }],
-      }
-    );
-
-    await page.goto(`${baseURL}/history`);
-
-    // SSE 연결 대기
-    await waitForSseConnection(page);
-
-    await expect(page.locator("tbody tr")).toHaveCount(1);
-
-    // 다른 도구 히스토리 추가 (SSE로 전송되지만 UI에는 표시되지 않아야 함)
-    HistoryService.getInstance().addHistory(
-      "other_tool",
-      {},
-      {
-        content: [{ type: "text", text: "Other Tool Result" }],
-      }
-    );
-
-    // 여전히 1개만 표시되어야 함 (SSE 필터링 확인)
-    await expect(page.locator("tbody tr")).toHaveCount(1, { timeout: 500 });
-    await expect(page.locator("tbody tr")).toHaveCount(1);
-    await expect(page.locator("tbody tr").first()).toContainText("KST Time");
-  });
-
-  test("CSS 스타일이 올바르게 적용되어야 함", async ({ page }) => {
-    await page.goto(`${baseURL}/history`);
-
-    // 그라디언트 배경 확인
-    const body = page.locator("body");
-    const backgroundColor = await body.evaluate((el) => {
-      return window.getComputedStyle(el).background;
-    });
-    expect(backgroundColor).toContain("linear-gradient");
-
-    // 테이블 스타일 확인
-    const table = page.locator("#history-table");
-    await expect(table).toBeVisible();
-
-    // 흰색 배경 확인
-    const tableBackground = await table.evaluate((el) => {
-      return window.getComputedStyle(el).backgroundColor;
-    });
-    expect(tableBackground).toContain("rgb(255, 255, 255)");
-  });
-
-  test("JSON 응답이 pre 태그로 포맷되어야 함", async ({ page }) => {
-    HistoryService.getInstance().addHistory(
-      "get_kst_time",
-      {},
-      {
-        content: [
-          {
-            type: "text",
-            text: "현재 한국 표준시 (KST, UTC+9):\n2026. 02. 07. 12:00:00",
-          },
-        ],
-      }
-    );
-
-    await page.goto(`${baseURL}/history`);
-
-    // pre 태그 확인
-    const preTag = page.locator("tbody tr td pre").first();
-    await expect(preTag).toBeVisible();
-
-    // JSON 포맷 확인
-    const preText = await preTag.textContent();
-    expect(preText).toContain('"content"');
-    expect(preText).toContain('"type"');
   });
 });

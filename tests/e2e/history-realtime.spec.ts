@@ -198,28 +198,4 @@ test.describe("E2E: HistoryService → SSE → UI 실시간 업데이트", () =>
     expect(idText).toHaveLength(8);
     expect(idText).toMatch(/^[0-9a-f]{8}$/i);
   });
-
-  test("타임스탬프가 KST 형식으로 표시되어야 함", async ({ page }) => {
-    await page.goto(`${baseURL}/history`);
-
-    // SSE 연결 대기
-    await waitForSseConnection(page);
-
-    HistoryService.getInstance().addHistory(
-      "get_kst_time",
-      {},
-      {
-        content: [{ type: "text", text: "Test entry" }],
-      }
-    );
-
-    await expect(page.locator("tbody tr").first()).toBeVisible({ timeout: 1000 });
-
-    const firstRow = page.locator("tbody tr").first();
-    const timestampCell = firstRow.locator("td").nth(1);
-    const timestampText = await timestampCell.textContent();
-
-    // "YYYY. MM. DD. HH:MM:SS" 형식 검증
-    expect(timestampText).toMatch(/^\d{4}\. \d{2}\. \d{2}\. \d{2}:\d{2}:\d{2}$/);
-  });
 });

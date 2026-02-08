@@ -37,7 +37,9 @@ export class HistoryService extends EventEmitter {
     };
 
     this.history.push(entry);
-    console.error(`History(${entry.id}) added: [${toolName}] at ${entry.timestampKst} / response: ${JSON.stringify(response)}`);
+    console.error(
+      `History(${entry.id}) added: [${toolName}] at ${entry.timestampKst} / response: ${JSON.stringify(response)}`
+    );
     this.emit("historyAdded", entry);
   }
 

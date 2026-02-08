@@ -97,7 +97,9 @@ export class HelloWorldWebServer {
       res.write(": connected\n\n");
 
       const listener = (entry: HistoryEntry) => {
-        console.error(`Listener triggered for history(${entry.id}) entry: [${entry.toolName}] at ${entry.timestampKst} response: ${JSON.stringify(entry.response)}`);
+        console.error(
+          `Listener triggered for history(${entry.id}) entry: [${entry.toolName}] at ${entry.timestampKst} response: ${JSON.stringify(entry.response)}`
+        );
         if (entry.toolName === "get_kst_time") {
           console.error(
             `Sending SSE for history(${entry.id}) entry: [${entry.toolName}] at ${entry.timestampKst}`
