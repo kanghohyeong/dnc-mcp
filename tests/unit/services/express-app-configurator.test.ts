@@ -38,7 +38,7 @@ describe("ExpressAppConfigurator", () => {
       expect(app.get("view engine")).toBe("ejs");
 
       // 설정이 정상적으로 완료되었는지 확인
-      expect(() => app.get("views")).not.toThrow();
+      expect(() => app.get("views") as unknown).not.toThrow();
     });
 
     it("4. public 디렉토리 경로 설정", () => {
@@ -74,13 +74,13 @@ describe("ExpressAppConfigurator", () => {
     it("7. 기존 view engine 덮어쓰지 않음 (idempotent)", () => {
       // 첫 번째 설정
       configurator.configure(app);
-      const firstViewEngine = app.get("view engine");
-      const firstViewsPath = app.get("views");
+      const firstViewEngine = app.get("view engine") as string;
+      const firstViewsPath = app.get("views") as string;
 
       // 두 번째 설정
       configurator.configure(app);
-      const secondViewEngine = app.get("view engine");
-      const secondViewsPath = app.get("views");
+      const secondViewEngine = app.get("view engine") as string;
+      const secondViewsPath = app.get("views") as string;
 
       // 같은 값이어야 함
       expect(secondViewEngine).toBe(firstViewEngine);

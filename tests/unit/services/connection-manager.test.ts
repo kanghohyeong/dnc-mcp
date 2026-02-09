@@ -43,8 +43,10 @@ describe("ConnectionManager", () => {
     it("3. 모든 HTTP 소켓 강제 종료 확인", () => {
       const socket1 = new EventEmitter() as Socket;
       const socket2 = new EventEmitter() as Socket;
-      socket1.destroy = vi.fn();
-      socket2.destroy = vi.fn();
+      const socket1DestroyMock = vi.fn();
+      const socket2DestroyMock = vi.fn();
+      socket1.destroy = socket1DestroyMock;
+      socket2.destroy = socket2DestroyMock;
 
       connectionManager.trackHttpSocket(socket1);
       connectionManager.trackHttpSocket(socket2);
@@ -53,8 +55,8 @@ describe("ConnectionManager", () => {
 
       connectionManager.closeAllHttpSockets();
 
-      expect(socket1.destroy).toHaveBeenCalledTimes(1);
-      expect(socket2.destroy).toHaveBeenCalledTimes(1);
+      expect(socket1DestroyMock).toHaveBeenCalledTimes(1);
+      expect(socket2DestroyMock).toHaveBeenCalledTimes(1);
       expect(connectionManager.getHttpConnectionCount()).toBe(0);
     });
 
@@ -85,22 +87,24 @@ describe("ConnectionManager", () => {
 
     it("6. SSE 클라이언트에게 shutdown 이벤트 전송 확인", async () => {
       const response = new EventEmitter() as Response;
-      response.end = vi.fn((cb?: () => void) => {
+      const responseEndMock = vi.fn((cb?: () => void) => {
         if (cb) {
           setImmediate(cb);
         }
       });
-      response.write = vi.fn().mockReturnValue(true);
+      const responseWriteMock = vi.fn().mockReturnValue(true);
+      response.end = responseEndMock;
+      response.write = responseWriteMock;
 
       const listener = vi.fn();
       connectionManager.trackSseConnection(response, listener);
 
       await connectionManager.closeAllSseConnections();
 
-      expect(response.write).toHaveBeenCalledWith(
+      expect(responseWriteMock).toHaveBeenCalledWith(
         'event: shutdown\ndata: {"reason":"server_stopping"}\n\n'
       );
-      expect(response.end).toHaveBeenCalledTimes(1);
+      expect(responseEndMock).toHaveBeenCalledTimes(1);
     });
 
     it("7. 연결 수 조회 메서드 정확성 확인", () => {
@@ -153,27 +157,31 @@ describe("ConnectionManager", () => {
 
     it("10. response.write() 에러 처리 (shutdown 메시지 전송 실패)", async () => {
       const response = new EventEmitter() as Response;
-      response.end = vi.fn((cb?: () => void) => {
+      const responseEndMock = vi.fn((cb?: () => void) => {
         if (cb) {
           setImmediate(cb);
         }
       });
-      response.write = vi.fn().mockImplementation(() => {
+      const responseWriteMock = vi.fn().mockImplementation(() => {
         throw new Error("Write failed");
       });
+      response.end = responseEndMock;
+      response.write = responseWriteMock;
 
       const listener = vi.fn();
       connectionManager.trackSseConnection(response, listener);
 
       await expect(connectionManager.closeAllSseConnections()).resolves.toBeUndefined();
-      expect(response.end).toHaveBeenCalledTimes(1);
+      expect(responseEndMock).toHaveBeenCalledTimes(1);
     });
 
     it("11. SSE 연결 종료 시 2초 타임아웃 적용", async () => {
       const response = new EventEmitter() as Response;
       // end 콜백을 호출하지 않아서 타임아웃이 발생하도록
-      response.end = vi.fn();
-      response.write = vi.fn().mockReturnValue(true);
+      const responseEndMock = vi.fn();
+      const responseWriteMock = vi.fn().mockReturnValue(true);
+      response.end = responseEndMock;
+      response.write = responseWriteMock;
 
       const listener = vi.fn();
       connectionManager.trackSseConnection(response, listener);
@@ -184,7 +192,7 @@ describe("ConnectionManager", () => {
 
       // 타임아웃이 발생했는지 확인 (2초 이상 대기)
       expect(elapsed).toBeGreaterThanOrEqual(1900); // 약간의 여유
-      expect(response.end).toHaveBeenCalledTimes(1);
+      expect(responseEndMock).toHaveBeenCalledTimes(1);
     }, 3000);
 
     it("12. 전체 SSE 연결 종료 5초 타임아웃 적용", async () => {
@@ -224,15 +232,20 @@ describe("ConnectionManager", () => {
 
     it("14. 다중 SSE 연결 동시 처리", async () => {
       const responses: Response[] = [];
+      const mocks: Array<{ write: ReturnType<typeof vi.fn>; end: ReturnType<typeof vi.fn> }> = [];
+
       for (let i = 0; i < 10; i++) {
         const response = new EventEmitter() as Response;
-        response.end = vi.fn((cb?: () => void) => {
+        const endMock = vi.fn((cb?: () => void) => {
           if (cb) {
             setImmediate(cb);
           }
         });
-        response.write = vi.fn().mockReturnValue(true);
+        const writeMock = vi.fn().mockReturnValue(true);
+        response.end = endMock;
+        response.write = writeMock;
         responses.push(response);
+        mocks.push({ write: writeMock, end: endMock });
         connectionManager.trackSseConnection(response, vi.fn());
       }
 
@@ -240,9 +253,9 @@ describe("ConnectionManager", () => {
 
       await connectionManager.closeAllSseConnections();
 
-      responses.forEach((response) => {
-        expect(response.write).toHaveBeenCalled();
-        expect(response.end).toHaveBeenCalled();
+      mocks.forEach((mock) => {
+        expect(mock.write).toHaveBeenCalled();
+        expect(mock.end).toHaveBeenCalled();
       });
 
       expect(connectionManager.getSseConnectionCount()).toBe(0);

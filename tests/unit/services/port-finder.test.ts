@@ -172,7 +172,7 @@ describe("PortFinder", () => {
 
       // listen을 모킹하여 다른 에러 발생시키기
       const mockApp = {
-        listen: vi.fn((port, callback) => {
+        listen: vi.fn((port: number, callback: (error?: NodeJS.ErrnoException) => void) => {
           const error = new Error("Some other error") as NodeJS.ErrnoException;
           error.code = "EACCES"; // EADDRINUSE가 아닌 다른 에러
           callback(error);

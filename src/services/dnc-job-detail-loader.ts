@@ -2,6 +2,8 @@ import fs from "fs/promises";
 import path from "path";
 import type { DncJob, DncJobWithDetails } from "./dnc-job-service.js";
 
+export type { DncJobWithDetails } from "./dnc-job-service.js";
+
 export class DncJobDetailLoader {
   private projectRoot: string;
 
