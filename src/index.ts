@@ -3,6 +3,11 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerGetKstTimeTool } from "./tools/get-kst-time.js";
+import { registerDncInitJobTool } from "./tools/dnc-init-job.js";
+import { registerDncAppendDividedJobTool } from "./tools/dnc-append-divided-job.js";
+import { registerDncDeleteJobTool } from "./tools/dnc-delete-job.js";
+import { registerDncUpdateJobTool } from "./tools/dnc-update-job.js";
+import { registerDncGetJobRelationsTool } from "./tools/dnc-get-job-relations.js";
 import { UIWebServer } from "./services/web-server.js";
 
 /**
@@ -30,6 +35,13 @@ const webServer = new UIWebServer();
  * 2. 여기에 import 및 등록 함수 호출 추가
  */
 registerGetKstTimeTool(mcpServer);
+
+// DnC (Divide and Conquer) job 관리 도구들
+registerDncInitJobTool(mcpServer);
+registerDncAppendDividedJobTool(mcpServer);
+registerDncDeleteJobTool(mcpServer);
+registerDncUpdateJobTool(mcpServer);
+registerDncGetJobRelationsTool(mcpServer);
 
 /**
  * Setup client connection handler
