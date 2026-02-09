@@ -8,20 +8,20 @@ export function registerDncGetJobRelationsTool(mcpServer: McpServer) {
     {
       description: "job의 분할 관계(트리 구조)를 조회합니다.",
       inputSchema: {
-        job_id: z.string().describe("조회할 job ID (필수)"),
+        job_title: z.string().describe("조회할 job title (필수)"),
       },
     },
     async (args) => {
       try {
-        const { job_id } = args;
+        const { job_title } = args;
 
         // 인자 검증
-        if (!job_id) {
+        if (!job_title) {
           return {
             content: [
               {
                 type: "text" as const,
-                text: "오류: job_id는 필수 입력 항목입니다.",
+                text: "오류: job_title는 필수 입력 항목입니다.",
               },
             ],
             isError: true,
@@ -31,13 +31,13 @@ export function registerDncGetJobRelationsTool(mcpServer: McpServer) {
         // job relation 읽기
         let jobRelation;
         try {
-          jobRelation = await readJobRelation(job_id);
+          jobRelation = await readJobRelation(job_title);
         } catch (error) {
           return {
             content: [
               {
                 type: "text" as const,
-                text: `오류: job "${job_id}"이(가) 존재하지 않습니다. ${error instanceof Error ? error.message : ""}`,
+                text: `오류: job "${job_title}"이(가) 존재하지 않습니다. ${error instanceof Error ? error.message : ""}`,
               },
             ],
             isError: true,
@@ -57,7 +57,7 @@ export function registerDncGetJobRelationsTool(mcpServer: McpServer) {
 ${jsonString}
 \`\`\`
 
-📋 Job ID: ${jobRelation.id}
+📋 Job Title: ${jobRelation.job_title}
 🎯 Goal: ${jobRelation.goal}
 📊 Status: ${jobRelation.status}
 👥 Divided Jobs: ${jobRelation.divided_jobs.length}개`,

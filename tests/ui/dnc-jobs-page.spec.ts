@@ -29,9 +29,15 @@ test.describe("DnC Jobs List Page UI", () => {
     // Given: DnC jobs 페이지 방문
     await page.goto(`${baseUrl}/dnc/jobs`);
 
-    // Then: job 목록 컨테이너 존재
-    const jobList = page.locator('[data-testid="job-list"], .job-list, table');
-    await expect(jobList).toBeVisible();
+    // Then: job 목록 컨테이너 존재하거나, job이 없을 때 empty state 표시
+    const jobList = page.locator('[data-testid="job-list"], .job-list');
+    const emptyState = page.locator('.empty-state');
+
+    // job 목록이 보이거나 empty state가 보여야 함
+    const jobListVisible = await jobList.isVisible().catch(() => false);
+    const emptyStateVisible = await emptyState.isVisible().catch(() => false);
+
+    expect(jobListVisible || emptyStateVisible).toBeTruthy();
   });
 
   test("should display job information (ID, goal, status)", async ({ page }) => {

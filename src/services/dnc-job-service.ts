@@ -2,7 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 
 export interface DncJob {
-  id: string;
+  job_title: string;
   goal: string;
   spec: string;
   status: "pending" | "in-progress" | "done";
@@ -57,17 +57,17 @@ export class DncJobService {
   /**
    * 특정 ID의 job을 찾아 반환합니다.
    */
-  async getJobById(jobId: string): Promise<DncJob | null> {
+  async getJobByTitle(jobTitle: string): Promise<DncJob | null> {
     const allJobs = await this.getAllRootJobs();
 
     // root job에서 찾기
     for (const job of allJobs) {
-      if (job.id === jobId) {
+      if (job.job_title === jobTitle) {
         return job;
       }
 
       // 하위 작업에서 재귀적으로 찾기
-      const found = this.findJobInTree(job, jobId);
+      const found = this.findJobInTree(job, jobTitle);
       if (found) {
         return found;
       }
@@ -79,13 +79,13 @@ export class DncJobService {
   /**
    * job 트리에서 특정 ID의 job을 재귀적으로 찾습니다.
    */
-  private findJobInTree(job: DncJob, targetId: string): DncJob | null {
-    if (job.id === targetId) {
+  private findJobInTree(job: DncJob, targetTitle: string): DncJob | null {
+    if (job.job_title === targetTitle) {
       return job;
     }
 
     for (const childJob of job.divided_jobs) {
-      const found = this.findJobInTree(childJob, targetId);
+      const found = this.findJobInTree(childJob, targetTitle);
       if (found) {
         return found;
       }

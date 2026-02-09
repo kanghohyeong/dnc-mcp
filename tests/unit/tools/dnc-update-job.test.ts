@@ -36,7 +36,7 @@ describe("dnc-update-job tool", () => {
 
   it("should update job goal", async () => {
     const job: JobRelation = {
-      id: "job-to-update",
+      job_title: "job-to-update",
       goal: "Original Goal",
       spec: ".dnc/job-to-update/specs/job-to-update.md",
       status: "pending",
@@ -50,13 +50,13 @@ describe("dnc-update-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncUpdateJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_id: string;
+      job_title: string;
       goal?: string;
       status?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_id: "job-to-update",
+      job_title: "job-to-update",
       goal: "Updated Goal",
     });
 
@@ -72,7 +72,7 @@ describe("dnc-update-job tool", () => {
 
   it("should update job status", async () => {
     const job: JobRelation = {
-      id: "job-to-update",
+      job_title: "job-to-update",
       goal: "Test Goal",
       spec: ".dnc/job-to-update/specs/job-to-update.md",
       status: "pending",
@@ -86,12 +86,12 @@ describe("dnc-update-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncUpdateJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_id: string;
+      job_title: string;
       status?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_id: "job-to-update",
+      job_title: "job-to-update",
       status: "in-progress",
     });
 
@@ -105,7 +105,7 @@ describe("dnc-update-job tool", () => {
 
   it("should update both goal and status", async () => {
     const job: JobRelation = {
-      id: "job-to-update",
+      job_title: "job-to-update",
       goal: "Original Goal",
       spec: ".dnc/job-to-update/specs/job-to-update.md",
       status: "pending",
@@ -119,13 +119,13 @@ describe("dnc-update-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncUpdateJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_id: string;
+      job_title: string;
       goal?: string;
       status?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_id: "job-to-update",
+      job_title: "job-to-update",
       goal: "New Goal",
       status: "done",
     });
@@ -141,13 +141,13 @@ describe("dnc-update-job tool", () => {
 
   it("should update child job in parent", async () => {
     const parentJob: JobRelation = {
-      id: "job-parent",
+      job_title: "job-parent",
       goal: "Parent Job",
       spec: ".dnc/job-parent/specs/job-parent.md",
       status: "pending",
       divided_jobs: [
         {
-          id: "job-child",
+          job_title: "job-child",
           goal: "Original Child Goal",
           spec: ".dnc/job-parent/specs/job-child.md",
           status: "pending",
@@ -163,15 +163,15 @@ describe("dnc-update-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncUpdateJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_id: string;
-      parent_job_id?: string;
+      job_title: string;
+      parent_job_title?: string;
       goal?: string;
       status?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_id: "job-child",
-      parent_job_id: "job-parent",
+      job_title: "job-child",
+      parent_job_title: "job-parent",
       goal: "Updated Child Goal",
       status: "done",
     });
@@ -187,7 +187,7 @@ describe("dnc-update-job tool", () => {
 
   it("should return error for invalid status", async () => {
     const job: JobRelation = {
-      id: "job-to-update",
+      job_title: "job-to-update",
       goal: "Test Goal",
       spec: ".dnc/job-to-update/specs/job-to-update.md",
       status: "pending",
@@ -201,12 +201,12 @@ describe("dnc-update-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncUpdateJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_id: string;
+      job_title: string;
       status?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_id: "job-to-update",
+      job_title: "job-to-update",
       status: "invalid-status",
     });
 
@@ -219,12 +219,12 @@ describe("dnc-update-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncUpdateJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_id: string;
+      job_title: string;
       goal?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_id: "non-existent",
+      job_title: "non-existent",
       goal: "New Goal",
     });
 
@@ -234,7 +234,7 @@ describe("dnc-update-job tool", () => {
 
   it("should return error when no updates provided", async () => {
     const job: JobRelation = {
-      id: "job-to-update",
+      job_title: "job-to-update",
       goal: "Test Goal",
       spec: ".dnc/job-to-update/specs/job-to-update.md",
       status: "pending",
@@ -248,26 +248,26 @@ describe("dnc-update-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncUpdateJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_id: string;
+      job_title: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_id: "job-to-update" });
+    const result = await handler({ job_title: "job-to-update" });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain("업데이트할 내용");
   });
 
-  it("should return error when job_id is missing", async () => {
+  it("should return error when job_title is missing", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncUpdateJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_id?: string;
+      job_title?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({});
 
     expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain("job_id");
+    expect(result.content[0].text).toContain("job_title");
   });
 });

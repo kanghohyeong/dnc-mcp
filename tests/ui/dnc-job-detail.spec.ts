@@ -17,11 +17,11 @@ class MockDncJobService extends DncJobService {
   }
 
   addJob(job: DncJob): void {
-    this.jobs.set(job.id, job);
+    this.jobs.set(job.job_title, job);
   }
 
-  removeJob(jobId: string): void {
-    this.jobs.delete(jobId);
+  removeJob(jobTitle: string): void {
+    this.jobs.delete(jobTitle);
   }
 
   clearJobs(): void {
@@ -32,15 +32,15 @@ class MockDncJobService extends DncJobService {
     return Promise.resolve(Array.from(this.jobs.values()));
   }
 
-  getJobById(jobId: string): Promise<DncJob | null> {
-    const job = this.jobs.get(jobId);
+  getJobByTitle(jobTitle: string): Promise<DncJob | null> {
+    const job = this.jobs.get(jobTitle);
     if (job) {
       return Promise.resolve(job);
     }
 
     // divided_jobs에서 재귀 검색
     for (const rootJob of this.jobs.values()) {
-      const found = this.findJobInTreeHelper(rootJob, jobId);
+      const found = this.findJobInTreeHelper(rootJob, jobTitle);
       if (found) {
         return Promise.resolve(found);
       }
@@ -49,13 +49,13 @@ class MockDncJobService extends DncJobService {
     return Promise.resolve(null);
   }
 
-  private findJobInTreeHelper(job: DncJob, targetId: string): DncJob | null {
-    if (job.id === targetId) {
+  private findJobInTreeHelper(job: DncJob, targetTitle: string): DncJob | null {
+    if (job.job_title === targetTitle) {
       return job;
     }
 
     for (const childJob of job.divided_jobs) {
-      const found = this.findJobInTreeHelper(childJob, targetId);
+      const found = this.findJobInTreeHelper(childJob, targetTitle);
       if (found) {
         return found;
       }
@@ -95,7 +95,7 @@ class MockDncJobDetailLoader extends DncJobDetailLoader {
     );
 
     return {
-      id: job.id,
+      job_title: job.job_title,
       goal: job.goal,
       spec: job.spec,
       status: job.status,
@@ -104,9 +104,9 @@ class MockDncJobDetailLoader extends DncJobDetailLoader {
     };
   }
 
-  async loadJobByIdWithDetails(jobId: string): Promise<DncJobWithDetails | null> {
+  async loadJobByTitleWithDetails(jobTitle: string): Promise<DncJobWithDetails | null> {
     // MockDncJobService에서 job 찾기
-    const job = await this.mockJobService.getJobById(jobId);
+    const job = await this.mockJobService.getJobByTitle(jobTitle);
     if (!job) {
       return null;
     }
@@ -149,7 +149,7 @@ test.describe("DnC Job Detail Page", () => {
 
     // 테스트용 job 추가 (메모리)
     const job: DncJob = {
-      id: "job-ui-test",
+      job_title: "job-ui-test",
       goal: "UI 테스트용 job입니다",
       spec: ".dnc/job-ui-test/spec.md",
       status: "in-progress",
@@ -206,7 +206,7 @@ function example() {
 
   test("should display correct status style for pending", async ({ page }) => {
     const job: DncJob = {
-      id: "job-pending-test",
+      job_title: "job-pending-test",
       goal: "Pending job",
       spec: ".dnc/job-pending-test/spec.md",
       status: "pending",
@@ -224,7 +224,7 @@ function example() {
 
   test("should display correct status style for done", async ({ page }) => {
     const job: DncJob = {
-      id: "job-done-test",
+      job_title: "job-done-test",
       goal: "Done job",
       spec: ".dnc/job-done-test/spec.md",
       status: "done",
@@ -384,20 +384,20 @@ function example() {
   test.describe("Subtasks Tree UI", () => {
     test("should display subtasks section when job has divided_jobs", async ({ page }) => {
       const job: DncJob = {
-        id: "job-with-subtasks",
+        job_title: "job-with-subtasks",
         goal: "Parent job with subtasks",
         spec: ".dnc/job-with-subtasks/spec.md",
         status: "in-progress",
         divided_jobs: [
           {
-            id: "subtask-1",
+            job_title: "subtask-1",
             goal: "First subtask",
             spec: ".dnc/job-with-subtasks/subtask-1-spec.md",
             status: "done",
             divided_jobs: [],
           },
           {
-            id: "subtask-2",
+            job_title: "subtask-2",
             goal: "Second subtask",
             spec: ".dnc/job-with-subtasks/subtask-2-spec.md",
             status: "pending",
@@ -432,13 +432,13 @@ function example() {
 
     test("should display subtask information correctly", async ({ page }) => {
       const job: DncJob = {
-        id: "job-with-subtasks",
+        job_title: "job-with-subtasks",
         goal: "Parent job",
         spec: ".dnc/job-with-subtasks/spec.md",
         status: "in-progress",
         divided_jobs: [
           {
-            id: "subtask-1",
+            job_title: "subtask-1",
             goal: "First subtask goal",
             spec: ".dnc/job-with-subtasks/subtask-1-spec.md",
             status: "done",
@@ -471,27 +471,27 @@ function example() {
 
     test("should apply correct status styles to subtasks", async ({ page }) => {
       const job: DncJob = {
-        id: "job-with-subtasks",
+        job_title: "job-with-subtasks",
         goal: "Parent job",
         spec: ".dnc/job-with-subtasks/spec.md",
         status: "in-progress",
         divided_jobs: [
           {
-            id: "subtask-pending",
+            job_title: "subtask-pending",
             goal: "Pending subtask",
             spec: ".dnc/job-with-subtasks/subtask-pending-spec.md",
             status: "pending",
             divided_jobs: [],
           },
           {
-            id: "subtask-in-progress",
+            job_title: "subtask-in-progress",
             goal: "In-progress subtask",
             spec: ".dnc/job-with-subtasks/subtask-in-progress-spec.md",
             status: "in-progress",
             divided_jobs: [],
           },
           {
-            id: "subtask-done",
+            job_title: "subtask-done",
             goal: "Done subtask",
             spec: ".dnc/job-with-subtasks/subtask-done-spec.md",
             status: "done",
@@ -534,19 +534,19 @@ function example() {
       page,
     }) => {
       const job: DncJob = {
-        id: "job-with-nested-subtasks",
+        job_title: "job-with-nested-subtasks",
         goal: "Parent job",
         spec: ".dnc/job-with-nested-subtasks/spec.md",
         status: "in-progress",
         divided_jobs: [
           {
-            id: "subtask-level-1",
+            job_title: "subtask-level-1",
             goal: "Level 1 subtask",
             spec: ".dnc/job-with-nested-subtasks/subtask-level-1-spec.md",
             status: "in-progress",
             divided_jobs: [
               {
-                id: "subtask-level-2",
+                job_title: "subtask-level-2",
                 goal: "Level 2 subtask",
                 spec: ".dnc/job-with-nested-subtasks/subtask-level-2-spec.md",
                 status: "pending",
@@ -590,25 +590,25 @@ function example() {
 
     test("should render deeply nested subtasks recursively", async ({ page }) => {
       const job: DncJob = {
-        id: "job-with-deep-subtasks",
+        job_title: "job-with-deep-subtasks",
         goal: "Parent job",
         spec: ".dnc/job-with-deep-subtasks/spec.md",
         status: "in-progress",
         divided_jobs: [
           {
-            id: "subtask-level-1",
+            job_title: "subtask-level-1",
             goal: "Level 1",
             spec: ".dnc/job-with-deep-subtasks/subtask-level-1-spec.md",
             status: "in-progress",
             divided_jobs: [
               {
-                id: "subtask-level-2",
+                job_title: "subtask-level-2",
                 goal: "Level 2",
                 spec: ".dnc/job-with-deep-subtasks/subtask-level-2-spec.md",
                 status: "in-progress",
                 divided_jobs: [
                   {
-                    id: "subtask-level-3",
+                    job_title: "subtask-level-3",
                     goal: "Level 3",
                     spec: ".dnc/job-with-deep-subtasks/subtask-level-3-spec.md",
                     status: "pending",
@@ -646,20 +646,20 @@ function example() {
 
     test("should toggle subtask spec independently", async ({ page }) => {
       const job: DncJob = {
-        id: "job-with-subtasks",
+        job_title: "job-with-subtasks",
         goal: "Parent job",
         spec: ".dnc/job-with-subtasks/spec.md",
         status: "in-progress",
         divided_jobs: [
           {
-            id: "subtask-1",
+            job_title: "subtask-1",
             goal: "First subtask",
             spec: ".dnc/job-with-subtasks/subtask-1-spec.md",
             status: "done",
             divided_jobs: [],
           },
           {
-            id: "subtask-2",
+            job_title: "subtask-2",
             goal: "Second subtask",
             spec: ".dnc/job-with-subtasks/subtask-2-spec.md",
             status: "pending",
@@ -716,13 +716,13 @@ function example() {
 
     test("should display subtask spec content as markdown", async ({ page }) => {
       const job: DncJob = {
-        id: "job-with-subtasks",
+        job_title: "job-with-subtasks",
         goal: "Parent job",
         spec: ".dnc/job-with-subtasks/spec.md",
         status: "in-progress",
         divided_jobs: [
           {
-            id: "subtask-1",
+            job_title: "subtask-1",
             goal: "First subtask",
             spec: ".dnc/job-with-subtasks/subtask-1-spec.md",
             status: "done",
@@ -768,19 +768,19 @@ function example() {
 
     test("should toggle nested subtask specs independently", async ({ page }) => {
       const job: DncJob = {
-        id: "job-with-nested-subtasks",
+        job_title: "job-with-nested-subtasks",
         goal: "Parent job",
         spec: ".dnc/job-with-nested-subtasks/spec.md",
         status: "in-progress",
         divided_jobs: [
           {
-            id: "subtask-level-1",
+            job_title: "subtask-level-1",
             goal: "Level 1 subtask",
             spec: ".dnc/job-with-nested-subtasks/subtask-level-1-spec.md",
             status: "in-progress",
             divided_jobs: [
               {
-                id: "subtask-level-2",
+                job_title: "subtask-level-2",
                 goal: "Level 2 subtask",
                 spec: ".dnc/job-with-nested-subtasks/subtask-level-2-spec.md",
                 status: "pending",

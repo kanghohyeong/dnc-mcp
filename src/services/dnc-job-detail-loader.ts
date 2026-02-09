@@ -31,7 +31,7 @@ export class DncJobDetailLoader {
     );
 
     return {
-      id: job.id,
+      job_title: job.job_title,
       goal: job.goal,
       spec: job.spec,
       status: job.status,
@@ -44,7 +44,7 @@ export class DncJobDetailLoader {
    * jobId로 job을 찾아 DncJobWithDetails로 반환합니다.
    * .dnc 디렉토리의 모든 root job을 탐색합니다.
    */
-  async loadJobByIdWithDetails(jobId: string): Promise<DncJobWithDetails | null> {
+  async loadJobByTitleWithDetails(jobTitle: string): Promise<DncJobWithDetails | null> {
     const dncDir = path.join(this.projectRoot, ".dnc");
 
     try {
@@ -62,13 +62,13 @@ export class DncJobDetailLoader {
             const rootJob = JSON.parse(content) as DncJob;
 
             // root job에서 찾기
-            if (rootJob.id === jobId) {
+            if (rootJob.job_title === jobTitle) {
               foundJob = rootJob;
               break;
             }
 
             // 하위 작업에서 재귀적으로 찾기
-            const found = this.findJobInTree(rootJob, jobId);
+            const found = this.findJobInTree(rootJob, jobTitle);
             if (found) {
               foundJob = found;
               break;
@@ -100,13 +100,13 @@ export class DncJobDetailLoader {
   /**
    * job 트리에서 특정 ID의 job을 재귀적으로 찾습니다.
    */
-  private findJobInTree(job: DncJob, targetId: string): DncJob | null {
-    if (job.id === targetId) {
+  private findJobInTree(job: DncJob, targetTitle: string): DncJob | null {
+    if (job.job_title === targetTitle) {
       return job;
     }
 
     for (const childJob of job.divided_jobs) {
-      const found = this.findJobInTree(childJob, targetId);
+      const found = this.findJobInTree(childJob, targetTitle);
       if (found) {
         return found;
       }

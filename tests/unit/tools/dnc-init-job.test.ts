@@ -31,11 +31,12 @@ describe("dnc-init-job tool", () => {
     expect(call[0]).toBe("dnc_init_job");
   });
 
-  it("should create root job with valid goal", async () => {
+  it("should create root job with valid job_title and goal", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncInitJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
+      job_title: string;
       goal: string;
       requirements?: string;
       constraints?: string;
@@ -43,6 +44,7 @@ describe("dnc-init-job tool", () => {
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
+      job_title: "implement-auth",
       goal: "Implement Authentication",
       requirements: "JWT tokens, OAuth2",
       constraints: "Use existing user model",
@@ -53,8 +55,8 @@ describe("dnc-init-job tool", () => {
     expect(result.content[0].text).toContain("성공적으로 생성되었습니다");
 
     // 파일 시스템 검증
-    const jobRelationPath = ".dnc/job-implement-authentication/job_relation.json";
-    const specPath = ".dnc/job-implement-authentication/specs/job-implement-authentication.md";
+    const jobRelationPath = ".dnc/implement-auth/job_relation.json";
+    const specPath = ".dnc/implement-auth/specs/implement-auth.md";
 
     const jobRelationExists = await fs
       .access(jobRelationPath)
@@ -72,7 +74,7 @@ describe("dnc-init-job tool", () => {
     const jobRelationContent = await fs.readFile(jobRelationPath, "utf-8");
     const jobRelation = JSON.parse(jobRelationContent) as JobRelation;
 
-    expect(jobRelation.id).toBe("job-implement-authentication");
+    expect(jobRelation.job_title).toBe("implement-auth");
     expect(jobRelation.goal).toBe("Implement Authentication");
     expect(jobRelation.status).toBe("pending");
     expect(jobRelation.divided_jobs).toEqual([]);
@@ -86,15 +88,52 @@ describe("dnc-init-job tool", () => {
     expect(specContent).toContain("All tests pass");
   });
 
+  it("should return error when job_title is invalid (uppercase)", async () => {
+    const mcpServer = createTestMcpServer();
+    const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
+    registerDncInitJobTool(mcpServer);
+    const handler = registerToolSpy.mock.calls[0][2] as (args: {
+      job_title: string;
+      goal: string;
+    }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
+
+    const result = await handler({
+      job_title: "Implement-Auth",
+      goal: "Implement Authentication",
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("lowercase");
+  });
+
+  it("should return error when job_title exceeds 10 words", async () => {
+    const mcpServer = createTestMcpServer();
+    const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
+    registerDncInitJobTool(mcpServer);
+    const handler = registerToolSpy.mock.calls[0][2] as (args: {
+      job_title: string;
+      goal: string;
+    }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
+
+    const result = await handler({
+      job_title: "one-two-three-four-five-six-seven-eight-nine-ten-eleven",
+      goal: "Test Goal",
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("10 words");
+  });
+
   it("should return error when goal is missing", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncInitJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
+      job_title: string;
       goal?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({});
+    const result = await handler({ job_title: "test-job", goal: "" });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain("goal");
@@ -105,52 +144,18 @@ describe("dnc-init-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncInitJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
+      job_title: string;
       goal: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     // 첫 번째 생성
-    await handler({ goal: "Test Goal" });
+    await handler({ job_title: "test-job", goal: "Test Goal" });
 
     // 중복 생성 시도
-    const result = await handler({ goal: "Test Goal" });
+    const result = await handler({ job_title: "test-job", goal: "Test Goal" });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain("이미 존재");
-  });
-
-  it("should handle empty goal gracefully", async () => {
-    const mcpServer = createTestMcpServer();
-    const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncInitJobTool(mcpServer);
-    const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      goal: string;
-    }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
-
-    const result = await handler({ goal: "" });
-
-    expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain("goal");
-  });
-
-  it("should handle special characters in goal", async () => {
-    const mcpServer = createTestMcpServer();
-    const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncInitJobTool(mcpServer);
-    const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      goal: string;
-    }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
-
-    const result = await handler({ goal: "Add User@Profile & Settings!" });
-
-    expect(result.isError).toBeUndefined();
-    const jobId = "job-add-userprofile-settings";
-    const jobPath = `.dnc/${jobId}/job_relation.json`;
-
-    const exists = await fs
-      .access(jobPath)
-      .then(() => true)
-      .catch(() => false);
-    expect(exists).toBe(true);
   });
 
   it("should create spec with optional fields omitted", async () => {
@@ -158,15 +163,16 @@ describe("dnc-init-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncInitJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
+      job_title: string;
       goal: string;
       requirements?: string;
       constraints?: string;
       acceptance_criteria?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    await handler({ goal: "Simple Task" });
+    await handler({ job_title: "simple-task", goal: "Simple Task" });
 
-    const specPath = ".dnc/job-simple-task/specs/job-simple-task.md";
+    const specPath = ".dnc/simple-task/specs/simple-task.md";
     const specContent = await fs.readFile(specPath, "utf-8");
 
     expect(specContent).toContain("# Simple Task");

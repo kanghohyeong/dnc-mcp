@@ -57,7 +57,7 @@ describe("DncJobService", () => {
       vi.spyOn(fs, "readFile")
         .mockResolvedValueOnce(
           JSON.stringify({
-            id: "job-valid",
+            job_title: "job-valid",
             goal: "Valid Job",
             spec: ".dnc/job-valid/specs/job-valid.md",
             status: "pending",
@@ -71,12 +71,12 @@ describe("DncJobService", () => {
 
       // Then: 유효한 job만 반환
       expect(jobs.length).toBe(1);
-      expect(jobs[0].id).toBe("job-valid");
+      expect(jobs[0].job_title).toBe("job-valid");
     });
   });
 
-  describe("getJobById", () => {
-    it("should return job by id from root jobs", async () => {
+  describe("getJobByTitle", () => {
+    it("should return job by title from root jobs", async () => {
       // Given: 실제 .dnc 디렉토리에 있는 job을 사용
       const allJobs = await service.getAllRootJobs();
       if (allJobs.length === 0) {
@@ -85,15 +85,15 @@ describe("DncJobService", () => {
         return;
       }
 
-      const jobId = allJobs[0].id;
+      const jobTitle = allJobs[0].job_title;
 
-      // When: getJobById 호출
-      const job = await service.getJobById(jobId);
+      // When: getJobByTitle 호출
+      const job = await service.getJobByTitle(jobTitle);
 
       // Then: 해당 job 반환
       expect(job).not.toBeNull();
       if (job) {
-        expect(job.id).toBe(jobId);
+        expect(job.job_title).toBe(jobTitle);
         expect(job.goal).toBeDefined();
         expect(job.status).toBeDefined();
       }
@@ -108,13 +108,13 @@ describe("DncJobService", () => {
 
       vi.spyOn(fs, "readFile").mockResolvedValueOnce(
         JSON.stringify({
-          id: "job-parent",
+          job_title: "job-parent",
           goal: "Parent Job",
           spec: ".dnc/job-parent/specs/job-parent.md",
           status: "in-progress",
           divided_jobs: [
             {
-              id: "job-child",
+              job_title: "job-child",
               goal: "Child Job",
               spec: ".dnc/job-parent/specs/child.md",
               status: "pending",
@@ -124,21 +124,21 @@ describe("DncJobService", () => {
         })
       );
 
-      // When: 자식 job ID로 조회
-      const job = await service.getJobById("job-child");
+      // When: 자식 job title로 조회
+      const job = await service.getJobByTitle("job-child");
 
       // Then: 자식 job 반환
       expect(job).not.toBeNull();
-      expect(job?.id).toBe("job-child");
+      expect(job?.job_title).toBe("job-child");
       expect(job?.goal).toBe("Child Job");
     });
 
     it("should return null when job does not exist", async () => {
-      // Given: 존재하지 않는 job ID
-      const jobId = "job-nonexistent-xyz-123";
+      // Given: 존재하지 않는 job title
+      const jobTitle = "nonexistent-job-xyz-123";
 
-      // When: getJobById 호출
-      const job = await service.getJobById(jobId);
+      // When: getJobByTitle 호출
+      const job = await service.getJobByTitle(jobTitle);
 
       // Then: null 반환
       expect(job).toBeNull();

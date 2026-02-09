@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Job Detail - <%= job.id %></title>
+  <title>Job Detail - <%= job.job_title %></title>
   <style>
     * {
       margin: 0;
@@ -425,7 +425,7 @@
     <div class="job-card">
       <div class="job-header">
         <div class="job-id" data-testid="job-id">
-          <%= job.id %>
+          <%= job.job_title %>
         </div>
         <div class="job-status status-<%= job.status %>" data-testid="job-status">
           <%= job.status %>
@@ -489,17 +489,17 @@
       const paddingLeft = level * 20;
 
       let html = `
-        <div class="subtask-item" data-testid="subtask-item-${subtask.id}" style="padding-left: ${paddingLeft}px;">
+        <div class="subtask-item" data-testid="subtask-item-${subtask.job_title}" style="padding-left: ${paddingLeft}px;">
           <div class="subtask-header">
-            <div class="subtask-id" data-testid="subtask-id">${subtask.id}</div>
+            <div class="subtask-id" data-testid="subtask-id">${subtask.job_title}</div>
             <div class="subtask-status status-${subtask.status}" data-testid="subtask-status">${subtask.status}</div>
           </div>
           <div class="subtask-goal" data-testid="subtask-goal">${subtask.goal}</div>
-          <div class="subtask-spec-header" data-testid="subtask-spec-toggle" onclick="toggleSubtaskSpec('${subtask.id}')">
+          <div class="subtask-spec-header" data-testid="subtask-spec-toggle" onclick="toggleSubtaskSpec('${subtask.job_title}')">
             <div class="subtask-spec-title">Specification</div>
-            <div class="subtask-spec-toggle-icon" id="subtask-spec-icon-${subtask.id}">▼</div>
+            <div class="subtask-spec-toggle-icon" id="subtask-spec-icon-${subtask.job_title}">▼</div>
           </div>
-          <div class="subtask-spec-content" id="subtask-spec-content-${subtask.id}" data-testid="subtask-spec-content">
+          <div class="subtask-spec-content" id="subtask-spec-content-${subtask.job_title}" data-testid="subtask-spec-content">
             ${subtask.specContentHtml}
           </div>
         </div>

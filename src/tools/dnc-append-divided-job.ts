@@ -1,11 +1,11 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod";
 import {
-  generateJobId,
   readJobRelation,
   writeJobRelation,
   writeSpecFile,
   findJobInTree,
+  validateJobTitle,
   type JobRelation,
 } from "../utils/dnc-utils.js";
 
@@ -15,7 +15,14 @@ export function registerDncAppendDividedJobTool(mcpServer: McpServer) {
     {
       description: "부모 job의 divided_jobs 목록에 하위 작업을 추가합니다.",
       inputSchema: {
-        parent_job_id: z.string().describe("부모 job ID (필수)"),
+        parent_job_title: z
+          .string()
+          .describe("부모 job title (필수, 영문 10단어 이하, kebab-case, 예: implement-user-auth)"),
+        child_job_title: z
+          .string()
+          .describe(
+            "하위 작업의 고유 식별자 (필수, 영문 10단어 이하, kebab-case, 예: create-database-schema)"
+          ),
         child_goal: z.string().describe("하위 작업의 목표 (필수)"),
         requirements: z.string().optional().describe("요구사항 (선택)"),
         constraints: z.string().optional().describe("제약조건 (선택)"),
@@ -24,21 +31,44 @@ export function registerDncAppendDividedJobTool(mcpServer: McpServer) {
     },
     async (args) => {
       try {
-        const { parent_job_id, child_goal, requirements, constraints, acceptance_criteria } = args;
+        const {
+          parent_job_title,
+          child_job_title,
+          child_goal,
+          requirements,
+          constraints,
+          acceptance_criteria,
+        } = args;
 
-        // 인자 검증
-        if (!parent_job_id) {
+        // parent_job_title 검증
+        const parentValidation = validateJobTitle(parent_job_title);
+        if (!parentValidation.isValid) {
           return {
             content: [
               {
                 type: "text" as const,
-                text: "오류: parent_job_id는 필수 입력 항목입니다.",
+                text: `오류: parent_job_title이 유효하지 않습니다. ${parentValidation.error}`,
               },
             ],
             isError: true,
           };
         }
 
+        // child_job_title 검증
+        const childValidation = validateJobTitle(child_job_title);
+        if (!childValidation.isValid) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `오류: child_job_title이 유효하지 않습니다. ${childValidation.error}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        // child_goal 검증
         if (!child_goal || child_goal.trim() === "") {
           return {
             content: [
@@ -51,19 +81,19 @@ export function registerDncAppendDividedJobTool(mcpServer: McpServer) {
           };
         }
 
-        // root job ID 추출 (job-xxx 형식에서 root job ID는 첫 번째 job ID)
-        const rootJobId = parent_job_id.split("/")[0];
+        // root job title 추출 (parent_job_title이 root job title임)
+        const rootJobTitle = parent_job_title;
 
         // 부모 job 읽기
         let parentJobRelation: JobRelation;
         try {
-          parentJobRelation = await readJobRelation(rootJobId);
+          parentJobRelation = await readJobRelation(rootJobTitle);
         } catch {
           return {
             content: [
               {
                 type: "text" as const,
-                text: `오류: 부모 job "${parent_job_id}"이(가) 존재하지 않습니다.`,
+                text: `오류: 부모 job "${parent_job_title}"이(가) 존재하지 않습니다.`,
               },
             ],
             isError: true,
@@ -71,34 +101,28 @@ export function registerDncAppendDividedJobTool(mcpServer: McpServer) {
         }
 
         // 부모 job 찾기 (트리에서)
-        const targetParent =
-          parent_job_id === rootJobId
-            ? parentJobRelation
-            : findJobInTree(parentJobRelation, parent_job_id);
+        const targetParent = findJobInTree(parentJobRelation, parent_job_title);
 
         if (!targetParent) {
           return {
             content: [
               {
                 type: "text" as const,
-                text: `오류: 부모 job "${parent_job_id}"을(를) 찾을 수 없습니다.`,
+                text: `오류: 부모 job "${parent_job_title}"을(를) 찾을 수 없습니다.`,
               },
             ],
             isError: true,
           };
         }
 
-        // child job ID 생성
-        const childJobId = generateJobId(child_goal);
-
         // 중복 확인
-        const duplicate = findJobInTree(parentJobRelation, childJobId);
+        const duplicate = findJobInTree(parentJobRelation, child_job_title);
         if (duplicate) {
           return {
             content: [
               {
                 type: "text" as const,
-                text: `오류: child job ID "${childJobId}"이(가) 이미 존재합니다.`,
+                text: `오류: child job title "${child_job_title}"이(가) 이미 존재합니다.`,
               },
             ],
             isError: true,
@@ -106,9 +130,9 @@ export function registerDncAppendDividedJobTool(mcpServer: McpServer) {
         }
 
         // child job 생성
-        const specPath = `.dnc/${rootJobId}/specs/${childJobId}.md`;
+        const specPath = `.dnc/${rootJobTitle}/specs/${child_job_title}.md`;
         const childJob: JobRelation = {
-          id: childJobId,
+          job_title: child_job_title,
           goal: child_goal,
           spec: specPath,
           status: "pending",
@@ -119,12 +143,12 @@ export function registerDncAppendDividedJobTool(mcpServer: McpServer) {
         targetParent.divided_jobs.push(childJob);
 
         // 업데이트된 root job 저장
-        await writeJobRelation(rootJobId, parentJobRelation);
+        await writeJobRelation(rootJobTitle, parentJobRelation);
 
         // spec 파일 생성
         await writeSpecFile(
-          rootJobId,
-          childJobId,
+          rootJobTitle,
+          child_job_title,
           child_goal,
           requirements,
           constraints,
@@ -137,9 +161,9 @@ export function registerDncAppendDividedJobTool(mcpServer: McpServer) {
               type: "text" as const,
               text: `하위 작업이 추가되었습니다!
 
-📋 Child Job ID: ${childJobId}
+📋 Child Job Title: ${child_job_title}
 🎯 Goal: ${child_goal}
-👨‍👩‍👧 Parent: ${parent_job_id}
+👨‍👩‍👧 Parent: ${parent_job_title}
 📝 Spec: ${specPath}`,
             },
           ],

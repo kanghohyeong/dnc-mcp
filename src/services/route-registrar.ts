@@ -98,11 +98,11 @@ export class RouteRegistrar {
    * GET /dnc/jobs/:jobId - DnC job 상세 페이지
    */
   private registerDncJobDetailRoute(app: Express): void {
-    app.get("/dnc/jobs/:jobId", async (req: Request, res: Response) => {
-      const jobId = req.params.jobId as string;
+    app.get("/dnc/jobs/:jobTitle", async (req: Request, res: Response) => {
+      const jobTitle = req.params.jobTitle as string;
 
       try {
-        const job = await this.dncJobDetailLoader.loadJobByIdWithDetails(jobId);
+        const job = await this.dncJobDetailLoader.loadJobByTitleWithDetails(jobTitle);
 
         if (!job) {
           res.status(404).render("error", {

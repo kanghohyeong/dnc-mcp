@@ -14,8 +14,11 @@ export function registerDncUpdateJobTool(mcpServer: McpServer) {
     {
       description: "job의 goal 또는 status를 업데이트합니다.",
       inputSchema: {
-        job_id: z.string().describe("업데이트할 job ID (필수)"),
-        parent_job_id: z.string().optional().describe("부모 job ID (child job 업데이트 시 지정)"),
+        job_title: z.string().describe("업데이트할 job title (필수)"),
+        parent_job_title: z
+          .string()
+          .optional()
+          .describe("부모 job title (child job 업데이트 시 지정)"),
         goal: z.string().optional().describe("새로운 목표 (선택)"),
         status: z
           .enum(["pending", "in-progress", "done"])
@@ -25,15 +28,15 @@ export function registerDncUpdateJobTool(mcpServer: McpServer) {
     },
     async (args) => {
       try {
-        const { job_id, parent_job_id, goal, status } = args;
+        const { job_title, parent_job_title, goal, status } = args;
 
         // 인자 검증
-        if (!job_id) {
+        if (!job_title) {
           return {
             content: [
               {
                 type: "text" as const,
-                text: "오류: job_id는 필수 입력 항목입니다.",
+                text: "오류: job_title는 필수 입력 항목입니다.",
               },
             ],
             isError: true,
@@ -65,19 +68,19 @@ export function registerDncUpdateJobTool(mcpServer: McpServer) {
           };
         }
 
-        // root job ID 결정
-        const rootJobId = parent_job_id ? parent_job_id.split("/")[0] : job_id;
+        // root job title 결정
+        const rootJobTitle = parent_job_title ? parent_job_title.split("/")[0] : job_title;
 
         // job relation 읽기
         let jobRelation;
         try {
-          jobRelation = await readJobRelation(rootJobId);
+          jobRelation = await readJobRelation(rootJobTitle);
         } catch {
           return {
             content: [
               {
                 type: "text" as const,
-                text: `오류: job "${rootJobId}"이(가) 존재하지 않습니다.`,
+                text: `오류: job "${rootJobTitle}"이(가) 존재하지 않습니다.`,
               },
             ],
             isError: true,
@@ -94,14 +97,14 @@ export function registerDncUpdateJobTool(mcpServer: McpServer) {
         }
 
         // job 업데이트
-        const updated = updateJobInTree(jobRelation, job_id, updates);
+        const updated = updateJobInTree(jobRelation, job_title, updates);
 
         if (!updated) {
           return {
             content: [
               {
                 type: "text" as const,
-                text: `오류: job "${job_id}"을(를) 찾을 수 없습니다.`,
+                text: `오류: job "${job_title}"을(를) 찾을 수 없습니다.`,
               },
             ],
             isError: true,
@@ -109,7 +112,7 @@ export function registerDncUpdateJobTool(mcpServer: McpServer) {
         }
 
         // 업데이트된 job relation 저장
-        await writeJobRelation(rootJobId, jobRelation);
+        await writeJobRelation(rootJobTitle, jobRelation);
 
         const updatedFields = [];
         if (goal) updatedFields.push(`Goal: ${goal}`);
@@ -119,7 +122,7 @@ export function registerDncUpdateJobTool(mcpServer: McpServer) {
           content: [
             {
               type: "text" as const,
-              text: `Job "${job_id}"이(가) 업데이트되었습니다!
+              text: `Job "${job_title}"이(가) 업데이트되었습니다!
 
 ${updatedFields.join("\n")}`,
             },

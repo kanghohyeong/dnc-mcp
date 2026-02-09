@@ -36,7 +36,7 @@ describe("dnc-get-job-relations tool", () => {
 
   it("should return simple job without divided_jobs", async () => {
     const job: JobRelation = {
-      id: "job-simple",
+      job_title: "job-simple",
       goal: "Simple Job",
       spec: ".dnc/job-simple/specs/job-simple.md",
       status: "pending",
@@ -50,10 +50,10 @@ describe("dnc-get-job-relations tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncGetJobRelationsTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_id: string;
+      job_title: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_id: "job-simple" });
+    const result = await handler({ job_title: "job-simple" });
 
     expect(result.isError).toBeUndefined();
     expect(result.content[0].text).toContain("job-simple");
@@ -63,20 +63,20 @@ describe("dnc-get-job-relations tool", () => {
 
   it("should return job with divided_jobs", async () => {
     const job: JobRelation = {
-      id: "job-parent",
+      job_title: "job-parent",
       goal: "Parent Job",
       spec: ".dnc/job-parent/specs/job-parent.md",
       status: "in-progress",
       divided_jobs: [
         {
-          id: "job-child-1",
+          job_title: "job-child-1",
           goal: "Child 1",
           spec: ".dnc/job-parent/specs/job-child-1.md",
           status: "done",
           divided_jobs: [],
         },
         {
-          id: "job-child-2",
+          job_title: "job-child-2",
           goal: "Child 2",
           spec: ".dnc/job-parent/specs/job-child-2.md",
           status: "pending",
@@ -92,10 +92,10 @@ describe("dnc-get-job-relations tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncGetJobRelationsTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_id: string;
+      job_title: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_id: "job-parent" });
+    const result = await handler({ job_title: "job-parent" });
 
     expect(result.isError).toBeUndefined();
     const text = result.content[0].text;
@@ -113,19 +113,19 @@ describe("dnc-get-job-relations tool", () => {
 
   it("should return deeply nested job structure", async () => {
     const job: JobRelation = {
-      id: "job-root",
+      job_title: "job-root",
       goal: "Root Job",
       spec: ".dnc/job-root/specs/job-root.md",
       status: "in-progress",
       divided_jobs: [
         {
-          id: "job-level-1",
+          job_title: "job-level-1",
           goal: "Level 1",
           spec: ".dnc/job-root/specs/job-level-1.md",
           status: "in-progress",
           divided_jobs: [
             {
-              id: "job-level-2",
+              job_title: "job-level-2",
               goal: "Level 2",
               spec: ".dnc/job-root/specs/job-level-2.md",
               status: "pending",
@@ -143,10 +143,10 @@ describe("dnc-get-job-relations tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncGetJobRelationsTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_id: string;
+      job_title: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_id: "job-root" });
+    const result = await handler({ job_title: "job-root" });
 
     expect(result.isError).toBeUndefined();
     const text = result.content[0].text;
@@ -164,27 +164,27 @@ describe("dnc-get-job-relations tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncGetJobRelationsTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_id: string;
+      job_title: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_id: "non-existent" });
+    const result = await handler({ job_title: "non-existent" });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain("존재하지 않습니다");
   });
 
-  it("should return error when job_id is missing", async () => {
+  it("should return error when job_title is missing", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncGetJobRelationsTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_id?: string;
+      job_title?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({});
 
     expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain("job_id");
+    expect(result.content[0].text).toContain("job_title");
   });
 
   it("should handle corrupted JSON gracefully", async () => {
@@ -195,10 +195,10 @@ describe("dnc-get-job-relations tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncGetJobRelationsTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_id: string;
+      job_title: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_id: "job-corrupted" });
+    const result = await handler({ job_title: "job-corrupted" });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain("오류");
@@ -206,7 +206,7 @@ describe("dnc-get-job-relations tool", () => {
 
   it("should return formatted JSON", async () => {
     const job: JobRelation = {
-      id: "job-format",
+      job_title: "job-format",
       goal: "Format Test",
       spec: ".dnc/job-format/specs/job-format.md",
       status: "pending",
@@ -220,10 +220,10 @@ describe("dnc-get-job-relations tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncGetJobRelationsTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_id: string;
+      job_title: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_id: "job-format" });
+    const result = await handler({ job_title: "job-format" });
 
     expect(result.isError).toBeUndefined();
 
@@ -234,7 +234,7 @@ describe("dnc-get-job-relations tool", () => {
 
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[1]) as JobRelation;
-      expect(parsed.id).toBe("job-format");
+      expect(parsed.job_title).toBe("job-format");
       expect(parsed.goal).toBe("Format Test");
     }
   });

@@ -46,7 +46,7 @@ describe("DnC Job Detail Route", () => {
       await fs.mkdir(jobDir, { recursive: true });
 
       const job: DncJob = {
-        id: "job-test-123",
+        job_title: "job-test-123",
         goal: "Test job",
         spec: ".dnc/job-test-123/spec.md",
         status: "pending",
@@ -91,7 +91,7 @@ describe("DnC Job Detail Route", () => {
         await fs.mkdir(jobDir, { recursive: true });
 
         const job: DncJob = {
-          id: `job-${status}`,
+          job_title: `job-${status}`,
           goal: `Job with ${status} status`,
           spec: `.dnc/job-${status}/spec.md`,
           status,

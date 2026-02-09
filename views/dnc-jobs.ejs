@@ -172,12 +172,12 @@
         <p style="margin-top: 8px;">/dnc-new 명령으로 새로운 job을 생성하세요.</p>
       </div>
       <% } else { %>
-        <div class="job-list">
+        <div class="job-list" data-testid="job-list">
           <% jobs.forEach(job=> { %>
             <div class="job-item" data-testid="job-item">
               <div class="job-header">
                 <div class="job-id">
-                  <%= job.id %>
+                  <%= job.job_title %>
                 </div>
                 <div class="job-status status-<%= job.status %>" data-testid="job-status">
                   <%= job.status %>
@@ -186,7 +186,7 @@
               <div class="job-goal">
                 <%= job.goal %>
               </div>
-              <a href="/dnc/jobs/<%= job.id %>" class="job-link">
+              <a href="/dnc/jobs/<%= job.job_title %>" class="job-link">
                 상세 보기 →
               </a>
             </div>
