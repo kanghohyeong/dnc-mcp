@@ -3,7 +3,6 @@ import type { Server } from "http";
 import { openBrowser } from "../utils/browser-launcher.js";
 import { ConnectionManager } from "./connection-manager.js";
 import { ExpressAppConfigurator } from "./express-app-configurator.js";
-import { HistoryService } from "./history-service.js";
 import { PortFinder } from "./port-finder.js";
 import { RouteRegistrar } from "./route-registrar.js";
 import { DncJobService } from "./dnc-job-service.js";
@@ -43,12 +42,7 @@ export class UIWebServer {
     // 컴포넌트 초기화
     this.connectionManager = new ConnectionManager();
     this.configurator = new ExpressAppConfigurator();
-    this.routeRegistrar = new RouteRegistrar(
-      HistoryService.getInstance(),
-      this.connectionManager,
-      options?.dncJobService,
-      options?.dncJobDetailLoader
-    );
+    this.routeRegistrar = new RouteRegistrar(options?.dncJobService, options?.dncJobDetailLoader);
     this.portFinder = new PortFinder(3331, 100);
 
     // Express 앱 설정

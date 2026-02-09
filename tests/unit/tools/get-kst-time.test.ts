@@ -1,14 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { registerGetKstTimeTool } from "../../../src/tools/get-kst-time.js";
 import { createTestMcpServer, mockKstTime } from "../../helpers/test-utils.js";
-import { HistoryService, type HistoryEntry } from "../../../src/services/history-service.js";
 
 describe("get-kst-time tool", () => {
   beforeEach(() => {
     // 고정된 시간으로 모킹: 2026-02-07T03:00:00Z (UTC) = 2026-02-07 12:00:00 (KST)
     mockKstTime("2026-02-07T03:00:00Z");
-    // 히스토리 초기화
-    HistoryService.getInstance().clearHistory();
   });
 
   afterEach(() => {
@@ -137,77 +134,5 @@ describe("get-kst-time tool", () => {
 
     // 원래 Date 복원
     global.Date = OriginalDate;
-  });
-
-  describe("History Service Integration", () => {
-    it("should record tool call to history service", () => {
-      const mcpServer = createTestMcpServer();
-      const registerToolSpy = vi.spyOn(mcpServer, "registerTool") as unknown as {
-        mock: {
-          calls: Array<
-            [
-              string,
-              object,
-              (args: object) => {
-                content: Array<{ type: string; text: string }>;
-                isError?: boolean;
-              },
-            ]
-          >;
-        };
-      };
-      registerGetKstTimeTool(mcpServer);
-      const handler = registerToolSpy.mock.calls[0][2];
-
-      const historyService = HistoryService.getInstance();
-      const eventSpy = vi.fn<[HistoryEntry]>();
-      historyService.on("historyAdded", eventSpy);
-
-      const result = handler({});
-
-      // 히스토리 이벤트가 발생했는지 확인
-      expect(eventSpy).toHaveBeenCalledTimes(1);
-      const historyEntry = eventSpy.mock.calls[0][0];
-
-      expect(historyEntry.toolName).toBe("get_kst_time");
-      expect(historyEntry.request).toEqual({});
-      expect(historyEntry.response).toEqual(result);
-    });
-
-    it("should add history entry with correct metadata", () => {
-      const mcpServer = createTestMcpServer();
-      const registerToolSpy = vi.spyOn(mcpServer, "registerTool") as unknown as {
-        mock: {
-          calls: Array<
-            [
-              string,
-              object,
-              (args: object) => {
-                content: Array<{ type: string; text: string }>;
-                isError?: boolean;
-              },
-            ]
-          >;
-        };
-      };
-      registerGetKstTimeTool(mcpServer);
-      const handler = registerToolSpy.mock.calls[0][2];
-
-      handler({});
-
-      const historyService = HistoryService.getInstance();
-      const history = historyService.getHistory("get_kst_time");
-
-      expect(history).toHaveLength(1);
-      expect(history[0]).toMatchObject({
-        toolName: "get_kst_time",
-        request: {},
-      });
-      expect(history[0].id).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-      );
-      expect(typeof history[0].timestamp).toBe("number");
-      expect(typeof history[0].timestampKst).toBe("string");
-    });
   });
 });

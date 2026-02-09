@@ -1,6 +1,5 @@
 import type { Response } from "express";
 import type { Socket } from "net";
-import { HistoryService } from "./history-service.js";
 
 /**
  * SSE 연결 및 HTTP 소켓을 추적하고 정리하는 클래스
@@ -42,23 +41,9 @@ export class ConnectionManager {
     const connection = { response, listener };
     this.sseConnections.add(connection);
 
-    // historyAdded 이벤트 리스너 등록
-    const historyService = HistoryService.getInstance();
-    historyService.on("historyAdded", listener);
-
     response.once("close", () => {
       this.sseConnections.delete(connection);
-      historyService.off("historyAdded", listener);
     });
-  }
-
-  /**
-   * SSE 연결 리스너 생성 (사용되지 않음 - RouteRegistrar에서 직접 생성)
-   */
-  createSseListener(): (entry: unknown) => void {
-    return (_entry: unknown) => {
-      // 리스너 로직은 RouteRegistrar에서 구현
-    };
   }
 
   /**
@@ -71,7 +56,7 @@ export class ConnectionManager {
 
     const closePromises: Promise<void>[] = [];
 
-    this.sseConnections.forEach(({ response, listener }) => {
+    this.sseConnections.forEach(({ response }) => {
       const closePromise = new Promise<void>((resolve) => {
         const timeout = setTimeout(() => {
           resolve();
@@ -96,9 +81,6 @@ export class ConnectionManager {
       });
 
       closePromises.push(closePromise);
-
-      const historyService = HistoryService.getInstance();
-      historyService.off("historyAdded", listener);
     });
 
     this.sseConnections.clear();

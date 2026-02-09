@@ -6,8 +6,6 @@ import os from "os";
 import type { Express } from "express";
 import express from "express";
 import { RouteRegistrar } from "../../src/services/route-registrar.js";
-import { HistoryService } from "../../src/services/history-service.js";
-import { ConnectionManager } from "../../src/services/connection-manager.js";
 import type { DncJob } from "../../src/services/dnc-job-service.js";
 
 describe("DnC Job Detail Route", () => {
@@ -28,9 +26,7 @@ describe("DnC Job Detail Route", () => {
     app.set("view engine", "ejs");
     app.set("views", path.join(originalCwd, "views"));
 
-    const historyService = HistoryService.getInstance();
-    const connectionManager = new ConnectionManager(historyService);
-    const routeRegistrar = new RouteRegistrar(historyService, connectionManager);
+    const routeRegistrar = new RouteRegistrar();
     routeRegistrar.registerRoutes(app);
   });
 

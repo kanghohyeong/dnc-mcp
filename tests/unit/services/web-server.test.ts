@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { UIWebServer } from "../../../src/services/web-server.js";
-import { HistoryService } from "../../../src/services/history-service.js";
 
 // browser-launcher 모킹
 vi.mock("../../../src/utils/browser-launcher.js", () => ({
@@ -187,31 +186,6 @@ describe("HelloWorldWebServer", () => {
     // beforeEach(() => {
     //   // Reserved for future use
     // });
-
-    it("should track SSE connections when clients connect", async () => {
-      await server.start();
-
-      // SSE 엔드포인트에 대한 핸들러 테스트를 위해 private 메서드 호출 필요
-      // 실제로는 통합 테스트에서 HTTP 요청으로 테스트해야 함
-      // 여기서는 연결 추적 로직이 구현되었는지만 확인
-      expect(server).toBeDefined();
-    });
-
-    it("should remove EventEmitter listeners when closing SSE connections", async () => {
-      const historyService = HistoryService.getInstance();
-      await server.start();
-
-      // 초기 리스너 수
-      const initialListenerCount = historyService.listenerCount("historyAdded");
-
-      // 서버 종료 시 리스너가 정리되는지 확인
-      await server.stop();
-
-      // 리스너 수가 초기 상태 이하로 줄어들어야 함
-      expect(historyService.listenerCount("historyAdded")).toBeLessThanOrEqual(
-        initialListenerCount
-      );
-    });
 
     it("should close all SSE connections on stop()", async () => {
       await server.start();

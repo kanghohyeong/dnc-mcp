@@ -3,7 +3,6 @@ import type { Response } from "express";
 import type { Socket } from "net";
 import { EventEmitter } from "events";
 import { ConnectionManager } from "../../../src/services/connection-manager.js";
-import { HistoryService } from "../../../src/services/history-service.js";
 
 describe("ConnectionManager", () => {
   let connectionManager: ConnectionManager;
@@ -104,31 +103,7 @@ describe("ConnectionManager", () => {
       expect(response.end).toHaveBeenCalledTimes(1);
     });
 
-    it("7. EventEmitter 리스너 정리 확인", () => {
-      const historyService = HistoryService.getInstance();
-
-      // 초기 리스너 수 저장
-      const initialListenerCount = historyService.listenerCount("historyAdded");
-
-      const listener = vi.fn();
-      const response = new EventEmitter() as Response;
-      response.end = vi.fn();
-      response.write = vi.fn();
-
-      connectionManager.trackSseConnection(response, listener);
-
-      // 리스너가 추가되었는지 확인
-      const listenerCountAfterAdd = historyService.listenerCount("historyAdded");
-      expect(listenerCountAfterAdd).toBe(initialListenerCount + 1);
-
-      // 연결 종료 시 리스너 제거 확인
-      response.emit("close");
-
-      const listenerCountAfterClose = historyService.listenerCount("historyAdded");
-      expect(listenerCountAfterClose).toBe(initialListenerCount);
-    });
-
-    it("8. 연결 수 조회 메서드 정확성 확인", () => {
+    it("7. 연결 수 조회 메서드 정확성 확인", () => {
       const httpSocket1 = new EventEmitter() as Socket;
       const httpSocket2 = new EventEmitter() as Socket;
       httpSocket1.destroy = vi.fn();

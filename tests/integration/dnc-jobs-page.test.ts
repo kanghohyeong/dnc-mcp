@@ -1,15 +1,11 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import express, { Express } from "express";
 import { RouteRegistrar } from "../../src/services/route-registrar.js";
-import { HistoryService } from "../../src/services/history-service.js";
-import { ConnectionManager } from "../../src/services/connection-manager.js";
 import { ExpressAppConfigurator } from "../../src/services/express-app-configurator.js";
 
 describe("DnC Jobs Page Integration Tests", () => {
   let app: Express;
-  let historyService: HistoryService;
-  let connectionManager: ConnectionManager;
 
   beforeAll(() => {
     app = express();
@@ -18,18 +14,9 @@ describe("DnC Jobs Page Integration Tests", () => {
     const configurator = new ExpressAppConfigurator();
     configurator.configure(app);
 
-    // 서비스 초기화
-    historyService = HistoryService.getInstance();
-    connectionManager = new ConnectionManager();
-
     // 라우트 등록
-    const routeRegistrar = new RouteRegistrar(historyService, connectionManager);
+    const routeRegistrar = new RouteRegistrar();
     routeRegistrar.registerRoutes(app);
-  });
-
-  afterAll(async () => {
-    await connectionManager.closeAllSseConnections();
-    connectionManager.closeAllHttpSockets();
   });
 
   describe("GET /dnc/jobs", () => {
