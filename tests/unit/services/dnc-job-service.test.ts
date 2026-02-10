@@ -20,35 +20,35 @@ describe("DncJobService", () => {
     }
   });
 
-  describe("getAllRootJobs", () => {
-    it("should return all root jobs from .dnc directory", async () => {
-      // When: getAllRootJobs 호출
-      const jobs = await service.getAllRootJobs();
+  describe("getAllRootTasks", () => {
+    it("should return all root tasks from .dnc directory", async () => {
+      // When: getAllRootTasks 호출
+      const tasks = await service.getAllRootTasks();
 
-      // Then: 모든 root job이 반환됨
-      expect(jobs).toBeDefined();
-      expect(Array.isArray(jobs)).toBe(true);
-      // 실제 .dnc 디렉토리의 job 수는 테스트 환경에 따라 다름
-      expect(jobs.length).toBeGreaterThanOrEqual(0);
+      // Then: 모든 root task가 반환됨
+      expect(tasks).toBeDefined();
+      expect(Array.isArray(tasks)).toBe(true);
+      // 실제 .dnc 디렉토리의 task 수는 테스트 환경에 따라 다름
+      expect(tasks.length).toBeGreaterThanOrEqual(0);
     });
 
     it("should return empty array when .dnc directory does not exist", async () => {
       // Given: .dnc 디렉토리가 없는 임시 디렉토리에서 테스트
       const tempService = new DncJobService("/nonexistent/path");
 
-      // When: getAllRootJobs 호출
-      const jobs = await tempService.getAllRootJobs();
+      // When: getAllRootTasks 호출
+      const tasks = await tempService.getAllRootTasks();
 
       // Then: 빈 배열 반환
-      expect(jobs).toEqual([]);
+      expect(tasks).toEqual([]);
     });
 
-    it("should skip invalid job_relation.json files and return only valid ones", async () => {
+    it("should skip invalid task.json files and return only valid ones", async () => {
       // Given: 일부 파일이 invalid JSON을 포함
       // 실제 파일 시스템을 사용하는 대신 모킹
       const mockDirents = [
-        { name: "job-valid", isDirectory: () => true },
-        { name: "job-invalid", isDirectory: () => true },
+        { name: "task-valid", isDirectory: () => true },
+        { name: "task-invalid", isDirectory: () => true },
       ];
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
@@ -57,91 +57,93 @@ describe("DncJobService", () => {
       vi.spyOn(fs, "readFile")
         .mockResolvedValueOnce(
           JSON.stringify({
-            job_title: "job-valid",
-            goal: "Valid Job",
-            spec: ".dnc/job-valid/specs/job-valid.md",
+            id: "task-valid",
+            goal: "Valid Task",
+            acceptance: "Task completed",
             status: "pending",
-            divided_jobs: [],
+            tasks: [],
           })
         )
         .mockRejectedValueOnce(new Error("Invalid JSON"));
 
-      // When: getAllRootJobs 호출
-      const jobs = await service.getAllRootJobs();
+      // When: getAllRootTasks 호출
+      const tasks = await service.getAllRootTasks();
 
-      // Then: 유효한 job만 반환
-      expect(jobs.length).toBe(1);
-      expect(jobs[0].job_title).toBe("job-valid");
+      // Then: 유효한 task만 반환
+      expect(tasks.length).toBe(1);
+      expect(tasks[0].id).toBe("task-valid");
     });
   });
 
-  describe("getJobByTitle", () => {
-    it("should return job by title from root jobs", async () => {
-      // Given: 실제 .dnc 디렉토리에 있는 job을 사용
-      const allJobs = await service.getAllRootJobs();
-      if (allJobs.length === 0) {
-        // job이 없으면 테스트 스킵
+  describe("getTaskById", () => {
+    it("should return task by ID from root tasks", async () => {
+      // Given: 실제 .dnc 디렉토리에 있는 task를 사용
+      const allTasks = await service.getAllRootTasks();
+      if (allTasks.length === 0) {
+        // task가 없으면 테스트 스킵
         expect(true).toBe(true);
         return;
       }
 
-      const jobTitle = allJobs[0].job_title;
+      const taskId = allTasks[0].id;
 
-      // When: getJobByTitle 호출
-      const job = await service.getJobByTitle(jobTitle);
+      // When: getTaskById 호출
+      const task = await service.getTaskById(taskId);
 
-      // Then: 해당 job 반환
-      expect(job).not.toBeNull();
-      if (job) {
-        expect(job.job_title).toBe(jobTitle);
-        expect(job.goal).toBeDefined();
-        expect(job.status).toBeDefined();
+      // Then: 해당 task 반환
+      expect(task).not.toBeNull();
+      if (task) {
+        expect(task.id).toBe(taskId);
+        expect(task.goal).toBeDefined();
+        expect(task.status).toBeDefined();
+        expect(task.acceptance).toBeDefined();
       }
     });
 
-    it("should return job from nested divided_jobs", async () => {
-      // Given: divided_jobs를 가진 job을 모킹
-      const mockDirents = [{ name: "job-parent", isDirectory: () => true }];
+    it("should return task from nested tasks", async () => {
+      // Given: nested tasks를 가진 task를 모킹
+      const mockDirents = [{ name: "task-parent", isDirectory: () => true }];
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       vi.spyOn(fs, "readdir").mockResolvedValue(mockDirents as fs.Dirent[]);
 
       vi.spyOn(fs, "readFile").mockResolvedValueOnce(
         JSON.stringify({
-          job_title: "job-parent",
-          goal: "Parent Job",
-          spec: ".dnc/job-parent/specs/job-parent.md",
+          id: "task-parent",
+          goal: "Parent Task",
+          acceptance: "Parent completed",
           status: "in-progress",
-          divided_jobs: [
+          tasks: [
             {
-              job_title: "job-child",
-              goal: "Child Job",
-              spec: ".dnc/job-parent/specs/child.md",
+              id: "task-child",
+              goal: "Child Task",
+              acceptance: "Child completed",
               status: "pending",
-              divided_jobs: [],
+              tasks: [],
             },
           ],
         })
       );
 
-      // When: 자식 job title로 조회
-      const job = await service.getJobByTitle("job-child");
+      // When: 자식 task ID로 조회
+      const task = await service.getTaskById("task-child");
 
-      // Then: 자식 job 반환
-      expect(job).not.toBeNull();
-      expect(job?.job_title).toBe("job-child");
-      expect(job?.goal).toBe("Child Job");
+      // Then: 자식 task 반환
+      expect(task).not.toBeNull();
+      expect(task?.id).toBe("task-child");
+      expect(task?.goal).toBe("Child Task");
+      expect(task?.acceptance).toBe("Child completed");
     });
 
-    it("should return null when job does not exist", async () => {
-      // Given: 존재하지 않는 job title
-      const jobTitle = "nonexistent-job-xyz-123";
+    it("should return null when task does not exist", async () => {
+      // Given: 존재하지 않는 task ID
+      const taskId = "nonexistent-task-xyz-123";
 
-      // When: getJobByTitle 호출
-      const job = await service.getJobByTitle(jobTitle);
+      // When: getTaskById 호출
+      const task = await service.getTaskById(taskId);
 
       // Then: null 반환
-      expect(job).toBeNull();
+      expect(task).toBeNull();
     });
   });
 });

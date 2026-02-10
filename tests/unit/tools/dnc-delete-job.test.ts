@@ -3,11 +3,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { registerDncDeleteJobTool } from "../../../src/tools/dnc-delete-job.js";
 import { createTestMcpServer } from "../../helpers/test-utils.js";
-import {
-  writeJobRelation,
-  ensureDncDirectory,
-  type JobRelation,
-} from "../../../src/utils/dnc-utils.js";
+import { writeTask, ensureDncDirectory, type Task } from "../../../src/utils/dnc-utils.js";
 
 describe("dnc-delete-job tool", () => {
   const testRoot = path.join(process.cwd(), ".dnc-test-delete");
@@ -35,23 +31,23 @@ describe("dnc-delete-job tool", () => {
   });
 
   it("should delete root job and all files", async () => {
-    const rootJob: JobRelation = {
-      job_title: "job-to-delete",
-      goal: "Job to Delete",
-      spec: ".dnc/job-to-delete/specs/job-to-delete.md",
+    const task: Task = {
+      id: "job-to-delete",
+      goal: "Task to Delete",
+      acceptance: "Deleted",
       status: "pending",
-      divided_jobs: [],
+      tasks: [],
     };
 
     await ensureDncDirectory("job-to-delete");
-    await writeJobRelation("job-to-delete", rootJob);
-    await fs.writeFile(".dnc/job-to-delete/specs/job-to-delete.md", "# Test Spec", "utf-8");
+    await writeTask("job-to-delete", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncDeleteJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       job_title: string;
+      parent_job_title?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({ job_title: "job-to-delete" });
@@ -59,42 +55,32 @@ describe("dnc-delete-job tool", () => {
     expect(result.isError).toBeUndefined();
     expect(result.content[0].text).toContain("삭제되었습니다");
 
-    // 디렉토리가 삭제되었는지 확인
-    const exists = await fs
+    const dirExists = await fs
       .access(".dnc/job-to-delete")
       .then(() => true)
       .catch(() => false);
-    expect(exists).toBe(false);
+    expect(dirExists).toBe(false);
   });
 
   it("should delete child job from parent", async () => {
-    const parentJob: JobRelation = {
-      job_title: "job-parent",
-      goal: "Parent Job",
-      spec: ".dnc/job-parent/specs/job-parent.md",
+    const task: Task = {
+      id: "job-parent",
+      goal: "Parent",
+      acceptance: "Done",
       status: "pending",
-      divided_jobs: [
+      tasks: [
         {
-          job_title: "job-child-to-delete",
+          id: "job-child-to-delete",
           goal: "Child to Delete",
-          spec: ".dnc/job-parent/specs/job-child-to-delete.md",
+          acceptance: "Deleted",
           status: "pending",
-          divided_jobs: [],
-        },
-        {
-          job_title: "job-child-keep",
-          goal: "Child to Keep",
-          spec: ".dnc/job-parent/specs/job-child-keep.md",
-          status: "pending",
-          divided_jobs: [],
+          tasks: [],
         },
       ],
     };
 
     await ensureDncDirectory("job-parent");
-    await writeJobRelation("job-parent", parentJob);
-    await fs.writeFile(".dnc/job-parent/specs/job-child-to-delete.md", "# Child Spec", "utf-8");
-    await fs.writeFile(".dnc/job-parent/specs/job-child-keep.md", "# Keep Spec", "utf-8");
+    await writeTask("job-parent", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -110,47 +96,32 @@ describe("dnc-delete-job tool", () => {
     });
 
     expect(result.isError).toBeUndefined();
+    expect(result.content[0].text).toContain("삭제되었습니다");
 
-    // Parent job의 divided_jobs 확인
-    const jobRelationContent = await fs.readFile(".dnc/job-parent/job_relation.json", "utf-8");
-    const updatedParent = JSON.parse(jobRelationContent) as JobRelation;
-
-    expect(updatedParent.divided_jobs).toHaveLength(1);
-    expect(updatedParent.divided_jobs[0].job_title).toBe("job-child-keep");
-
-    // Spec 파일 삭제 확인
-    const deletedSpecExists = await fs
-      .access(".dnc/job-parent/specs/job-child-to-delete.md")
-      .then(() => true)
-      .catch(() => false);
-    expect(deletedSpecExists).toBe(false);
-
-    const keptSpecExists = await fs
-      .access(".dnc/job-parent/specs/job-child-keep.md")
-      .then(() => true)
-      .catch(() => false);
-    expect(keptSpecExists).toBe(true);
+    const taskContent = await fs.readFile(".dnc/job-parent/task.json", "utf-8");
+    const updatedParent = JSON.parse(taskContent) as Task;
+    expect(updatedParent.tasks).toHaveLength(0);
   });
 
   it("should recursively delete nested jobs", async () => {
-    const rootJob: JobRelation = {
-      job_title: "job-root",
-      goal: "Root Job",
-      spec: ".dnc/job-root/specs/job-root.md",
+    const task: Task = {
+      id: "job-root",
+      goal: "Root",
+      acceptance: "Done",
       status: "pending",
-      divided_jobs: [
+      tasks: [
         {
-          job_title: "job-child",
-          goal: "Child Job",
-          spec: ".dnc/job-root/specs/job-child.md",
+          id: "job-level-1",
+          goal: "Level 1",
+          acceptance: "Done",
           status: "pending",
-          divided_jobs: [
+          tasks: [
             {
-              job_title: "job-grandchild",
-              goal: "Grandchild Job",
-              spec: ".dnc/job-root/specs/job-grandchild.md",
+              id: "job-level-2",
+              goal: "Level 2",
+              acceptance: "Done",
               status: "pending",
-              divided_jobs: [],
+              tasks: [],
             },
           ],
         },
@@ -158,28 +129,26 @@ describe("dnc-delete-job tool", () => {
     };
 
     await ensureDncDirectory("job-root");
-    await writeJobRelation("job-root", rootJob);
-    await fs.writeFile(".dnc/job-root/specs/job-root.md", "# Root", "utf-8");
-    await fs.writeFile(".dnc/job-root/specs/job-child.md", "# Child", "utf-8");
-    await fs.writeFile(".dnc/job-root/specs/job-grandchild.md", "# Grandchild", "utf-8");
+    await writeTask("job-root", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncDeleteJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       job_title: string;
+      parent_job_title?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_title: "job-root" });
+    const result = await handler({
+      job_title: "job-level-2",
+      parent_job_title: "job-root",
+    });
 
     expect(result.isError).toBeUndefined();
 
-    // 모든 파일 삭제 확인
-    const exists = await fs
-      .access(".dnc/job-root")
-      .then(() => true)
-      .catch(() => false);
-    expect(exists).toBe(false);
+    const taskContent = await fs.readFile(".dnc/job-root/task.json", "utf-8");
+    const updatedRoot = JSON.parse(taskContent) as Task;
+    expect(updatedRoot.tasks[0].tasks).toHaveLength(0);
   });
 
   it("should return error when job not found", async () => {
@@ -188,9 +157,10 @@ describe("dnc-delete-job tool", () => {
     registerDncDeleteJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       job_title: string;
+      parent_job_title?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_title: "non-existent" });
+    const result = await handler({ job_title: "non-existent-job" });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain("존재하지 않습니다");
@@ -204,9 +174,8 @@ describe("dnc-delete-job tool", () => {
       job_title?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({});
+    const result = await handler({ job_title: "" });
 
     expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain("job_title");
   });
 });

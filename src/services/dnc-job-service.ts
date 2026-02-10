@@ -1,18 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
-
-export interface DncJob {
-  job_title: string;
-  goal: string;
-  spec: string;
-  status: "pending" | "in-progress" | "done";
-  divided_jobs: DncJob[];
-}
-
-export interface DncJobWithDetails extends Omit<DncJob, "divided_jobs"> {
-  specContent: string;
-  divided_jobs: DncJobWithDetails[];
-}
+import type { Task } from "../utils/dnc-utils.js";
 
 export class DncJobService {
   private dncDir: string;
@@ -22,24 +10,24 @@ export class DncJobService {
   }
 
   /**
-   * .dnc 디렉토리에서 모든 root job을 읽어옵니다.
+   * .dnc 디렉토리에서 모든 root task를 읽어옵니다.
    */
-  async getAllRootJobs(): Promise<DncJob[]> {
+  async getAllRootTasks(): Promise<Task[]> {
     try {
       // .dnc 디렉토리 확인
       const entries = await fs.readdir(this.dncDir, { withFileTypes: true });
 
-      const jobs: DncJob[] = [];
+      const tasks: Task[] = [];
 
-      // 각 디렉토리에서 job_relation.json 읽기
+      // 각 디렉토리에서 task.json 읽기
       for (const entry of entries) {
         if (entry.isDirectory()) {
-          const jobRelationPath = path.join(this.dncDir, entry.name, "job_relation.json");
+          const taskPath = path.join(this.dncDir, entry.name, "task.json");
 
           try {
-            const content = await fs.readFile(jobRelationPath, "utf-8");
-            const job = JSON.parse(content) as DncJob;
-            jobs.push(job);
+            const content = await fs.readFile(taskPath, "utf-8");
+            const task = JSON.parse(content) as Task;
+            tasks.push(task);
           } catch {
             // 파일이 없거나 invalid JSON이면 스킵
             continue;
@@ -47,7 +35,7 @@ export class DncJobService {
         }
       }
 
-      return jobs;
+      return tasks;
     } catch {
       // .dnc 디렉토리가 없으면 빈 배열 반환
       return [];
@@ -55,19 +43,19 @@ export class DncJobService {
   }
 
   /**
-   * 특정 ID의 job을 찾아 반환합니다.
+   * 특정 ID의 task를 찾아 반환합니다.
    */
-  async getJobByTitle(jobTitle: string): Promise<DncJob | null> {
-    const allJobs = await this.getAllRootJobs();
+  async getTaskById(taskId: string): Promise<Task | null> {
+    const allTasks = await this.getAllRootTasks();
 
-    // root job에서 찾기
-    for (const job of allJobs) {
-      if (job.job_title === jobTitle) {
-        return job;
+    // root task에서 찾기
+    for (const task of allTasks) {
+      if (task.id === taskId) {
+        return task;
       }
 
       // 하위 작업에서 재귀적으로 찾기
-      const found = this.findJobInTree(job, jobTitle);
+      const found = this.findTaskInTree(task, taskId);
       if (found) {
         return found;
       }
@@ -77,15 +65,15 @@ export class DncJobService {
   }
 
   /**
-   * job 트리에서 특정 ID의 job을 재귀적으로 찾습니다.
+   * task 트리에서 특정 ID의 task를 재귀적으로 찾습니다.
    */
-  private findJobInTree(job: DncJob, targetTitle: string): DncJob | null {
-    if (job.job_title === targetTitle) {
-      return job;
+  private findTaskInTree(task: Task, targetId: string): Task | null {
+    if (task.id === targetId) {
+      return task;
     }
 
-    for (const childJob of job.divided_jobs) {
-      const found = this.findJobInTree(childJob, targetTitle);
+    for (const childTask of task.tasks) {
+      const found = this.findTaskInTree(childTask, targetId);
       if (found) {
         return found;
       }

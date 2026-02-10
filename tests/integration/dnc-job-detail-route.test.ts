@@ -6,7 +6,7 @@ import os from "os";
 import type { Express } from "express";
 import express from "express";
 import { RouteRegistrar } from "../../src/services/route-registrar.js";
-import type { DncJob } from "../../src/services/dnc-job-service.js";
+import type { Task } from "../../src/utils/dnc-utils.js";
 
 describe("DnC Job Detail Route", () => {
   let app: Express;
@@ -40,21 +40,20 @@ describe("DnC Job Detail Route", () => {
 
   describe("GET /dnc/jobs/:jobId", () => {
     it("should return 200 and render job detail page for existing job", async () => {
-      // Arrange: job 생성
+      // Arrange: task 생성
       const dncDir = path.join(tempDir, ".dnc");
       const jobDir = path.join(dncDir, "job-test-123");
       await fs.mkdir(jobDir, { recursive: true });
 
-      const job: DncJob = {
-        job_title: "job-test-123",
+      const task: Task = {
+        id: "job-test-123",
         goal: "Test job",
-        spec: ".dnc/job-test-123/spec.md",
+        acceptance: "All tests pass",
         status: "pending",
-        divided_jobs: [],
+        tasks: [],
       };
 
-      await fs.writeFile(path.join(jobDir, "job_relation.json"), JSON.stringify(job));
-      await fs.writeFile(path.join(jobDir, "spec.md"), "# Test Spec\n\nThis is a test spec.");
+      await fs.writeFile(path.join(jobDir, "task.json"), JSON.stringify(task));
 
       // Act
       const response = await request(app).get("/dnc/jobs/job-test-123");
@@ -77,7 +76,7 @@ describe("DnC Job Detail Route", () => {
     });
 
     it("should display different status styles", async () => {
-      // Arrange: pending, in-progress, done 상태의 job 생성
+      // Arrange: pending, in-progress, done 상태의 task 생성
       const dncDir = path.join(tempDir, ".dnc");
 
       const statuses: Array<"pending" | "in-progress" | "done"> = [
@@ -90,16 +89,15 @@ describe("DnC Job Detail Route", () => {
         const jobDir = path.join(dncDir, `job-${status}`);
         await fs.mkdir(jobDir, { recursive: true });
 
-        const job: DncJob = {
-          job_title: `job-${status}`,
+        const task: Task = {
+          id: `job-${status}`,
           goal: `Job with ${status} status`,
-          spec: `.dnc/job-${status}/spec.md`,
+          acceptance: `${status} acceptance criteria`,
           status,
-          divided_jobs: [],
+          tasks: [],
         };
 
-        await fs.writeFile(path.join(jobDir, "job_relation.json"), JSON.stringify(job));
-        await fs.writeFile(path.join(jobDir, "spec.md"), `# Spec for ${status}`);
+        await fs.writeFile(path.join(jobDir, "task.json"), JSON.stringify(task));
 
         // Act
         const response = await request(app).get(`/dnc/jobs/job-${status}`);

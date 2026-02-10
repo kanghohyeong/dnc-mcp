@@ -2,7 +2,6 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { vi } from "vitest";
 import { UIWebServer } from "../../src/services/web-server.js";
 import { DncJobService } from "../../src/services/dnc-job-service.js";
-import { DncJobDetailLoader } from "../../src/services/dnc-job-detail-loader.js";
 
 /**
  * MCP 서버 테스트 인스턴스 생성
@@ -16,7 +15,6 @@ export function createTestMcpServer() {
 
 export interface TestWebServerOptions {
   dncJobService?: DncJobService;
-  dncJobDetailLoader?: DncJobDetailLoader;
 }
 
 /**
@@ -26,7 +24,6 @@ export async function createTestWebServer(options?: TestWebServerOptions) {
   const server = new UIWebServer({
     autoOpenBrowser: false,
     dncJobService: options?.dncJobService,
-    dncJobDetailLoader: options?.dncJobDetailLoader,
   });
   await server.start();
   return server;

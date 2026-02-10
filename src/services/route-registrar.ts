@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from "express";
-import { DncJobService, type DncJobWithDetails } from "./dnc-job-service.js";
-import { DncJobDetailLoader } from "./dnc-job-detail-loader.js";
+import { DncJobService } from "./dnc-job-service.js";
+import type { Task } from "../utils/dnc-utils.js";
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 
@@ -9,11 +9,9 @@ import sanitizeHtml from "sanitize-html";
  */
 export class RouteRegistrar {
   private dncJobService: DncJobService;
-  private dncJobDetailLoader: DncJobDetailLoader;
 
-  constructor(dncJobService?: DncJobService, dncJobDetailLoader?: DncJobDetailLoader) {
+  constructor(dncJobService?: DncJobService) {
     this.dncJobService = dncJobService || new DncJobService();
-    this.dncJobDetailLoader = dncJobDetailLoader || new DncJobDetailLoader();
   }
 
   /**
@@ -52,7 +50,7 @@ export class RouteRegistrar {
    */
   private registerDncJobsRoute(app: Express): void {
     app.get("/dnc/jobs", async (_req: Request, res: Response) => {
-      const jobs = await this.dncJobService.getAllRootJobs();
+      const jobs = await this.dncJobService.getAllRootTasks();
       res.render("dnc-jobs", { jobs });
     });
   }
@@ -76,52 +74,51 @@ export class RouteRegistrar {
   }
 
   /**
-   * Job 객체에 재귀적으로 specContentHtml 추가
+   * Task 객체에 재귀적으로 acceptanceHtml 추가
    */
-  private async addHtmlToJob(
-    job: DncJobWithDetails
-  ): Promise<DncJobWithDetails & { specContentHtml: string }> {
-    const specContentHtml = await this.convertMarkdownToHtml(job.specContent);
+  private async addHtmlToTask(task: Task): Promise<Task & { acceptanceHtml: string }> {
+    const acceptanceHtml = await this.convertMarkdownToHtml(task.acceptance);
 
-    const dividedJobsWithHtml = await Promise.all(
-      job.divided_jobs.map((childJob) => this.addHtmlToJob(childJob))
+    const tasksWithHtml = await Promise.all(
+      task.tasks.map((childTask) => this.addHtmlToTask(childTask))
     );
 
     return {
-      ...job,
-      specContentHtml,
-      divided_jobs: dividedJobsWithHtml,
+      ...task,
+      acceptanceHtml,
+      tasks: tasksWithHtml,
     };
   }
 
   /**
-   * GET /dnc/jobs/:jobId - DnC job 상세 페이지
+   * GET /dnc/jobs/:jobTitle - DnC job 상세 페이지
    */
   private registerDncJobDetailRoute(app: Express): void {
     app.get("/dnc/jobs/:jobTitle", async (req: Request, res: Response) => {
       const jobTitle = req.params.jobTitle as string;
 
       try {
-        const job = await this.dncJobDetailLoader.loadJobByTitleWithDetails(jobTitle);
+        const task = await this.dncJobService.getTaskById(jobTitle);
 
-        if (!job) {
+        if (!task) {
           res.status(404).render("error", {
-            message: "Job not found",
+            message: "Task not found",
             error: { status: 404, stack: "" },
           });
           return;
         }
 
-        // 재귀적으로 마크다운을 HTML로 변환
-        const jobWithHtml = await this.addHtmlToJob(job);
+        // 재귀적으로 acceptance를 HTML로 변환
+        const taskWithHtml = await this.addHtmlToTask(task);
 
         res.render("dnc-job-detail", {
-          job: jobWithHtml,
-          specContentHtml: jobWithHtml.specContentHtml,
+          job: taskWithHtml,
+          acceptanceHtml: taskWithHtml.acceptanceHtml,
+          specContentHtml: "",
         });
       } catch (error) {
         res.status(500).render("error", {
-          message: "Failed to load job details",
+          message: "Failed to load task details",
           error: {
             status: 500,
             stack: error instanceof Error ? error.stack : "",

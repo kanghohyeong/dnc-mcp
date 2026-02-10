@@ -1,72 +1,72 @@
 import * as fs from "fs/promises";
 
-export type JobStatus = "pending" | "in-progress" | "done";
+export type TaskStatus = "pending" | "in-progress" | "done";
 
-export interface JobRelation {
-  job_title: string;
+export interface Task {
+  id: string;
   goal: string;
-  spec: string;
-  status: JobStatus;
-  divided_jobs: JobRelation[];
+  acceptance: string;
+  status: TaskStatus;
+  tasks: Task[];
 }
 
 /**
- * job 상태값이 유효한지 검증합니다.
+ * task 상태값이 유효한지 검증합니다.
  * @param status - 검증할 상태값
  * @returns 유효하면 true
  */
-export function validateJobStatus(status: string): status is JobStatus {
+export function validateTaskStatus(status: string): status is TaskStatus {
   return status === "pending" || status === "in-progress" || status === "done";
 }
 
 /**
- * job_title 형식을 검증합니다.
+ * task ID 형식을 검증합니다.
  * - 영문만 허용 (a-z, 0-9, 하이픈)
  * - 하이픈 기준 10단어 이하
  * - kebab-case 형식
  * - 1-100자
- * @param jobTitle - 검증할 job title
+ * @param taskId - 검증할 task ID
  * @returns 검증 결과 및 에러 메시지
  */
-export function validateJobTitle(jobTitle: string): {
+export function validateTaskId(taskId: string): {
   isValid: boolean;
   error?: string;
 } {
   // 1. Empty check
-  if (!jobTitle || jobTitle.trim() === "") {
-    return { isValid: false, error: "job_title cannot be empty" };
+  if (!taskId || taskId.trim() === "") {
+    return { isValid: false, error: "task ID cannot be empty" };
   }
 
   // 2. Character validation (only a-z, 0-9, hyphens)
-  if (!/^[a-z0-9-]+$/.test(jobTitle)) {
+  if (!/^[a-z0-9-]+$/.test(taskId)) {
     return {
       isValid: false,
-      error: "job_title must contain only lowercase letters, numbers, and hyphens",
+      error: "task ID must contain only lowercase letters, numbers, and hyphens",
     };
   }
 
   // 3. Length validation
-  if (jobTitle.length < 1 || jobTitle.length > 100) {
+  if (taskId.length < 1 || taskId.length > 100) {
     return {
       isValid: false,
-      error: "job_title must be between 1 and 100 characters",
+      error: "task ID must be between 1 and 100 characters",
     };
   }
 
   // 4. Word count validation (split by hyphens)
-  const words = jobTitle.split("-").filter((w) => w.length > 0);
+  const words = taskId.split("-").filter((w) => w.length > 0);
   if (words.length > 10) {
     return {
       isValid: false,
-      error: "job_title must not exceed 10 words (English only)",
+      error: "task ID must not exceed 10 words (English only)",
     };
   }
 
   // 5. Check for double hyphens or leading/trailing hyphens
-  if (jobTitle.startsWith("-") || jobTitle.endsWith("-") || jobTitle.includes("--")) {
+  if (taskId.startsWith("-") || taskId.endsWith("-") || taskId.includes("--")) {
     return {
       isValid: false,
-      error: "job_title cannot start/end with hyphen or contain consecutive hyphens",
+      error: "task ID cannot start/end with hyphen or contain consecutive hyphens",
     };
   }
 
@@ -74,104 +74,52 @@ export function validateJobTitle(jobTitle: string): {
 }
 
 /**
- * job relation 파일 경로를 반환합니다.
- * @param jobTitle - job title
- * @returns .dnc/{jobTitle}/job_relation.json 경로
+ * task 파일 경로를 반환합니다.
+ * @param taskId - task ID
+ * @returns .dnc/{taskId}/task.json 경로
  */
-export function getJobPath(jobTitle: string): string {
-  return `.dnc/${jobTitle}/job_relation.json`;
-}
-
-/**
- * spec 파일 경로를 반환합니다.
- * @param rootJobTitle - root job title
- * @param jobTitle - job title
- * @returns .dnc/{rootJobTitle}/specs/{jobTitle}.md 경로
- */
-export function getSpecPath(rootJobTitle: string, jobTitle: string): string {
-  return `.dnc/${rootJobTitle}/specs/${jobTitle}.md`;
+export function getTaskPath(taskId: string): string {
+  return `.dnc/${taskId}/task.json`;
 }
 
 /**
  * .dnc 디렉토리 구조를 생성합니다.
- * @param jobTitle - job title
+ * @param taskId - task ID
  */
-export async function ensureDncDirectory(jobTitle: string): Promise<void> {
+export async function ensureDncDirectory(taskId: string): Promise<void> {
   await fs.mkdir(".dnc", { recursive: true });
-  await fs.mkdir(`.dnc/${jobTitle}`, { recursive: true });
-  await fs.mkdir(`.dnc/${jobTitle}/specs`, { recursive: true });
+  await fs.mkdir(`.dnc/${taskId}`, { recursive: true });
 }
 
 /**
- * job relation을 파일에 씁니다.
- * @param jobTitle - job title
- * @param jobRelation - job relation 데이터
+ * task를 파일에 씁니다.
+ * @param taskId - task ID
+ * @param task - task 데이터
  */
-export async function writeJobRelation(jobTitle: string, jobRelation: JobRelation): Promise<void> {
-  const jobPath = getJobPath(jobTitle);
-  await fs.writeFile(jobPath, JSON.stringify(jobRelation, null, 2), "utf-8");
+export async function writeTask(taskId: string, task: Task): Promise<void> {
+  const taskPath = getTaskPath(taskId);
+  await fs.writeFile(taskPath, JSON.stringify(task, null, 2), "utf-8");
 }
 
 /**
- * job relation을 파일에서 읽습니다.
- * @param jobTitle - job title
- * @returns job relation 데이터
+ * task를 파일에서 읽습니다.
+ * @param taskId - task ID
+ * @returns task 데이터
  */
-export async function readJobRelation(jobTitle: string): Promise<JobRelation> {
-  const jobPath = getJobPath(jobTitle);
-  const content = await fs.readFile(jobPath, "utf-8");
-  return JSON.parse(content) as JobRelation;
+export async function readTask(taskId: string): Promise<Task> {
+  const taskPath = getTaskPath(taskId);
+  const content = await fs.readFile(taskPath, "utf-8");
+  return JSON.parse(content) as Task;
 }
 
 /**
- * spec 마크다운 파일을 생성합니다.
- * @param rootJobTitle - root job title
- * @param jobTitle - job title
- * @param goal - 목표
- * @param requirements - 요구사항 (선택)
- * @param constraints - 제약조건 (선택)
- * @param acceptanceCriteria - 완료 기준 (선택)
- */
-export async function writeSpecFile(
-  rootJobTitle: string,
-  jobTitle: string,
-  goal: string,
-  requirements?: string,
-  constraints?: string,
-  acceptanceCriteria?: string
-): Promise<void> {
-  const specPath = getSpecPath(rootJobTitle, jobTitle);
-
-  const content = `# ${goal}
-
-## 목표
-
-${goal}
-
-## 요구사항
-
-${requirements || "없음"}
-
-## 제약조건
-
-${constraints || "없음"}
-
-## 완료 기준
-
-${acceptanceCriteria || "없음"}
-`;
-
-  await fs.writeFile(specPath, content, "utf-8");
-}
-
-/**
- * job이 존재하는지 확인합니다.
- * @param jobTitle - job title
+ * task가 존재하는지 확인합니다.
+ * @param taskId - task ID
  * @returns 존재하면 true
  */
-export async function jobExists(jobTitle: string): Promise<boolean> {
+export async function taskExists(taskId: string): Promise<boolean> {
   try {
-    await fs.access(getJobPath(jobTitle));
+    await fs.access(getTaskPath(taskId));
     return true;
   } catch {
     return false;
@@ -179,21 +127,18 @@ export async function jobExists(jobTitle: string): Promise<boolean> {
 }
 
 /**
- * job을 재귀적으로 찾습니다.
- * @param jobRelation - 탐색할 job relation
- * @param targetJobTitle - 찾을 job title
- * @returns 찾은 job relation 또는 null
+ * task를 재귀적으로 찾습니다.
+ * @param task - 탐색할 task
+ * @param targetTaskId - 찾을 task ID
+ * @returns 찾은 task 또는 null
  */
-export function findJobInTree(
-  jobRelation: JobRelation,
-  targetJobTitle: string
-): JobRelation | null {
-  if (jobRelation.job_title === targetJobTitle) {
-    return jobRelation;
+export function findTaskInTree(task: Task, targetTaskId: string): Task | null {
+  if (task.id === targetTaskId) {
+    return task;
   }
 
-  for (const child of jobRelation.divided_jobs) {
-    const found = findJobInTree(child, targetJobTitle);
+  for (const child of task.tasks) {
+    const found = findTaskInTree(child, targetTaskId);
     if (found) {
       return found;
     }
@@ -203,29 +148,32 @@ export function findJobInTree(
 }
 
 /**
- * job을 재귀적으로 업데이트합니다.
- * @param jobRelation - 탐색할 job relation
- * @param targetJobTitle - 업데이트할 job title
+ * task를 재귀적으로 업데이트합니다.
+ * @param task - 탐색할 task
+ * @param targetTaskId - 업데이트할 task ID
  * @param updates - 업데이트할 필드
  * @returns 업데이트 성공 여부
  */
-export function updateJobInTree(
-  jobRelation: JobRelation,
-  targetJobTitle: string,
-  updates: { goal?: string; status?: JobStatus }
+export function updateTaskInTree(
+  task: Task,
+  targetTaskId: string,
+  updates: { goal?: string; status?: TaskStatus; acceptance?: string }
 ): boolean {
-  if (jobRelation.job_title === targetJobTitle) {
+  if (task.id === targetTaskId) {
     if (updates.goal !== undefined) {
-      jobRelation.goal = updates.goal;
+      task.goal = updates.goal;
     }
     if (updates.status !== undefined) {
-      jobRelation.status = updates.status;
+      task.status = updates.status;
+    }
+    if (updates.acceptance !== undefined) {
+      task.acceptance = updates.acceptance;
     }
     return true;
   }
 
-  for (const child of jobRelation.divided_jobs) {
-    if (updateJobInTree(child, targetJobTitle, updates)) {
+  for (const child of task.tasks) {
+    if (updateTaskInTree(child, targetTaskId, updates)) {
       return true;
     }
   }
@@ -234,49 +182,32 @@ export function updateJobInTree(
 }
 
 /**
- * job을 재귀적으로 삭제합니다.
- * @param jobRelation - 탐색할 job relation
- * @param targetJobTitle - 삭제할 job title
- * @returns 업데이트된 job relation
+ * task를 재귀적으로 삭제합니다.
+ * Root task는 삭제할 수 없습니다 (전체 디렉토리 삭제로만 처리).
+ * @param task - 탐색할 task
+ * @param targetTaskId - 삭제할 task ID
+ * @returns 삭제 성공 여부
  */
-export function deleteJobInTree(jobRelation: JobRelation, targetJobTitle: string): JobRelation {
-  jobRelation.divided_jobs = jobRelation.divided_jobs.filter(
-    (child) => child.job_title !== targetJobTitle
-  );
-
-  for (const child of jobRelation.divided_jobs) {
-    deleteJobInTree(child, targetJobTitle);
+export function deleteTaskInTree(task: Task, targetTaskId: string): boolean {
+  // Root task는 삭제 불가
+  if (task.id === targetTaskId) {
+    return false;
   }
 
-  return jobRelation;
-}
+  // 직계 자식에서 삭제
+  const initialLength = task.tasks.length;
+  task.tasks = task.tasks.filter((child) => child.id !== targetTaskId);
 
-/**
- * spec 파일을 삭제합니다.
- * @param rootJobTitle - root job title
- * @param jobTitle - job title
- */
-export async function deleteSpecFile(rootJobTitle: string, jobTitle: string): Promise<void> {
-  const specPath = getSpecPath(rootJobTitle, jobTitle);
-  try {
-    await fs.unlink(specPath);
-  } catch {
-    // 파일이 없어도 무시
+  if (task.tasks.length < initialLength) {
+    return true;
   }
-}
 
-/**
- * job의 모든 spec 파일을 재귀적으로 삭제합니다.
- * @param rootJobTitle - root job title
- * @param jobRelation - 삭제할 job relation
- */
-export async function deleteAllSpecFiles(
-  rootJobTitle: string,
-  jobRelation: JobRelation
-): Promise<void> {
-  await deleteSpecFile(rootJobTitle, jobRelation.job_title);
-
-  for (const child of jobRelation.divided_jobs) {
-    await deleteAllSpecFiles(rootJobTitle, child);
+  // 재귀적으로 하위 task 탐색
+  for (const child of task.tasks) {
+    if (deleteTaskInTree(child, targetTaskId)) {
+      return true;
+    }
   }
+
+  return false;
 }

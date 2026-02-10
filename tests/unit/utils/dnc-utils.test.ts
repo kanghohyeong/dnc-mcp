@@ -2,14 +2,17 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "fs/promises";
 import * as path from "path";
 import {
-  readJobRelation,
-  writeJobRelation,
+  readTask,
+  writeTask,
   ensureDncDirectory,
-  getJobPath,
-  getSpecPath,
-  validateJobStatus,
-  validateJobTitle,
-  type JobRelation,
+  getTaskPath,
+  validateTaskStatus,
+  validateTaskId,
+  taskExists,
+  findTaskInTree,
+  updateTaskInTree,
+  deleteTaskInTree,
+  type Task,
 } from "../../../src/utils/dnc-utils.js";
 
 describe("dnc-utils", () => {
@@ -29,187 +32,389 @@ describe("dnc-utils", () => {
     vi.restoreAllMocks();
   });
 
-  describe("validateJobStatus", () => {
+  describe("validateTaskStatus", () => {
     it("should return true for valid statuses", () => {
-      expect(validateJobStatus("pending")).toBe(true);
-      expect(validateJobStatus("in-progress")).toBe(true);
-      expect(validateJobStatus("done")).toBe(true);
+      expect(validateTaskStatus("pending")).toBe(true);
+      expect(validateTaskStatus("in-progress")).toBe(true);
+      expect(validateTaskStatus("done")).toBe(true);
     });
 
     it("should return false for invalid statuses", () => {
-      expect(validateJobStatus("invalid")).toBe(false);
-      expect(validateJobStatus("")).toBe(false);
-      expect(validateJobStatus("PENDING")).toBe(false);
+      expect(validateTaskStatus("invalid")).toBe(false);
+      expect(validateTaskStatus("")).toBe(false);
+      expect(validateTaskStatus("PENDING")).toBe(false);
     });
   });
 
-  describe("validateJobTitle", () => {
-    it("should accept valid job title with 3 words", () => {
-      const result = validateJobTitle("implement-user-auth");
+  describe("validateTaskId", () => {
+    it("should accept valid task ID with 3 words", () => {
+      const result = validateTaskId("implement-user-auth");
       expect(result.isValid).toBe(true);
       expect(result.error).toBeUndefined();
     });
 
-    it("should accept valid job title with numbers", () => {
-      const result = validateJobTitle("fix-bug-123");
+    it("should accept valid task ID with numbers", () => {
+      const result = validateTaskId("fix-bug-123");
       expect(result.isValid).toBe(true);
       expect(result.error).toBeUndefined();
     });
 
-    it("should accept valid job title with exactly 10 words", () => {
-      const result = validateJobTitle("one-two-three-four-five-six-seven-eight-nine-ten");
+    it("should accept valid task ID with exactly 10 words", () => {
+      const result = validateTaskId("one-two-three-four-five-six-seven-eight-nine-ten");
       expect(result.isValid).toBe(true);
       expect(result.error).toBeUndefined();
     });
 
-    it("should reject job title with more than 10 words", () => {
-      const result = validateJobTitle("one-two-three-four-five-six-seven-eight-nine-ten-eleven");
+    it("should reject task ID with more than 10 words", () => {
+      const result = validateTaskId("one-two-three-four-five-six-seven-eight-nine-ten-eleven");
       expect(result.isValid).toBe(false);
       expect(result.error).toContain("10 words");
     });
 
-    it("should reject job title with uppercase letters", () => {
-      const result = validateJobTitle("Implement-Auth");
+    it("should reject task ID with uppercase letters", () => {
+      const result = validateTaskId("Implement-Auth");
       expect(result.isValid).toBe(false);
       expect(result.error).toContain("lowercase");
     });
 
-    it("should reject job title with underscores", () => {
-      const result = validateJobTitle("implement_auth");
+    it("should reject task ID with underscores", () => {
+      const result = validateTaskId("implement_auth");
       expect(result.isValid).toBe(false);
       expect(result.error).toContain("lowercase letters, numbers, and hyphens");
     });
 
-    it("should reject job title with spaces", () => {
-      const result = validateJobTitle("implement auth");
+    it("should reject task ID with spaces", () => {
+      const result = validateTaskId("implement auth");
       expect(result.isValid).toBe(false);
       expect(result.error).toContain("lowercase letters, numbers, and hyphens");
     });
 
-    it("should reject empty job title", () => {
-      const result = validateJobTitle("");
+    it("should reject empty task ID", () => {
+      const result = validateTaskId("");
       expect(result.isValid).toBe(false);
       expect(result.error).toContain("cannot be empty");
     });
 
-    it("should reject job title with leading hyphen", () => {
-      const result = validateJobTitle("-implement");
+    it("should reject task ID with leading hyphen", () => {
+      const result = validateTaskId("-implement");
       expect(result.isValid).toBe(false);
       expect(result.error).toContain("cannot start/end with hyphen");
     });
 
-    it("should reject job title with trailing hyphen", () => {
-      const result = validateJobTitle("implement-");
+    it("should reject task ID with trailing hyphen", () => {
+      const result = validateTaskId("implement-");
       expect(result.isValid).toBe(false);
       expect(result.error).toContain("cannot start/end with hyphen");
     });
 
-    it("should reject job title with consecutive hyphens", () => {
-      const result = validateJobTitle("implement--auth");
+    it("should reject task ID with consecutive hyphens", () => {
+      const result = validateTaskId("implement--auth");
       expect(result.isValid).toBe(false);
       expect(result.error).toContain("consecutive hyphens");
     });
   });
 
-  describe("getJobPath", () => {
-    it("should return correct job relation path", () => {
-      const jobTitle = "test-job";
-      const jobPath = getJobPath(jobTitle);
-      expect(jobPath).toBe(".dnc/test-job/job_relation.json");
-    });
-  });
-
-  describe("getSpecPath", () => {
-    it("should return correct spec file path", () => {
-      const rootJobTitle = "test-job";
-      const jobTitle = "test-child-job";
-      const specPath = getSpecPath(rootJobTitle, jobTitle);
-      expect(specPath).toBe(".dnc/test-job/specs/test-child-job.md");
+  describe("getTaskPath", () => {
+    it("should return correct task path", () => {
+      const taskId = "test-task";
+      const taskPath = getTaskPath(taskId);
+      expect(taskPath).toBe(".dnc/test-task/task.json");
     });
   });
 
   describe("ensureDncDirectory", () => {
-    it("should create .dnc directory structure", async () => {
-      const jobTitle = "test-job";
-      await ensureDncDirectory(jobTitle);
+    it("should create .dnc directory structure without specs", async () => {
+      const taskId = "test-task";
+      await ensureDncDirectory(taskId);
 
       const dncExists = await fs
         .access(".dnc")
         .then(() => true)
         .catch(() => false);
-      const jobDirExists = await fs
-        .access(`.dnc/${jobTitle}`)
+      const taskDirExists = await fs
+        .access(`.dnc/${taskId}`)
         .then(() => true)
         .catch(() => false);
       const specsDirExists = await fs
-        .access(`.dnc/${jobTitle}/specs`)
+        .access(`.dnc/${taskId}/specs`)
         .then(() => true)
         .catch(() => false);
 
       expect(dncExists).toBe(true);
-      expect(jobDirExists).toBe(true);
-      expect(specsDirExists).toBe(true);
+      expect(taskDirExists).toBe(true);
+      expect(specsDirExists).toBe(false); // specs 디렉토리는 생성되지 않아야 함
     });
 
     it("should not throw if directories already exist", async () => {
-      const jobTitle = "test-job";
-      await ensureDncDirectory(jobTitle);
-      await expect(ensureDncDirectory(jobTitle)).resolves.not.toThrow();
+      const taskId = "test-task";
+      await ensureDncDirectory(taskId);
+      await expect(ensureDncDirectory(taskId)).resolves.not.toThrow();
     });
   });
 
-  describe("writeJobRelation and readJobRelation", () => {
-    it("should write and read job relation correctly", async () => {
-      const jobRelation: JobRelation = {
-        job_title: "test-job",
+  describe("writeTask and readTask", () => {
+    it("should write and read task correctly", async () => {
+      const task: Task = {
+        id: "test-task",
         goal: "Test Goal",
-        spec: ".dnc/test-job/specs/test-job.md",
+        acceptance: "Task completed successfully",
         status: "pending",
-        divided_jobs: [],
+        tasks: [],
       };
 
-      await ensureDncDirectory("test-job");
-      await writeJobRelation("test-job", jobRelation);
+      await ensureDncDirectory("test-task");
+      await writeTask("test-task", task);
 
-      const readRelation = await readJobRelation("test-job");
-      expect(readRelation).toEqual(jobRelation);
+      const readTaskData = await readTask("test-task");
+      expect(readTaskData).toEqual(task);
     });
 
-    it("should throw error when reading non-existent job", async () => {
-      await expect(readJobRelation("non-existent")).rejects.toThrow();
+    it("should throw error when reading non-existent task", async () => {
+      await expect(readTask("non-existent")).rejects.toThrow();
     });
 
-    it("should handle job with divided_jobs", async () => {
-      const jobRelation: JobRelation = {
-        job_title: "parent-job",
-        goal: "Parent Job",
-        spec: ".dnc/parent-job/specs/parent-job.md",
+    it("should handle task with nested tasks", async () => {
+      const task: Task = {
+        id: "parent-task",
+        goal: "Parent Task",
+        acceptance: "Parent completed",
         status: "in-progress",
-        divided_jobs: [
+        tasks: [
           {
-            job_title: "child-job",
-            goal: "Child Job",
-            spec: ".dnc/parent-job/specs/child-job.md",
+            id: "child-task",
+            goal: "Child Task",
+            acceptance: "Child completed",
             status: "pending",
-            divided_jobs: [],
+            tasks: [],
           },
         ],
       };
 
-      await ensureDncDirectory("parent-job");
-      await writeJobRelation("parent-job", jobRelation);
+      await ensureDncDirectory("parent-task");
+      await writeTask("parent-task", task);
 
-      const readRelation = await readJobRelation("parent-job");
-      expect(readRelation.divided_jobs).toHaveLength(1);
-      expect(readRelation.divided_jobs[0].job_title).toBe("child-job");
+      const readTaskData = await readTask("parent-task");
+      expect(readTaskData.tasks).toHaveLength(1);
+      expect(readTaskData.tasks[0].id).toBe("child-task");
     });
 
     it("should throw error on invalid JSON", async () => {
-      const jobTitle = "invalid-job";
-      await ensureDncDirectory(jobTitle);
-      await fs.writeFile(getJobPath(jobTitle), "invalid json", "utf-8");
+      const taskId = "invalid-task";
+      await ensureDncDirectory(taskId);
+      await fs.writeFile(getTaskPath(taskId), "invalid json", "utf-8");
 
-      await expect(readJobRelation(jobTitle)).rejects.toThrow();
+      await expect(readTask(taskId)).rejects.toThrow();
+    });
+  });
+
+  describe("taskExists", () => {
+    it("should return true for existing task", async () => {
+      const task: Task = {
+        id: "existing-task",
+        goal: "Test",
+        acceptance: "Done",
+        status: "pending",
+        tasks: [],
+      };
+
+      await ensureDncDirectory("existing-task");
+      await writeTask("existing-task", task);
+
+      const exists = await taskExists("existing-task");
+      expect(exists).toBe(true);
+    });
+
+    it("should return false for non-existent task", async () => {
+      const exists = await taskExists("non-existent-task");
+      expect(exists).toBe(false);
+    });
+  });
+
+  describe("findTaskInTree", () => {
+    it("should find root task", () => {
+      const task: Task = {
+        id: "root-task",
+        goal: "Root",
+        acceptance: "Root done",
+        status: "pending",
+        tasks: [],
+      };
+
+      const found = findTaskInTree(task, "root-task");
+      expect(found).toEqual(task);
+    });
+
+    it("should find nested child task", () => {
+      const task: Task = {
+        id: "root-task",
+        goal: "Root",
+        acceptance: "Root done",
+        status: "pending",
+        tasks: [
+          {
+            id: "child-task",
+            goal: "Child",
+            acceptance: "Child done",
+            status: "pending",
+            tasks: [
+              {
+                id: "grandchild-task",
+                goal: "Grandchild",
+                acceptance: "Grandchild done",
+                status: "pending",
+                tasks: [],
+              },
+            ],
+          },
+        ],
+      };
+
+      const found = findTaskInTree(task, "grandchild-task");
+      expect(found).not.toBeNull();
+      expect(found?.id).toBe("grandchild-task");
+    });
+
+    it("should return null for non-existent task", () => {
+      const task: Task = {
+        id: "root-task",
+        goal: "Root",
+        acceptance: "Root done",
+        status: "pending",
+        tasks: [],
+      };
+
+      const found = findTaskInTree(task, "non-existent");
+      expect(found).toBeNull();
+    });
+
+    it("should handle empty tasks array", () => {
+      const task: Task = {
+        id: "root-task",
+        goal: "Root",
+        acceptance: "Root done",
+        status: "pending",
+        tasks: [],
+      };
+
+      const found = findTaskInTree(task, "child-task");
+      expect(found).toBeNull();
+    });
+  });
+
+  describe("updateTaskInTree", () => {
+    it("should update root task goal", () => {
+      const task: Task = {
+        id: "root-task",
+        goal: "Old Goal",
+        acceptance: "Done",
+        status: "pending",
+        tasks: [],
+      };
+
+      const updated = updateTaskInTree(task, "root-task", { goal: "New Goal" });
+      expect(updated).toBe(true);
+      expect(task.goal).toBe("New Goal");
+    });
+
+    it("should update child task status", () => {
+      const task: Task = {
+        id: "root-task",
+        goal: "Root",
+        acceptance: "Root done",
+        status: "pending",
+        tasks: [
+          {
+            id: "child-task",
+            goal: "Child",
+            acceptance: "Child done",
+            status: "pending",
+            tasks: [],
+          },
+        ],
+      };
+
+      const updated = updateTaskInTree(task, "child-task", { status: "done" });
+      expect(updated).toBe(true);
+      expect(task.tasks[0].status).toBe("done");
+    });
+
+    it("should update acceptance field", () => {
+      const task: Task = {
+        id: "root-task",
+        goal: "Root",
+        acceptance: "Old acceptance",
+        status: "pending",
+        tasks: [],
+      };
+
+      const updated = updateTaskInTree(task, "root-task", {
+        acceptance: "New acceptance",
+      });
+      expect(updated).toBe(true);
+      expect(task.acceptance).toBe("New acceptance");
+    });
+
+    it("should return false for non-existent task", () => {
+      const task: Task = {
+        id: "root-task",
+        goal: "Root",
+        acceptance: "Done",
+        status: "pending",
+        tasks: [],
+      };
+
+      const updated = updateTaskInTree(task, "non-existent", { goal: "New" });
+      expect(updated).toBe(false);
+    });
+  });
+
+  describe("deleteTaskInTree", () => {
+    it("should delete child task from array", () => {
+      const task: Task = {
+        id: "root-task",
+        goal: "Root",
+        acceptance: "Root done",
+        status: "pending",
+        tasks: [
+          {
+            id: "child-task",
+            goal: "Child",
+            acceptance: "Child done",
+            status: "pending",
+            tasks: [],
+          },
+        ],
+      };
+
+      const deleted = deleteTaskInTree(task, "child-task");
+      expect(deleted).toBe(true);
+      expect(task.tasks).toHaveLength(0);
+    });
+
+    it("should return false for non-existent task", () => {
+      const task: Task = {
+        id: "root-task",
+        goal: "Root",
+        acceptance: "Done",
+        status: "pending",
+        tasks: [],
+      };
+
+      const deleted = deleteTaskInTree(task, "non-existent");
+      expect(deleted).toBe(false);
+    });
+
+    it("should not delete root task", () => {
+      const task: Task = {
+        id: "root-task",
+        goal: "Root",
+        acceptance: "Done",
+        status: "pending",
+        tasks: [],
+      };
+
+      const deleted = deleteTaskInTree(task, "root-task");
+      expect(deleted).toBe(false);
     });
   });
 });

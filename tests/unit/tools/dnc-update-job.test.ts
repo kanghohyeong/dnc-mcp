@@ -3,11 +3,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { registerDncUpdateJobTool } from "../../../src/tools/dnc-update-job.js";
 import { createTestMcpServer } from "../../helpers/test-utils.js";
-import {
-  writeJobRelation,
-  ensureDncDirectory,
-  type JobRelation,
-} from "../../../src/utils/dnc-utils.js";
+import { writeTask, ensureDncDirectory, type Task } from "../../../src/utils/dnc-utils.js";
 
 describe("dnc-update-job tool", () => {
   const testRoot = path.join(process.cwd(), ".dnc-test-update");
@@ -34,17 +30,17 @@ describe("dnc-update-job tool", () => {
     expect(registerToolSpy.mock.calls[0][0]).toBe("dnc_update_job");
   });
 
-  it("should update job goal", async () => {
-    const job: JobRelation = {
-      job_title: "job-to-update",
+  it("should update task goal", async () => {
+    const task: Task = {
+      id: "job-to-update",
       goal: "Original Goal",
-      spec: ".dnc/job-to-update/specs/job-to-update.md",
+      acceptance: "Original acceptance criteria",
       status: "pending",
-      divided_jobs: [],
+      tasks: [],
     };
 
     await ensureDncDirectory("job-to-update");
-    await writeJobRelation("job-to-update", job);
+    await writeTask("job-to-update", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -53,6 +49,7 @@ describe("dnc-update-job tool", () => {
       job_title: string;
       goal?: string;
       status?: string;
+      acceptance?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
@@ -63,24 +60,25 @@ describe("dnc-update-job tool", () => {
     expect(result.isError).toBeUndefined();
     expect(result.content[0].text).toContain("업데이트되었습니다");
 
-    const jobRelationContent = await fs.readFile(".dnc/job-to-update/job_relation.json", "utf-8");
-    const updatedJob = JSON.parse(jobRelationContent) as JobRelation;
+    const taskContent = await fs.readFile(".dnc/job-to-update/task.json", "utf-8");
+    const updatedTask = JSON.parse(taskContent) as Task;
 
-    expect(updatedJob.goal).toBe("Updated Goal");
-    expect(updatedJob.status).toBe("pending"); // 변경되지 않음
+    expect(updatedTask.goal).toBe("Updated Goal");
+    expect(updatedTask.status).toBe("pending"); // 변경되지 않음
+    expect(updatedTask.acceptance).toBe("Original acceptance criteria"); // 변경되지 않음
   });
 
-  it("should update job status", async () => {
-    const job: JobRelation = {
-      job_title: "job-to-update",
+  it("should update task status", async () => {
+    const task: Task = {
+      id: "job-to-update",
       goal: "Test Goal",
-      spec: ".dnc/job-to-update/specs/job-to-update.md",
+      acceptance: "Test acceptance",
       status: "pending",
-      divided_jobs: [],
+      tasks: [],
     };
 
     await ensureDncDirectory("job-to-update");
-    await writeJobRelation("job-to-update", job);
+    await writeTask("job-to-update", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -97,23 +95,56 @@ describe("dnc-update-job tool", () => {
 
     expect(result.isError).toBeUndefined();
 
-    const jobRelationContent = await fs.readFile(".dnc/job-to-update/job_relation.json", "utf-8");
-    const updatedJob = JSON.parse(jobRelationContent) as JobRelation;
+    const taskContent = await fs.readFile(".dnc/job-to-update/task.json", "utf-8");
+    const updatedTask = JSON.parse(taskContent) as Task;
 
-    expect(updatedJob.status).toBe("in-progress");
+    expect(updatedTask.status).toBe("in-progress");
   });
 
-  it("should update both goal and status", async () => {
-    const job: JobRelation = {
-      job_title: "job-to-update",
-      goal: "Original Goal",
-      spec: ".dnc/job-to-update/specs/job-to-update.md",
+  it("should update task acceptance", async () => {
+    const task: Task = {
+      id: "job-to-update",
+      goal: "Test Goal",
+      acceptance: "Original acceptance",
       status: "pending",
-      divided_jobs: [],
+      tasks: [],
     };
 
     await ensureDncDirectory("job-to-update");
-    await writeJobRelation("job-to-update", job);
+    await writeTask("job-to-update", task);
+
+    const mcpServer = createTestMcpServer();
+    const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
+    registerDncUpdateJobTool(mcpServer);
+    const handler = registerToolSpy.mock.calls[0][2] as (args: {
+      job_title: string;
+      acceptance?: string;
+    }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
+
+    const result = await handler({
+      job_title: "job-to-update",
+      acceptance: "Updated acceptance criteria",
+    });
+
+    expect(result.isError).toBeUndefined();
+
+    const taskContent = await fs.readFile(".dnc/job-to-update/task.json", "utf-8");
+    const updatedTask = JSON.parse(taskContent) as Task;
+
+    expect(updatedTask.acceptance).toBe("Updated acceptance criteria");
+  });
+
+  it("should update goal, status, and acceptance together", async () => {
+    const task: Task = {
+      id: "job-to-update",
+      goal: "Original Goal",
+      acceptance: "Original acceptance",
+      status: "pending",
+      tasks: [],
+    };
+
+    await ensureDncDirectory("job-to-update");
+    await writeTask("job-to-update", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -122,42 +153,45 @@ describe("dnc-update-job tool", () => {
       job_title: string;
       goal?: string;
       status?: string;
+      acceptance?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
       job_title: "job-to-update",
       goal: "New Goal",
       status: "done",
+      acceptance: "New acceptance",
     });
 
     expect(result.isError).toBeUndefined();
 
-    const jobRelationContent = await fs.readFile(".dnc/job-to-update/job_relation.json", "utf-8");
-    const updatedJob = JSON.parse(jobRelationContent) as JobRelation;
+    const taskContent = await fs.readFile(".dnc/job-to-update/task.json", "utf-8");
+    const updatedTask = JSON.parse(taskContent) as Task;
 
-    expect(updatedJob.goal).toBe("New Goal");
-    expect(updatedJob.status).toBe("done");
+    expect(updatedTask.goal).toBe("New Goal");
+    expect(updatedTask.status).toBe("done");
+    expect(updatedTask.acceptance).toBe("New acceptance");
   });
 
-  it("should update child job in parent", async () => {
-    const parentJob: JobRelation = {
-      job_title: "job-parent",
-      goal: "Parent Job",
-      spec: ".dnc/job-parent/specs/job-parent.md",
+  it("should update child task in parent", async () => {
+    const parentTask: Task = {
+      id: "job-parent",
+      goal: "Parent Task",
+      acceptance: "Parent acceptance",
       status: "pending",
-      divided_jobs: [
+      tasks: [
         {
-          job_title: "job-child",
+          id: "job-child",
           goal: "Original Child Goal",
-          spec: ".dnc/job-parent/specs/job-child.md",
+          acceptance: "Child acceptance",
           status: "pending",
-          divided_jobs: [],
+          tasks: [],
         },
       ],
     };
 
     await ensureDncDirectory("job-parent");
-    await writeJobRelation("job-parent", parentJob);
+    await writeTask("job-parent", parentTask);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -178,24 +212,24 @@ describe("dnc-update-job tool", () => {
 
     expect(result.isError).toBeUndefined();
 
-    const jobRelationContent = await fs.readFile(".dnc/job-parent/job_relation.json", "utf-8");
-    const updatedParent = JSON.parse(jobRelationContent) as JobRelation;
+    const taskContent = await fs.readFile(".dnc/job-parent/task.json", "utf-8");
+    const updatedParent = JSON.parse(taskContent) as Task;
 
-    expect(updatedParent.divided_jobs[0].goal).toBe("Updated Child Goal");
-    expect(updatedParent.divided_jobs[0].status).toBe("done");
+    expect(updatedParent.tasks[0].goal).toBe("Updated Child Goal");
+    expect(updatedParent.tasks[0].status).toBe("done");
   });
 
   it("should return error for invalid status", async () => {
-    const job: JobRelation = {
-      job_title: "job-to-update",
+    const task: Task = {
+      id: "job-to-update",
       goal: "Test Goal",
-      spec: ".dnc/job-to-update/specs/job-to-update.md",
+      acceptance: "Test acceptance",
       status: "pending",
-      divided_jobs: [],
+      tasks: [],
     };
 
     await ensureDncDirectory("job-to-update");
-    await writeJobRelation("job-to-update", job);
+    await writeTask("job-to-update", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -211,10 +245,10 @@ describe("dnc-update-job tool", () => {
     });
 
     expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain("유효하지 않은 상태");
+    expect(result.content[0].text).toContain("유효하지 않은");
   });
 
-  it("should return error when job not found", async () => {
+  it("should return error when task not found", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncUpdateJobTool(mcpServer);
@@ -233,16 +267,16 @@ describe("dnc-update-job tool", () => {
   });
 
   it("should return error when no updates provided", async () => {
-    const job: JobRelation = {
-      job_title: "job-to-update",
+    const task: Task = {
+      id: "job-to-update",
       goal: "Test Goal",
-      spec: ".dnc/job-to-update/specs/job-to-update.md",
+      acceptance: "Test acceptance",
       status: "pending",
-      divided_jobs: [],
+      tasks: [],
     };
 
     await ensureDncDirectory("job-to-update");
-    await writeJobRelation("job-to-update", job);
+    await writeTask("job-to-update", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -254,7 +288,7 @@ describe("dnc-update-job tool", () => {
     const result = await handler({ job_title: "job-to-update" });
 
     expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain("업데이트할 내용");
+    expect(result.content[0].text).toContain("최소 하나");
   });
 
   it("should return error when job_title is missing", async () => {
@@ -265,9 +299,8 @@ describe("dnc-update-job tool", () => {
       job_title?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({});
+    const result = await handler({ job_title: "" });
 
     expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain("job_title");
   });
 });

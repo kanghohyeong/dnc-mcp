@@ -3,11 +3,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { registerDncAppendDividedJobTool } from "../../../src/tools/dnc-append-divided-job.js";
 import { createTestMcpServer } from "../../helpers/test-utils.js";
-import {
-  writeJobRelation,
-  ensureDncDirectory,
-  type JobRelation,
-} from "../../../src/utils/dnc-utils.js";
+import { writeTask, ensureDncDirectory, type Task } from "../../../src/utils/dnc-utils.js";
 
 describe("dnc-append-divided-job tool", () => {
   const testRoot = path.join(process.cwd(), ".dnc-test-append");
@@ -35,17 +31,16 @@ describe("dnc-append-divided-job tool", () => {
   });
 
   it("should append divided job to parent", async () => {
-    // 부모 job 생성
-    const parentJob: JobRelation = {
-      job_title: "parent-job",
-      goal: "Parent Job",
-      spec: ".dnc/parent-job/specs/parent-job.md",
+    const parentTask: Task = {
+      id: "parent-job",
+      goal: "Parent Task",
+      acceptance: "Parent done",
       status: "pending",
-      divided_jobs: [],
+      tasks: [],
     };
 
     await ensureDncDirectory("parent-job");
-    await writeJobRelation("parent-job", parentJob);
+    await writeTask("parent-job", parentTask);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -54,40 +49,26 @@ describe("dnc-append-divided-job tool", () => {
       parent_job_title: string;
       child_job_title: string;
       child_goal: string;
-      requirements?: string;
-      constraints?: string;
-      acceptance_criteria?: string;
+      acceptance: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
       parent_job_title: "parent-job",
       child_job_title: "child-task",
       child_goal: "Child Task",
-      requirements: "Requirement 1",
+      acceptance: "Child done",
     });
 
     expect(result.isError).toBeUndefined();
     expect(result.content[0].text).toContain("추가되었습니다");
 
-    // 부모 job 검증
-    const jobRelationContent = await fs.readFile(".dnc/parent-job/job_relation.json", "utf-8");
-    const updatedParent = JSON.parse(jobRelationContent) as JobRelation;
+    const taskContent = await fs.readFile(".dnc/parent-job/task.json", "utf-8");
+    const updatedParent = JSON.parse(taskContent) as Task;
 
-    expect(updatedParent.divided_jobs).toHaveLength(1);
-    expect(updatedParent.divided_jobs[0].goal).toBe("Child Task");
-    expect(updatedParent.divided_jobs[0].job_title).toBe("child-task");
-
-    // Spec 파일 검증
-    const specPath = ".dnc/parent-job/specs/child-task.md";
-    const specExists = await fs
-      .access(specPath)
-      .then(() => true)
-      .catch(() => false);
-    expect(specExists).toBe(true);
-
-    const specContent = await fs.readFile(specPath, "utf-8");
-    expect(specContent).toContain("# Child Task");
-    expect(specContent).toContain("Requirement 1");
+    expect(updatedParent.tasks).toHaveLength(1);
+    expect(updatedParent.tasks[0].goal).toBe("Child Task");
+    expect(updatedParent.tasks[0].id).toBe("child-task");
+    expect(updatedParent.tasks[0].acceptance).toBe("Child done");
   });
 
   it("should return error when parent job not found", async () => {
@@ -98,12 +79,14 @@ describe("dnc-append-divided-job tool", () => {
       parent_job_title: string;
       child_job_title: string;
       child_goal: string;
+      acceptance: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
       parent_job_title: "non-existent",
       child_job_title: "child-task",
       child_goal: "Child Task",
+      acceptance: "Done",
     });
 
     expect(result.isError).toBe(true);
@@ -111,25 +94,24 @@ describe("dnc-append-divided-job tool", () => {
   });
 
   it("should prevent duplicate child job titles", async () => {
-    // 부모 job 생성
-    const parentJob: JobRelation = {
-      job_title: "parent-job",
-      goal: "Parent Job",
-      spec: ".dnc/parent-job/specs/parent-job.md",
+    const parentTask: Task = {
+      id: "parent-job",
+      goal: "Parent Task",
+      acceptance: "Parent done",
       status: "pending",
-      divided_jobs: [
+      tasks: [
         {
-          job_title: "existing-child",
+          id: "existing-child",
           goal: "Existing Child",
-          spec: ".dnc/parent-job/specs/existing-child.md",
+          acceptance: "Child done",
           status: "pending",
-          divided_jobs: [],
+          tasks: [],
         },
       ],
     };
 
     await ensureDncDirectory("parent-job");
-    await writeJobRelation("parent-job", parentJob);
+    await writeTask("parent-job", parentTask);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -138,12 +120,14 @@ describe("dnc-append-divided-job tool", () => {
       parent_job_title: string;
       child_job_title: string;
       child_goal: string;
+      acceptance: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
       parent_job_title: "parent-job",
       child_job_title: "existing-child",
       child_goal: "Existing Child",
+      acceptance: "Done",
     });
 
     expect(result.isError).toBe(true);
@@ -158,12 +142,14 @@ describe("dnc-append-divided-job tool", () => {
       parent_job_title: string;
       child_job_title: string;
       child_goal: string;
+      acceptance: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
       parent_job_title: "parent-job",
       child_job_title: "child-task",
       child_goal: "",
+      acceptance: "Done",
     });
 
     expect(result.isError).toBe(true);
@@ -171,16 +157,16 @@ describe("dnc-append-divided-job tool", () => {
   });
 
   it("should append multiple divided jobs", async () => {
-    const parentJob: JobRelation = {
-      job_title: "parent-job",
-      goal: "Parent Job",
-      spec: ".dnc/parent-job/specs/parent-job.md",
+    const parentTask: Task = {
+      id: "parent-job",
+      goal: "Parent Task",
+      acceptance: "Parent done",
       status: "pending",
-      divided_jobs: [],
+      tasks: [],
     };
 
     await ensureDncDirectory("parent-job");
-    await writeJobRelation("parent-job", parentJob);
+    await writeTask("parent-job", parentTask);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -189,31 +175,35 @@ describe("dnc-append-divided-job tool", () => {
       parent_job_title: string;
       child_job_title: string;
       child_goal: string;
+      acceptance: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     await handler({
       parent_job_title: "parent-job",
       child_job_title: "child-1",
       child_goal: "Child 1",
+      acceptance: "Done 1",
     });
     await handler({
       parent_job_title: "parent-job",
       child_job_title: "child-2",
       child_goal: "Child 2",
+      acceptance: "Done 2",
     });
     await handler({
       parent_job_title: "parent-job",
       child_job_title: "child-3",
       child_goal: "Child 3",
+      acceptance: "Done 3",
     });
 
-    const jobRelationContent = await fs.readFile(".dnc/parent-job/job_relation.json", "utf-8");
-    const updatedParent = JSON.parse(jobRelationContent) as JobRelation;
+    const taskContent = await fs.readFile(".dnc/parent-job/task.json", "utf-8");
+    const updatedParent = JSON.parse(taskContent) as Task;
 
-    expect(updatedParent.divided_jobs).toHaveLength(3);
-    expect(updatedParent.divided_jobs[0].goal).toBe("Child 1");
-    expect(updatedParent.divided_jobs[1].goal).toBe("Child 2");
-    expect(updatedParent.divided_jobs[2].goal).toBe("Child 3");
+    expect(updatedParent.tasks).toHaveLength(3);
+    expect(updatedParent.tasks[0].goal).toBe("Child 1");
+    expect(updatedParent.tasks[1].goal).toBe("Child 2");
+    expect(updatedParent.tasks[2].goal).toBe("Child 3");
   });
 
   it("should return error for invalid child_job_title format", async () => {
@@ -224,12 +214,14 @@ describe("dnc-append-divided-job tool", () => {
       parent_job_title: string;
       child_job_title: string;
       child_goal: string;
+      acceptance: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
       parent_job_title: "parent-job",
       child_job_title: "Invalid Title With Spaces",
       child_goal: "Child Task",
+      acceptance: "Done",
     });
 
     expect(result.isError).toBe(true);
