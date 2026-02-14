@@ -81,10 +81,10 @@ export class RouteRegistrar {
   }
 
   /**
-   * GET /dnc/jobs/:jobTitle - DnC job 상세 페이지
+   * GET /:jobTitle - DnC job 상세 페이지
    */
   private registerDncJobDetailRoute(app: Express): void {
-    app.get("/dnc/jobs/:jobTitle", async (req: Request, res: Response) => {
+    app.get("/:jobTitle", async (req: Request, res: Response) => {
       const jobTitle = req.params.jobTitle as string;
 
       try {

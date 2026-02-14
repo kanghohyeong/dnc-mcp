@@ -28,6 +28,7 @@ export default defineConfig({
         'dist/',
         'build/',
         'tests/',
+        'public/', // 클라이언트 사이드 코드 (Playwright로 테스트)
         '**/*.config.ts',
         '**/*.d.ts',
         'test-setup.ts',

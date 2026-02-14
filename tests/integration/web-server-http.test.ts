@@ -57,6 +57,16 @@ describe("웹 서버 HTTP 엔드포인트", () => {
         message: "MCP server is running",
       });
     });
+
+    it("should not be interpreted as a task ID", async () => {
+      const response = await request(app).get("/health");
+
+      // /health는 JSON을 반환해야 하며, HTML 페이지가 아니어야 함
+      expect(response.status).toBe(200);
+      expect(response.type).toBe("application/json");
+      expect(response.text).not.toContain("<!DOCTYPE html>");
+      expect(response.text).not.toContain("Task Detail");
+    });
   });
 
   describe("404 처리", () => {

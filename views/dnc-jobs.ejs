@@ -142,11 +142,9 @@
       <% } else { %>
         <div class="job-list fade-in" data-testid="job-list">
           <% jobs.forEach(job=> { %>
-            <div class="job-card" onclick="location.href='/dnc/jobs/<%= job.job_title %>'" data-testid="job-item">
+            <div class="job-card" onclick="location.href='/<%= job.id %>'" data-testid="job-item">
               <div class="job-card-header">
-                <div class="job-id">
-                  <%= job.job_title %>
-                </div>
+                <div class="job-id"><%= job.id %></div>
                 <div class="status-badge status-<%= job.status %>" data-testid="job-status">
                   <%= job.status %>
                 </div>
@@ -154,7 +152,7 @@
               <div class="job-goal">
                 <%= job.goal %>
               </div>
-              <a href="/dnc/jobs/<%= job.job_title %>" class="job-link" onclick="event.stopPropagation()">
+              <a href="/<%= job.id %>" class="job-link" onclick="event.stopPropagation()">
                 상세 보기 →
               </a>
             </div>

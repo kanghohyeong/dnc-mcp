@@ -66,3 +66,41 @@ export async function waitForServer(server: UIWebServer, maxAttempts = 10): Prom
   }
   throw new Error("Server did not start in time");
 }
+
+/**
+ * 3-level 계층 구조를 가진 테스트 Task 생성
+ * Root → 2 children → 1 grandchild 구조
+ * @returns 계층 구조를 가진 Task
+ */
+export function createTestTaskWithHierarchy() {
+  return {
+    id: "root-task",
+    goal: "Root task goal",
+    acceptance: "# Root Acceptance\n\nThis is **root** acceptance criteria.",
+    status: "in-progress" as const,
+    tasks: [
+      {
+        id: "child-1",
+        goal: "Child 1 goal",
+        acceptance: "## Child 1 Acceptance\n\nFirst child task.",
+        status: "done" as const,
+        tasks: [
+          {
+            id: "grandchild-1",
+            goal: "Grandchild goal",
+            acceptance: "### Grandchild Acceptance\n\nNested task.",
+            status: "pending" as const,
+            tasks: [],
+          },
+        ],
+      },
+      {
+        id: "child-2",
+        goal: "Child 2 goal",
+        acceptance: "## Child 2 Acceptance\n\nSecond child task.",
+        status: "in-progress" as const,
+        tasks: [],
+      },
+    ],
+  };
+}

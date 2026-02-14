@@ -38,7 +38,7 @@ describe("DnC Job Detail Route", () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
-  describe("GET /dnc/jobs/:jobId", () => {
+  describe("GET /:jobTitle", () => {
     it("should return 200 and render job detail page for existing job", async () => {
       // Arrange: task 생성
       const dncDir = path.join(tempDir, ".dnc");
@@ -56,7 +56,7 @@ describe("DnC Job Detail Route", () => {
       await fs.writeFile(path.join(jobDir, "task.json"), JSON.stringify(task));
 
       // Act
-      const response = await request(app).get("/dnc/jobs/job-test-123");
+      const response = await request(app).get("/job-test-123");
 
       // Assert
       expect(response.status).toBe(200);
@@ -68,7 +68,7 @@ describe("DnC Job Detail Route", () => {
 
     it("should return 404 for non-existent job", async () => {
       // Act
-      const response = await request(app).get("/dnc/jobs/non-existent-job");
+      const response = await request(app).get("/non-existent-job");
 
       // Assert
       expect(response.status).toBe(404);
@@ -100,13 +100,39 @@ describe("DnC Job Detail Route", () => {
         await fs.writeFile(path.join(jobDir, "task.json"), JSON.stringify(task));
 
         // Act
-        const response = await request(app).get(`/dnc/jobs/job-${status}`);
+        const response = await request(app).get(`/job-${status}`);
 
         // Assert
         expect(response.status).toBe(200);
         expect(response.text).toContain(`status-${status}`);
         expect(response.text).toContain(status);
       }
+    });
+
+    it("should display job ID from task.id field", async () => {
+      // Arrange: task 생성
+      const dncDir = path.join(tempDir, ".dnc");
+      const jobDir = path.join(dncDir, "test-job-id");
+      await fs.mkdir(jobDir, { recursive: true });
+
+      const task: Task = {
+        id: "test-job-id",
+        goal: "Test job ID display",
+        acceptance: "Job ID should be displayed correctly",
+        status: "pending",
+        tasks: [],
+      };
+
+      await fs.writeFile(path.join(jobDir, "task.json"), JSON.stringify(task));
+
+      // Act
+      const response = await request(app).get("/test-job-id");
+
+      // Assert
+      expect(response.status).toBe(200);
+      expect(response.text).toContain("test-job-id");
+      // job.id가 표시되는지 확인 (job.job_title이 아님)
+      expect(response.text).toMatch(/data-testid="job-id"[^>]*>[\s\S]*?test-job-id/);
     });
   });
 });

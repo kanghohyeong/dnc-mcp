@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= job.job_title %> - Task Detail</title>
+  <title><%= job.id %> - Task Detail</title>
   <link rel="stylesheet" href="/css/jira-style.css">
   <link rel="stylesheet" href="/css/tree-ui.css">
   <style>
@@ -273,9 +273,7 @@
     <!-- 메인 정보 -->
     <div class="main-card fade-in">
       <div class="main-card-header">
-        <div class="job-id" data-testid="job-id">
-          <%= job.job_title %>
-        </div>
+        <div class="job-id" data-testid="job-id"><%= job.id %></div>
         <div class="status-badge status-<%= job.status %>" data-testid="job-status">
           <%= job.status %>
         </div>
@@ -301,7 +299,7 @@
     </div>
 
     <!-- Subtasks (Tree UI) -->
-    <% if (job.divided_jobs && job.divided_jobs.length > 0) { %>
+    <% if (job.tasks && job.tasks.length > 0) { %>
     <div class="subtasks-section fade-in" data-testid="subtasks-section">
       <div class="subtasks-header">
         <div class="subtasks-title">Subtasks</div>
@@ -336,11 +334,11 @@
       const jobData = <%- JSON.stringify(job) %>;
 
       // Subtasks가 있으면 트리 렌더링
-      if (jobData.divided_jobs && jobData.divided_jobs.length > 0) {
+      if (jobData.tasks && jobData.tasks.length > 0) {
         const treeContainer = document.getElementById('treeContainer');
         if (treeContainer) {
           let html = '';
-          for (const subtask of jobData.divided_jobs) {
+          for (const subtask of jobData.tasks) {
             html += renderTreeItem(subtask, 0);
           }
           treeContainer.innerHTML = html;

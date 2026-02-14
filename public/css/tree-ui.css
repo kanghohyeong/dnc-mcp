@@ -111,17 +111,33 @@
 }
 
 /* ==================== 트리 깊이별 스타일 ==================== */
+.tree-item[data-depth="0"] {
+  padding-left: 0;
+}
+
 .tree-item[data-depth="0"] .tree-item-header {
   font-weight: var(--font-weight-semibold);
+}
+
+.tree-item[data-depth="1"] {
+  padding-left: var(--spacing-lg);
 }
 
 .tree-item[data-depth="1"] .tree-item-title {
   font-size: var(--font-size-sm);
 }
 
+.tree-item[data-depth="2"] {
+  padding-left: calc(var(--spacing-lg) * 2);
+}
+
 .tree-item[data-depth="2"] .tree-item-title {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
+}
+
+.tree-item[data-depth="3"] {
+  padding-left: calc(var(--spacing-lg) * 3);
 }
 
 /* ==================== 상세 정보 영역 ==================== */

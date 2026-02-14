@@ -68,16 +68,15 @@ test.describe("DnC Jobs List Page UI", () => {
     const jobCount = await jobItems.count();
 
     if (jobCount > 0) {
-      // job 상세 페이지로 가는 링크 찾기 (job ID가 포함된 링크만)
-      const allLinks = page.locator('a[href*="/dnc/jobs/"]');
+      // job 상세 페이지로 가는 링크 찾기 (root URL + job ID)
+      const allLinks = page.locator("a.job-link");
       const linkCount = await allLinks.count();
 
       let hasValidLink = false;
       for (let i = 0; i < linkCount; i++) {
         const href = await allLinks.nth(i).getAttribute("href");
-        // /dnc/jobs/ 뒤에 실제 ID가 있는 링크만 검증
-        if (href && href !== "/dnc/jobs/" && href !== "/dnc/jobs") {
-          expect(href).toMatch(/\/dnc\/jobs\/.+/);
+        // /{job-id} 형식인지 검증
+        if (href && href !== "/" && href.match(/^\/[a-z0-9-]+$/)) {
           hasValidLink = true;
           break;
         }
@@ -109,6 +108,137 @@ test.describe("DnC Jobs List Page UI", () => {
       // 텍스트가 pending, in-progress, done 중 하나를 포함해야 함
       const text = await firstStatus.textContent();
       expect(text).toMatch(/pending|in-progress|done/i);
+    }
+  });
+
+  test("should display job ID correctly", async ({ page }) => {
+    // Given: 테스트 task 파일 확인
+    await page.goto(`${baseUrl}/`);
+
+    // Then: job이 있으면 .job-id 요소에 ID가 표시되어야 함
+    const jobIdElements = page.locator(".job-id");
+    const count = await jobIdElements.count();
+
+    if (count > 0) {
+      const firstJobId = jobIdElements.first();
+      await expect(firstJobId).toBeVisible();
+
+      // job ID는 kebab-case 형식이어야 함
+      const text = await firstJobId.textContent();
+      expect(text).toMatch(/^[a-z0-9-]+$/);
+      expect(text).not.toBe(""); // 비어있으면 안됨
+    }
+  });
+
+  test("should have correct detail page URL format", async ({ page }) => {
+    // Given: 메인 페이지 방문
+    await page.goto(`${baseUrl}/`);
+
+    // Then: 상세 보기 링크가 /{task-id} 형식이어야 함
+    const detailLinks = page.locator("a.job-link");
+    const count = await detailLinks.count();
+
+    if (count > 0) {
+      const firstLink = detailLinks.first();
+      const href = await firstLink.getAttribute("href");
+
+      // /{task-id} 형식 검증 (예: /test-job-1)
+      expect(href).toMatch(/^\/[a-z0-9-]+$/);
+      expect(href).not.toContain("/dnc/jobs/"); // 이전 형식이 아니어야 함
+    }
+  });
+
+  test("should navigate to detail page on click", async ({ page }) => {
+    // Given: 메인 페이지 방문
+    await page.goto(`${baseUrl}/`);
+
+    // When: 상세 보기 링크 클릭
+    const detailLinks = page.locator("a.job-link");
+    const count = await detailLinks.count();
+
+    if (count > 0) {
+      const firstLink = detailLinks.first();
+      const href = await firstLink.getAttribute("href");
+
+      await firstLink.click();
+      await page.waitForLoadState("networkidle");
+
+      // Then: URL이 /{task-id}로 변경되어야 함
+      expect(page.url()).toBe(`${baseUrl}${href}`);
+    }
+  });
+
+  test("should display job ID on detail page", async ({ page }) => {
+    // Given: 메인 페이지에서 job ID 찾기
+    await page.goto(`${baseUrl}/`);
+
+    const jobIdElements = page.locator(".job-id");
+    const count = await jobIdElements.count();
+
+    if (count > 0) {
+      const firstJobId = await jobIdElements.first().textContent();
+
+      // When: 상세 페이지로 직접 이동
+      await page.goto(`${baseUrl}/${firstJobId}`);
+
+      // Then: 상세 페이지에 job ID가 표시되어야 함
+      const detailPageJobId = page.locator('[data-testid="job-id"]');
+      await expect(detailPageJobId).toBeVisible();
+      await expect(detailPageJobId).toHaveText(firstJobId || "");
+    }
+  });
+
+  test("should show 404 for non-existent job", async ({ page }) => {
+    // When: 존재하지 않는 job ID로 접근
+    const response = await page.goto(`${baseUrl}/non-existent-job-id`);
+
+    // Then: 404 응답
+    expect(response?.status()).toBe(404);
+  });
+
+  test("should show 404 for invalid job ID format", async ({ page }) => {
+    // When: 잘못된 형식의 job ID로 접근
+    const response = await page.goto(`${baseUrl}/INVALID_ID!!!!`);
+
+    // Then: 404 응답 또는 에러 페이지
+    expect(response?.status()).toBe(404);
+  });
+
+  test("should display empty state when no jobs", async ({ page }) => {
+    // Given: job이 하나도 없는 상태 (이 테스트는 .dnc가 비어있을 때만 의미 있음)
+    await page.goto(`${baseUrl}/`);
+
+    // Then: job 목록이 없으면 empty state가 표시되어야 함
+    const jobList = page.locator('[data-testid="job-list"]');
+    const emptyState = page.locator(".empty-state");
+
+    const jobListVisible = await jobList.isVisible().catch(() => false);
+    const emptyStateVisible = await emptyState.isVisible().catch(() => false);
+
+    // 둘 중 하나는 보여야 함
+    expect(jobListVisible || emptyStateVisible).toBeTruthy();
+
+    // job이 없으면 empty state가 보여야 함
+    if (!jobListVisible) {
+      await expect(emptyState).toBeVisible();
+    }
+  });
+
+  test("should display multiple job IDs correctly", async ({ page }) => {
+    // Given: 메인 페이지 방문
+    await page.goto(`${baseUrl}/`);
+
+    // Then: 모든 job ID가 올바른 형식으로 표시되어야 함
+    const jobIdElements = page.locator(".job-id");
+    const count = await jobIdElements.count();
+
+    for (let i = 0; i < count; i++) {
+      const jobId = jobIdElements.nth(i);
+      await expect(jobId).toBeVisible();
+
+      const text = await jobId.textContent();
+      expect(text).toMatch(/^[a-z0-9-]+$/);
+      expect(text).not.toBe("");
     }
   });
 });

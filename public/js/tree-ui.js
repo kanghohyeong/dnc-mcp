@@ -10,18 +10,18 @@
  * @returns {string} HTML 문자열
  */
 function renderTreeItem(task, depth = 0) {
-  const hasChildren = task.divided_jobs && task.divided_jobs.length > 0;
+  const hasChildren = task.tasks && task.tasks.length > 0;
   const toggleClass = hasChildren ? '' : 'no-children';
-  const childrenId = `children-${task.job_title}`;
-  const detailsId = `details-${task.job_title}`;
-  const detailsContentId = `details-content-${task.job_title}`;
+  const childrenId = `children-${task.id}`;
+  const detailsId = `details-${task.id}`;
+  const detailsContentId = `details-content-${task.id}`;
 
   let html = `
-    <div class="tree-item" data-depth="${depth}" data-testid="tree-item-${task.job_title}">
-      <div class="tree-item-header" onclick="toggleTreeItem('${task.job_title}')">
-        <span class="tree-toggle ${toggleClass}" id="toggle-${task.job_title}">▶</span>
+    <div class="tree-item" data-depth="${depth}" data-testid="tree-item-${task.id}">
+      <div class="tree-item-header" onclick="toggleTreeItem('${task.id}')">
+        <span class="tree-toggle ${toggleClass}" id="toggle-${task.id}">▶</span>
         <div class="tree-item-content">
-          <span class="tree-item-title" data-testid="tree-item-title">${escapeHtml(task.job_title)}</span>
+          <span class="tree-item-title" data-testid="tree-item-title">${escapeHtml(task.id)}</span>
           <span class="tree-item-status status-${task.status}" data-testid="tree-item-status">${task.status}</span>
         </div>
       </div>
@@ -34,9 +34,9 @@ function renderTreeItem(task, depth = 0) {
   if (task.acceptanceHtml) {
     html += `
       <div class="tree-item-details" id="${detailsId}">
-        <div class="tree-item-details-header" onclick="toggleDetails('${task.job_title}')">
+        <div class="tree-item-details-header" onclick="toggleDetails('${task.id}')">
           <span class="tree-item-details-title">Acceptance Criteria</span>
-          <span class="tree-item-details-toggle" id="details-toggle-${task.job_title}">▼</span>
+          <span class="tree-item-details-toggle" id="details-toggle-${task.id}">▼</span>
         </div>
         <div class="tree-item-details-content" id="${detailsContentId}">
           ${task.acceptanceHtml}
@@ -48,7 +48,7 @@ function renderTreeItem(task, depth = 0) {
   // 자식 작업들
   if (hasChildren) {
     html += `<div class="tree-children" id="${childrenId}">`;
-    for (const child of task.divided_jobs) {
+    for (const child of task.tasks) {
       html += renderTreeItem(child, depth + 1);
     }
     html += '</div>';
@@ -66,6 +66,7 @@ function toggleTreeItem(taskId) {
   const toggle = document.getElementById(`toggle-${taskId}`);
   const children = document.getElementById(`children-${taskId}`);
   const details = document.getElementById(`details-${taskId}`);
+  const treeItem = document.querySelector(`[data-testid="tree-item-${taskId}"]`);
 
   if (!toggle || toggle.classList.contains('no-children')) {
     return;
@@ -77,12 +78,18 @@ function toggleTreeItem(taskId) {
     if (isExpanded) {
       children.classList.remove('expanded');
       toggle.classList.remove('expanded');
+      if (treeItem) {
+        treeItem.classList.remove('expanded');
+      }
       if (details) {
         details.style.display = 'none';
       }
     } else {
       children.classList.add('expanded');
       toggle.classList.add('expanded');
+      if (treeItem) {
+        treeItem.classList.add('expanded');
+      }
       if (details) {
         details.style.display = 'block';
       }
@@ -133,10 +140,14 @@ function expandAll() {
     const taskId = toggle.id.replace('toggle-', '');
     const children = document.getElementById(`children-${taskId}`);
     const details = document.getElementById(`details-${taskId}`);
+    const treeItem = document.querySelector(`[data-testid="tree-item-${taskId}"]`);
 
     if (children && !children.classList.contains('expanded')) {
       children.classList.add('expanded');
       toggle.classList.add('expanded');
+      if (treeItem) {
+        treeItem.classList.add('expanded');
+      }
       if (details) {
         details.style.display = 'block';
       }
@@ -153,10 +164,14 @@ function collapseAll() {
     const taskId = toggle.id.replace('toggle-', '');
     const children = document.getElementById(`children-${taskId}`);
     const details = document.getElementById(`details-${taskId}`);
+    const treeItem = document.querySelector(`[data-testid="tree-item-${taskId}"]`);
 
     if (children && children.classList.contains('expanded')) {
       children.classList.remove('expanded');
       toggle.classList.remove('expanded');
+      if (treeItem) {
+        treeItem.classList.remove('expanded');
+      }
       if (details) {
         details.style.display = 'none';
       }
