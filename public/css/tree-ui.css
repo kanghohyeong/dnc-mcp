@@ -1,0 +1,264 @@
+/**
+ * 트리 UI 컴포넌트 스타일
+ * 디렉토리 탐색과 같은 계층적 구조를 표현하는 스타일
+ */
+
+/* ==================== 트리 컨테이너 ==================== */
+.tree-container {
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-md);
+}
+
+/* ==================== 트리 아이템 ==================== */
+.tree-item {
+  position: relative;
+  margin-bottom: var(--spacing-xs);
+}
+
+.tree-item-header {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  user-select: none;
+}
+
+.tree-item-header:hover {
+  background-color: var(--hover-bg-light);
+}
+
+/* 펼치기/접기 아이콘 */
+.tree-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-right: var(--spacing-sm);
+  color: var(--text-secondary);
+  transition: transform var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.tree-toggle.expanded {
+  transform: rotate(90deg);
+}
+
+.tree-toggle.no-children {
+  visibility: hidden;
+}
+
+/* 트리 아이템 콘텐츠 */
+.tree-item-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  min-width: 0;
+}
+
+.tree-item-title {
+  font-family: 'Courier New', monospace;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  margin-right: var(--spacing-md);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-item-status {
+  padding: 2px var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+/* 트리 아이템 설명 */
+.tree-item-description {
+  padding: var(--spacing-sm) var(--spacing-md);
+  padding-left: 48px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  margin-bottom: var(--spacing-sm);
+}
+
+/* 트리 자식 컨테이너 */
+.tree-children {
+  margin-left: var(--spacing-lg);
+  border-left: 2px solid var(--border-color-light);
+  padding-left: var(--spacing-md);
+  margin-top: var(--spacing-xs);
+  display: none;
+}
+
+.tree-children.expanded {
+  display: block;
+}
+
+/* 빈 상태 (자식 없음) */
+.tree-children.empty {
+  display: none;
+}
+
+/* ==================== 트리 깊이별 스타일 ==================== */
+.tree-item[data-depth="0"] .tree-item-header {
+  font-weight: var(--font-weight-semibold);
+}
+
+.tree-item[data-depth="1"] .tree-item-title {
+  font-size: var(--font-size-sm);
+}
+
+.tree-item[data-depth="2"] .tree-item-title {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* ==================== 상세 정보 영역 ==================== */
+.tree-item-details {
+  margin-left: 48px;
+  margin-top: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color-light);
+  display: none;
+}
+
+.tree-item-details.expanded {
+  display: block;
+}
+
+.tree-item-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+}
+
+.tree-item-details-header:hover {
+  opacity: 0.8;
+}
+
+.tree-item-details-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tree-item-details-toggle {
+  font-size: var(--font-size-md);
+  color: var(--color-primary);
+  transition: transform var(--transition-fast);
+}
+
+.tree-item-details-toggle.expanded {
+  transform: rotate(180deg);
+}
+
+.tree-item-details-content {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  line-height: 1.6;
+  display: none;
+}
+
+.tree-item-details-content.visible {
+  display: block;
+}
+
+/* 마크다운 스타일 (상세 정보 내) */
+.tree-item-details-content h1,
+.tree-item-details-content h2,
+.tree-item-details-content h3 {
+  margin-top: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+.tree-item-details-content p {
+  margin-bottom: var(--spacing-sm);
+}
+
+.tree-item-details-content ul,
+.tree-item-details-content ol {
+  margin-bottom: var(--spacing-sm);
+  padding-left: var(--spacing-lg);
+}
+
+.tree-item-details-content li {
+  margin-bottom: var(--spacing-xs);
+}
+
+.tree-item-details-content code {
+  font-family: 'Courier New', monospace;
+  font-size: var(--font-size-xs);
+  background-color: var(--bg-secondary);
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+}
+
+.tree-item-details-content pre {
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-md);
+  overflow-x: auto;
+  margin-bottom: var(--spacing-sm);
+}
+
+.tree-item-details-content pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+/* ==================== 애니메이션 ==================== */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 1000px;
+  }
+}
+
+.tree-children.expanded {
+  animation: slideDown 0.2s ease-out;
+}
+
+/* ==================== 반응형 ==================== */
+@media (max-width: 768px) {
+  .tree-children {
+    margin-left: var(--spacing-md);
+    padding-left: var(--spacing-sm);
+  }
+
+  .tree-item-description {
+    padding-left: 32px;
+  }
+
+  .tree-item-details {
+    margin-left: 32px;
+  }
+
+  .tree-item-title {
+    font-size: var(--font-size-sm);
+  }
+}

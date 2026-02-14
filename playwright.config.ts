@@ -47,8 +47,8 @@ export default defineConfig({
 
   // 웹 서버 설정 (테스트 전 자동 시작)
   webServer: {
-    command: 'npm run build && node dist/index.js',
-    url: 'http://localhost:3331',
+    command: 'npm run build && node build/index.js',
+    url: 'http://localhost:3331/health',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
     stdout: 'ignore',

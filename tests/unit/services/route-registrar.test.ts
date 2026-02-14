@@ -24,7 +24,7 @@ describe("RouteRegistrar", () => {
       const response = await request(app).get("/");
 
       expect(response.status).toBe(200);
-      expect(response.text).toContain("Interlock MCP Server");
+      expect(response.text).toContain("Task Management");
     });
 
     it("2. GET /health 라우트 등록 및 JSON 응답", async () => {

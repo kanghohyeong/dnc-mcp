@@ -2,6 +2,7 @@ import type { Express } from "express";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,9 +17,20 @@ export class ExpressAppConfigurator {
   configure(app: Express): void {
     // EJS view engine 설정
     app.set("view engine", "ejs");
-    app.set("views", path.join(__dirname, "../../views"));
+
+    // views와 public 경로 결정 (빌드 환경과 개발 환경 모두 지원)
+    // build/services -> build/views 또는 src/services -> views
+    const builtViewsPath = path.join(__dirname, "../views");
+    const srcViewsPath = path.join(__dirname, "../../views");
+    const viewsPath = fs.existsSync(builtViewsPath) ? builtViewsPath : srcViewsPath;
+
+    const builtPublicPath = path.join(__dirname, "../public");
+    const srcPublicPath = path.join(__dirname, "../../public");
+    const publicPath = fs.existsSync(builtPublicPath) ? builtPublicPath : srcPublicPath;
+
+    app.set("views", viewsPath);
 
     // 정적 파일 제공 설정
-    app.use(express.static(path.join(__dirname, "../../public")));
+    app.use(express.static(publicPath));
   }
 }

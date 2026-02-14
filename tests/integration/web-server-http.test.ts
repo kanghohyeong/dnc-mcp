@@ -20,14 +20,14 @@ describe("웹 서버 HTTP 엔드포인트", () => {
   });
 
   describe("GET /", () => {
-    it('should return HTML with "hello world"', async () => {
+    it('should return HTML with "Task Management"', async () => {
       const response = await request(app).get("/");
 
       expect(response.status).toBe(200);
       expect(response.type).toBe("text/html");
-      expect(response.text).toContain("hello world");
+      expect(response.text).toContain("Task Management");
       expect(response.text).toContain("<!DOCTYPE html>");
-      expect(response.text).toContain("Interlock MCP Server");
+      expect(response.text).toContain("DnC (Divide and Conquer)");
     });
 
     it("should have correct HTML structure", async () => {
@@ -35,14 +35,14 @@ describe("웹 서버 HTTP 엔드포인트", () => {
 
       expect(response.text).toMatch(/<html lang="ko">/);
       expect(response.text).toMatch(/<meta charset="UTF-8">/);
-      expect(response.text).toMatch(/<h1>hello world<\/h1>/);
+      expect(response.text).toMatch(/<h1[^>]*>Task Management<\/h1>/);
     });
 
-    it("should include CSS animations", async () => {
+    it("should include Jira style CSS", async () => {
       const response = await request(app).get("/");
 
-      expect(response.text).toContain("animation: fadeIn");
-      expect(response.text).toContain("@keyframes fadeIn");
+      expect(response.text).toContain("jira-style.css");
+      expect(response.text).toContain("fade-in");
     });
   });
 

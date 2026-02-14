@@ -20,16 +20,16 @@ export class RouteRegistrar {
   registerRoutes(app: Express): void {
     this.registerMainRoute(app);
     this.registerHealthRoute(app);
-    this.registerDncJobsRoute(app);
     this.registerDncJobDetailRoute(app);
   }
 
   /**
-   * GET / - 메인 페이지
+   * GET / - 메인 페이지 (DnC Jobs 목록)
    */
   private registerMainRoute(app: Express): void {
-    app.get("/", (_req: Request, res: Response) => {
-      res.render("index");
+    app.get("/", async (_req: Request, res: Response) => {
+      const jobs = await this.dncJobService.getAllRootTasks();
+      res.render("dnc-jobs", { jobs });
     });
   }
 
@@ -42,16 +42,6 @@ export class RouteRegistrar {
         status: "ok",
         message: "MCP server is running",
       });
-    });
-  }
-
-  /**
-   * GET /dnc/jobs - DnC jobs 목록 페이지
-   */
-  private registerDncJobsRoute(app: Express): void {
-    app.get("/dnc/jobs", async (_req: Request, res: Response) => {
-      const jobs = await this.dncJobService.getAllRootTasks();
-      res.render("dnc-jobs", { jobs });
     });
   }
 

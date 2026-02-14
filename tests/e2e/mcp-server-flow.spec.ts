@@ -7,9 +7,9 @@ test.describe("MCP 서버 E2E 플로우", () => {
     // 웹 페이지 접속
     await page.goto("/");
 
-    // "hello world" 페이지가 정상적으로 로드되는지 확인
-    await expect(page.locator("h1")).toHaveText("hello world");
-    await expect(page).toHaveTitle("Interlock MCP Server");
+    // "Task Management" 페이지가 정상적으로 로드되는지 확인
+    await expect(page.locator("h1")).toHaveText("Task Management");
+    await expect(page).toHaveTitle(/Task Management/);
   });
 
   test("서버가 올바른 포트에서 응답", async ({ page }) => {
@@ -25,9 +25,9 @@ test.describe("MCP 서버 E2E 플로우", () => {
     await page.goto("/");
     await expect(page.locator("h1")).toBeVisible();
 
-    // 2. "hello world" 텍스트 확인
+    // 2. "Task Management" 텍스트 확인
     const heading = page.locator("h1");
-    await expect(heading).toHaveText("hello world");
+    await expect(heading).toHaveText("Task Management");
 
     // 3. health check 엔드포인트 접속
     const healthResponse = await page.goto("/health");
@@ -41,7 +41,7 @@ test.describe("MCP 서버 E2E 플로우", () => {
 
     // 4. 메인 페이지로 다시 돌아가기
     await page.goto("/");
-    await expect(page.locator("h1")).toHaveText("hello world");
+    await expect(page.locator("h1")).toHaveText("Task Management");
   });
 
   test("404 페이지 처리", async ({ page }) => {
