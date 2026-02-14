@@ -4,20 +4,47 @@
  */
 
 /**
+ * 상태 옵션 목록
+ */
+const STATUS_OPTIONS = [
+  { value: 'init', label: 'init' },
+  { value: 'accept', label: 'accept' },
+  { value: 'in-progress', label: 'in-progress' },
+  { value: 'done', label: 'done' },
+  { value: 'delete', label: 'delete' },
+  { value: 'hold', label: 'hold' },
+  { value: 'split', label: 'split' }
+];
+
+/**
  * 재귀적 섹션 구조로 task 아이템 렌더링
  * @param {Object} task - 작업 객체
  * @param {number} depth - 트리 깊이
+ * @param {string} rootTaskId - Root task ID
  * @returns {string} HTML 문자열
  */
-function renderTaskItem(task, depth = 0) {
+function renderTaskItem(task, depth = 0, rootTaskId = null) {
   const hasChildren = task.tasks && task.tasks.length > 0;
+  const actualRootTaskId = rootTaskId || task.id;
+
+  // 상태 드롭다운 옵션 생성
+  const statusOptions = STATUS_OPTIONS.map(option =>
+    `<option value="${option.value}" ${task.status === option.value ? 'selected' : ''}>${option.label}</option>`
+  ).join('');
 
   let html = `
     <div class="task-item" data-depth="${depth}" data-testid="tree-item-${task.id}">
       <!-- Header: ID + Status -->
       <div class="task-header">
         <div class="task-id" data-testid="tree-item-title">${escapeHtml(task.id)}</div>
-        <div class="status-badge status-${task.status}" data-testid="tree-item-status">${task.status}</div>
+        <select
+          class="status-dropdown"
+          data-testid="status-dropdown-${task.id}"
+          data-task-id="${task.id}"
+          data-root-task-id="${actualRootTaskId}"
+          data-original-status="${task.status}">
+          ${statusOptions}
+        </select>
       </div>
 
       <!-- Goal 섹션 -->
@@ -46,7 +73,7 @@ function renderTaskItem(task, depth = 0) {
     `;
 
     for (const child of task.tasks) {
-      html += renderTaskItem(child, depth + 1);  // 재귀 호출
+      html += renderTaskItem(child, depth + 1, actualRootTaskId);  // 재귀 호출
     }
 
     html += `

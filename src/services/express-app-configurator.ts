@@ -18,15 +18,28 @@ export class ExpressAppConfigurator {
     // EJS view engine 설정
     app.set("view engine", "ejs");
 
+    // JSON body 파싱 미들웨어
+    app.use(express.json());
+
     // views와 public 경로 결정 (빌드 환경과 개발 환경 모두 지원)
-    // build/services -> build/views 또는 src/services -> views
+    // 테스트 환경에서는 항상 src 디렉토리 사용
+    const isTest = process.env.NODE_ENV === "test";
+
     const builtViewsPath = path.join(__dirname, "../views");
     const srcViewsPath = path.join(__dirname, "../../views");
-    const viewsPath = fs.existsSync(builtViewsPath) ? builtViewsPath : srcViewsPath;
+    const viewsPath = isTest
+      ? srcViewsPath
+      : fs.existsSync(builtViewsPath)
+        ? builtViewsPath
+        : srcViewsPath;
 
     const builtPublicPath = path.join(__dirname, "../public");
     const srcPublicPath = path.join(__dirname, "../../public");
-    const publicPath = fs.existsSync(builtPublicPath) ? builtPublicPath : srcPublicPath;
+    const publicPath = isTest
+      ? srcPublicPath
+      : fs.existsSync(builtPublicPath)
+        ? builtPublicPath
+        : srcPublicPath;
 
     app.set("views", viewsPath);
 

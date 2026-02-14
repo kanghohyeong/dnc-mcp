@@ -237,7 +237,7 @@ test.describe.serial("Tree Hierarchy UI", () => {
       // Given: task 상세 페이지 방문
       await page.goto(`${baseUrl}/${testTaskId}`);
 
-      // Then: child-1의 header에 ID와 Status
+      // Then: child-1의 header에 ID와 Status dropdown
       const child1 = page.locator('[data-testid="tree-item-child-1"]');
       const child1Header = child1.locator(".task-header").first();
 
@@ -245,7 +245,10 @@ test.describe.serial("Tree Hierarchy UI", () => {
       await expect(child1Header.locator('[data-testid="tree-item-title"]')).toContainText(
         "child-1"
       );
-      await expect(child1Header.locator('[data-testid="tree-item-status"]')).toContainText("done");
+      // Status는 이제 dropdown으로 표시됨
+      const statusDropdown = child1Header.locator('[data-testid="status-dropdown-child-1"]');
+      await expect(statusDropdown).toBeVisible();
+      await expect(statusDropdown).toHaveValue("done");
     });
   });
 });

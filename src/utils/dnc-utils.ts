@@ -1,6 +1,14 @@
 import * as fs from "fs/promises";
 
-export type TaskStatus = "pending" | "init" | "accept" | "in-progress" | "done" | "delete" | "hold" | "split";
+export type TaskStatus =
+  | "pending"
+  | "init"
+  | "accept"
+  | "in-progress"
+  | "done"
+  | "delete"
+  | "hold"
+  | "split";
 
 export interface Task {
   id: string;

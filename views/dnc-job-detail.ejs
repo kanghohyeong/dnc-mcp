@@ -14,6 +14,54 @@
       padding: var(--spacing-xl) var(--spacing-lg);
     }
 
+    /* Toast 컨테이너 */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-sm);
+    }
+
+    /* Toast 메시지 */
+    .toast {
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-radius: var(--radius-sm);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      font-size: var(--font-size-md);
+      font-weight: var(--font-weight-medium);
+      min-width: 300px;
+      max-width: 500px;
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all var(--transition-fast);
+    }
+
+    .toast-show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .toast-success {
+      background: #10b981;
+      color: white;
+      border-left: 4px solid #059669;
+    }
+
+    .toast-error {
+      background: #ef4444;
+      color: white;
+      border-left: 4px solid #dc2626;
+    }
+
+    .toast-info {
+      background: var(--color-primary);
+      color: white;
+      border-left: 4px solid var(--color-primary-dark);
+    }
+
     /* 헤더 */
     .page-header {
       margin-bottom: var(--spacing-xl);
@@ -173,6 +221,61 @@
       margin-top: var(--spacing-md);
     }
 
+    /* Status Dropdown */
+    .status-dropdown {
+      padding: var(--spacing-xs) var(--spacing-sm);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background: var(--bg-primary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .status-dropdown:hover {
+      border-color: var(--color-primary);
+    }
+
+    .status-dropdown:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px var(--color-primary-light);
+    }
+
+    /* Submit Button */
+    .submit-button-container {
+      margin-top: var(--spacing-xl);
+      padding-top: var(--spacing-lg);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .submit-button {
+      padding: var(--spacing-sm) var(--spacing-lg);
+      font-size: var(--font-size-md);
+      font-weight: var(--font-weight-semibold);
+      color: white;
+      background: var(--color-primary);
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .submit-button:hover:not(:disabled) {
+      background: var(--color-primary-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 122, 204, 0.3);
+    }
+
+    .submit-button:disabled {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
 
     /* 반응형 */
     @media (max-width: 768px) {
@@ -213,19 +316,40 @@
     <!-- 통합 카드: 재귀적 task 구조 -->
     <div class="main-card fade-in">
       <div id="rootTaskContainer"></div>
+
+      <!-- Submit Button -->
+      <div class="submit-button-container">
+        <button
+          id="submitStatusChanges"
+          data-testid="submit-status-changes"
+          class="submit-button"
+          disabled>
+          변경사항 저장
+        </button>
+      </div>
     </div>
   </div>
 
+  <script src="/js/toast.js"></script>
   <script src="/js/tree-ui.js"></script>
+  <script src="/js/status-change.js"></script>
   <script>
-    // 페이지 로드 시 재귀적 task 렌더링
+    // 페이지 로드 시 재귀적 task 렌더링 및 상태 관리 초기화
     window.addEventListener('DOMContentLoaded', () => {
       const jobData = <%- JSON.stringify(job) %>;
 
-      // 루트 task 전체를 재귀적으로 렌더링
+      // 1. 루트 task 전체를 재귀적으로 렌더링
       const rootTaskContainer = document.getElementById('rootTaskContainer');
       if (rootTaskContainer) {
         rootTaskContainer.innerHTML = renderTaskItem(jobData, 0);
+      }
+
+      // 2. DOM 렌더링 완료 후 명시적으로 StatusChangeManager 초기화
+      // 이렇게 하면 모든 dropdown이 준비된 후 이벤트 리스너가 등록됨
+      if (window.StatusChangeManager) {
+        window.StatusChangeManager.init();
+      } else {
+        console.error('StatusChangeManager not loaded');
       }
     });
   </script>
