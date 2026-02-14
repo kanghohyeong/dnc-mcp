@@ -66,7 +66,7 @@ describe("dnc-update-job tool", () => {
     const updatedTask = JSON.parse(taskContent) as Task;
 
     expect(updatedTask.goal).toBe("Updated Goal");
-    expect(updatedTask.status).toBe("pending"); // 변경되지 않음
+    expect(updatedTask.status).toBe("init"); // 마이그레이션으로 init으로 변환됨
     expect(updatedTask.acceptance).toBe("Original acceptance criteria"); // 변경되지 않음
   });
 
@@ -227,12 +227,85 @@ describe("dnc-update-job tool", () => {
     expect(updatedParent.tasks[0].status).toBe("done");
   });
 
+  describe("status updates with 7-state system", () => {
+    it.each(["init", "accept", "in-progress", "done", "delete", "hold", "split"])(
+      "should update status to %s",
+      async (status) => {
+        const task: Task = {
+          id: "test-job",
+          goal: "Test Goal",
+          acceptance: "Test acceptance",
+          status: "init",
+          tasks: [],
+        };
+
+        await ensureDncDirectory("test-job");
+        await writeTask("test-job", task);
+
+        const mcpServer = createTestMcpServer();
+        const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
+        registerDncUpdateJobTool(mcpServer);
+        const handler = registerToolSpy.mock.calls[0][2] as (args: {
+          root_task_id: string;
+          task_id: string;
+          status?: string;
+        }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
+
+        const result = await handler({
+          root_task_id: "test-job",
+          task_id: "test-job",
+          status: status,
+        });
+
+        expect(result.isError).toBeUndefined();
+
+        const taskContent = await fs.readFile(".dnc/test-job/task.json", "utf-8");
+        const updatedTask = JSON.parse(taskContent) as Task;
+        expect(updatedTask.status).toBe(status);
+
+        // Cleanup for next iteration
+        await fs.rm(".dnc", { recursive: true, force: true });
+      }
+    );
+
+    it("should reject pending as invalid status", async () => {
+      const task: Task = {
+        id: "test-job",
+        goal: "Test Goal",
+        acceptance: "Test acceptance",
+        status: "init",
+        tasks: [],
+      };
+
+      await ensureDncDirectory("test-job");
+      await writeTask("test-job", task);
+
+      const mcpServer = createTestMcpServer();
+      const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
+      registerDncUpdateJobTool(mcpServer);
+      const handler = registerToolSpy.mock.calls[0][2] as (args: {
+        root_task_id: string;
+        task_id: string;
+        status?: string;
+      }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
+
+      const result = await handler({
+        root_task_id: "test-job",
+        task_id: "test-job",
+        status: "pending" as string,
+      });
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("유효하지 않은 status");
+    });
+  });
+
   it("should return error for invalid status", async () => {
     const task: Task = {
       id: "job-to-update",
       goal: "Test Goal",
       acceptance: "Test acceptance",
-      status: "pending",
+      status: "init",
       tasks: [],
     };
 

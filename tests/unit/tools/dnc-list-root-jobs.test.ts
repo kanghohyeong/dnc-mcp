@@ -93,7 +93,7 @@ describe("dnc-list-root-jobs tool", () => {
     expect(text).toContain("Root Tasks:");
     expect(text).toContain("- test-job");
     expect(text).toContain("Goal: Test goal");
-    expect(text).toContain("Status: pending");
+    expect(text).toContain("Status: init");
     expect(text).toContain("Total: 1 root task");
   });
 
@@ -145,7 +145,7 @@ describe("dnc-list-root-jobs tool", () => {
     expect(text).toContain("Root Tasks:");
     expect(text).toContain("- job-alpha");
     expect(text).toContain("Goal: Alpha goal");
-    expect(text).toContain("Status: pending");
+    expect(text).toContain("Status: init");
     expect(text).toContain("- job-beta");
     expect(text).toContain("Goal: Beta goal");
     expect(text).toContain("Status: in-progress");
@@ -256,7 +256,7 @@ describe("dnc-list-root-jobs tool", () => {
 
     expect(result.content).toHaveLength(1);
     const text = result.content[0].text;
-    expect(text).toContain("Status: pending");
+    expect(text).toContain("Status: init");
     expect(text).toContain("Status: in-progress");
     expect(text).toContain("Status: done");
   });
@@ -323,6 +323,6 @@ describe("dnc-list-root-jobs tool", () => {
     const text = result.content[0].text;
     expect(text).toContain("- empty-goal");
     expect(text).toContain("Goal: ");
-    expect(text).toContain("Status: pending");
+    expect(text).toContain("Status: init");
   });
 });

@@ -88,7 +88,7 @@ export function registerDncInitJobTool(mcpServer: McpServer) {
           id: job_title,
           goal: goal,
           acceptance: acceptance,
-          status: "pending",
+          status: "init",
           tasks: [],
         };
 

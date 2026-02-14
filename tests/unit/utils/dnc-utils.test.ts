@@ -7,6 +7,8 @@ import {
   ensureDncDirectory,
   getTaskPath,
   validateTaskStatus,
+  validateStatusTransition,
+  migratePendingToInit,
   validateTaskId,
   taskExists,
   findTaskInTree,
@@ -33,16 +35,179 @@ describe("dnc-utils", () => {
   });
 
   describe("validateTaskStatus", () => {
-    it("should return true for valid statuses", () => {
-      expect(validateTaskStatus("pending")).toBe(true);
+    it("should return true for all valid statuses", () => {
+      expect(validateTaskStatus("init")).toBe(true);
+      expect(validateTaskStatus("accept")).toBe(true);
       expect(validateTaskStatus("in-progress")).toBe(true);
       expect(validateTaskStatus("done")).toBe(true);
+      expect(validateTaskStatus("delete")).toBe(true);
+      expect(validateTaskStatus("hold")).toBe(true);
+      expect(validateTaskStatus("split")).toBe(true);
     });
 
-    it("should return false for invalid statuses", () => {
+    it("should return false for invalid statuses including pending", () => {
+      expect(validateTaskStatus("pending")).toBe(false);
       expect(validateTaskStatus("invalid")).toBe(false);
       expect(validateTaskStatus("")).toBe(false);
       expect(validateTaskStatus("PENDING")).toBe(false);
+    });
+  });
+
+  describe("validateStatusTransition", () => {
+    describe("normal flow", () => {
+      it("should allow init -> accept", () => {
+        const result = validateStatusTransition("init", "accept");
+        expect(result.isValid).toBe(true);
+        expect(result.warning).toBeUndefined();
+      });
+
+      it("should allow accept -> in-progress", () => {
+        const result = validateStatusTransition("accept", "in-progress");
+        expect(result.isValid).toBe(true);
+        expect(result.warning).toBeUndefined();
+      });
+
+      it("should allow in-progress -> done", () => {
+        const result = validateStatusTransition("in-progress", "done");
+        expect(result.isValid).toBe(true);
+        expect(result.warning).toBeUndefined();
+      });
+    });
+
+    describe("special transitions from init", () => {
+      it("should allow init -> delete", () => {
+        const result = validateStatusTransition("init", "delete");
+        expect(result.isValid).toBe(true);
+      });
+
+      it("should allow init -> hold", () => {
+        const result = validateStatusTransition("init", "hold");
+        expect(result.isValid).toBe(true);
+      });
+
+      it("should allow init -> split", () => {
+        const result = validateStatusTransition("init", "split");
+        expect(result.isValid).toBe(true);
+      });
+    });
+
+    describe("hold recovery", () => {
+      it("should allow hold -> init", () => {
+        const result = validateStatusTransition("hold", "init");
+        expect(result.isValid).toBe(true);
+      });
+
+      it("should allow hold -> accept", () => {
+        const result = validateStatusTransition("hold", "accept");
+        expect(result.isValid).toBe(true);
+      });
+
+      it("should NOT allow hold -> in-progress", () => {
+        const result = validateStatusTransition("hold", "in-progress");
+        expect(result.isValid).toBe(false);
+        expect(result.warning).toContain("비권장 상태 전이");
+      });
+    });
+
+    describe("invalid transitions", () => {
+      it("should warn for done -> any status", () => {
+        const result = validateStatusTransition("done", "init");
+        expect(result.isValid).toBe(false);
+        expect(result.warning).toBeDefined();
+      });
+
+      it("should warn for delete -> any status", () => {
+        const result = validateStatusTransition("delete", "init");
+        expect(result.isValid).toBe(false);
+        expect(result.warning).toBeDefined();
+      });
+
+      it("should warn for split -> accept (should go to init first)", () => {
+        const result = validateStatusTransition("split", "accept");
+        expect(result.isValid).toBe(false);
+        expect(result.warning).toBeDefined();
+      });
+    });
+  });
+
+  describe("migratePendingToInit", () => {
+    it("should migrate pending to init", () => {
+      const task = {
+        id: "test",
+        goal: "Test",
+        acceptance: "Done",
+        status: "pending",
+        tasks: [],
+      } as Task;
+
+      migratePendingToInit(task);
+      expect(task.status).toBe("init");
+    });
+
+    it("should migrate nested tasks recursively", () => {
+      const task = {
+        id: "root",
+        goal: "Root",
+        acceptance: "Done",
+        status: "pending",
+        tasks: [
+          {
+            id: "child",
+            goal: "Child",
+            acceptance: "Done",
+            status: "pending",
+            tasks: [],
+          },
+        ],
+      } as Task;
+
+      migratePendingToInit(task);
+      expect(task.status).toBe("init");
+      expect(task.tasks[0].status).toBe("init");
+    });
+
+    it("should not change non-pending statuses", () => {
+      const task: Task = {
+        id: "test",
+        goal: "Test",
+        acceptance: "Done",
+        status: "done",
+        tasks: [],
+      };
+
+      migratePendingToInit(task);
+      expect(task.status).toBe("done");
+    });
+
+    it("should handle deeply nested tasks", () => {
+      const task = {
+        id: "root",
+        goal: "Root",
+        acceptance: "Done",
+        status: "pending",
+        tasks: [
+          {
+            id: "child-1",
+            goal: "Child 1",
+            acceptance: "Done",
+            status: "in-progress",
+            tasks: [
+              {
+                id: "grandchild",
+                goal: "Grandchild",
+                acceptance: "Done",
+                status: "pending",
+                tasks: [],
+              },
+            ],
+          },
+        ],
+      } as Task;
+
+      migratePendingToInit(task);
+      expect(task.status).toBe("init");
+      expect(task.tasks[0].status).toBe("in-progress");
+      expect(task.tasks[0].tasks[0].status).toBe("init");
     });
   });
 
@@ -158,7 +323,7 @@ describe("dnc-utils", () => {
         id: "test-task",
         goal: "Test Goal",
         acceptance: "Task completed successfully",
-        status: "pending",
+        status: "init",
         tasks: [],
       };
 

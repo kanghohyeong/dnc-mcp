@@ -1,6 +1,6 @@
 import * as fs from "fs/promises";
 
-export type TaskStatus = "pending" | "in-progress" | "done";
+export type TaskStatus = "pending" | "init" | "accept" | "in-progress" | "done" | "delete" | "hold" | "split";
 
 export interface Task {
   id: string;
@@ -16,7 +16,51 @@ export interface Task {
  * @returns 유효하면 true
  */
 export function validateTaskStatus(status: string): status is TaskStatus {
-  return status === "pending" || status === "in-progress" || status === "done";
+  return ["init", "accept", "in-progress", "done", "delete", "hold", "split"].includes(status);
+}
+
+/**
+ * 상태 전이가 권장 플로우를 따르는지 검증합니다.
+ * @param fromStatus - 현재 상태
+ * @param toStatus - 목표 상태
+ * @returns 검증 결과 및 경고 메시지
+ */
+export function validateStatusTransition(
+  fromStatus: TaskStatus,
+  toStatus: TaskStatus
+): { isValid: boolean; warning?: string } {
+  const allowedTransitions: Record<TaskStatus, TaskStatus[]> = {
+    pending: [],
+    init: ["accept", "delete", "hold", "split"],
+    accept: ["in-progress", "hold"],
+    "in-progress": ["done", "hold"],
+    done: [],
+    delete: [],
+    hold: ["init", "accept"],
+    split: ["init"],
+  };
+
+  const allowed = allowedTransitions[fromStatus] || [];
+
+  if (!allowed.includes(toStatus)) {
+    return {
+      isValid: false,
+      warning: `비권장 상태 전이: ${fromStatus} → ${toStatus}. 권장 전이: ${allowed.join(", ") || "없음"}`,
+    };
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * 기존 "pending" 상태를 "init"으로 마이그레이션합니다.
+ * @param task - 마이그레이션할 task
+ */
+export function migratePendingToInit(task: Task): void {
+  if (task.status === "pending") {
+    task.status = "init";
+  }
+  task.tasks.forEach(migratePendingToInit);
 }
 
 /**
@@ -109,7 +153,12 @@ export async function writeTask(taskId: string, task: Task): Promise<void> {
 export async function readTask(taskId: string): Promise<Task> {
   const taskPath = getTaskPath(taskId);
   const content = await fs.readFile(taskPath, "utf-8");
-  return JSON.parse(content) as Task;
+  const task = JSON.parse(content) as Task;
+
+  // 자동 마이그레이션: pending → init
+  migratePendingToInit(task);
+
+  return task;
 }
 
 /**

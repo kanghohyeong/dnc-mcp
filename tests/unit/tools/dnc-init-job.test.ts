@@ -67,7 +67,7 @@ describe("dnc-init-job tool", () => {
     expect(task.id).toBe("implement-auth");
     expect(task.goal).toBe("Implement Authentication");
     expect(task.acceptance).toBe("All authentication tests pass");
-    expect(task.status).toBe("pending");
+    expect(task.status).toBe("init");
     expect(task.tasks).toEqual([]);
   });
 

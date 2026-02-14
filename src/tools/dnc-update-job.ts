@@ -24,9 +24,11 @@ export function registerDncUpdateJobTool(mcpServer: McpServer) {
           .describe("업데이트할 task의 job title (필수, 영문 10단어 이하, kebab-case)"),
         goal: z.string().optional().describe("새로운 목표 (선택)"),
         status: z
-          .enum(["pending", "in-progress", "done"])
+          .enum(["init", "accept", "in-progress", "done", "delete", "hold", "split"])
           .optional()
-          .describe('새로운 상태 (선택, "pending" | "in-progress" | "done")'),
+          .describe(
+            '새로운 상태 (선택, "init" | "accept" | "in-progress" | "done" | "delete" | "hold" | "split")'
+          ),
         acceptance: z.string().optional().describe("새로운 완료 기준 (선택)"),
       },
     },
@@ -53,7 +55,7 @@ export function registerDncUpdateJobTool(mcpServer: McpServer) {
             content: [
               {
                 type: "text" as const,
-                text: '오류: 유효하지 않은 status입니다. "pending", "in-progress", "done" 중 하나여야 합니다.',
+                text: '오류: 유효하지 않은 status입니다. "init", "accept", "in-progress", "done", "delete", "hold", "split" 중 하나여야 합니다.',
               },
             ],
             isError: true,

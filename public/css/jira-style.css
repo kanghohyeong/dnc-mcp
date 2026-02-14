@@ -21,9 +21,13 @@
   --color-primary-hover: #0065ff;
   --color-primary-light: #deebff;
 
-  /* 상태 색상 - Pending */
-  --status-pending-bg: #dfe1e6;
-  --status-pending-text: #42526e;
+  /* 상태 색상 - Init */
+  --status-init-bg: #f4f5f7;
+  --status-init-text: #5e6c84;
+
+  /* 상태 색상 - Accept */
+  --status-accept-bg: #e3fcef;
+  --status-accept-text: #006644;
 
   /* 상태 색상 - In Progress */
   --status-in-progress-bg: #deebff;
@@ -32,6 +36,18 @@
   /* 상태 색상 - Done */
   --status-done-bg: #e3fcef;
   --status-done-text: #006644;
+
+  /* 상태 색상 - Delete */
+  --status-delete-bg: #ffebe6;
+  --status-delete-text: #bf2600;
+
+  /* 상태 색상 - Hold */
+  --status-hold-bg: #fff0b3;
+  --status-hold-text: #ff8b00;
+
+  /* 상태 색상 - Split */
+  --status-split-bg: #eae6ff;
+  --status-split-text: #5243aa;
 
   /* 보더 및 구분선 */
   --border-color: #dfe1e6;
@@ -171,9 +187,14 @@ h3 {
   letter-spacing: 0.5px;
 }
 
-.status-pending {
-  background-color: var(--status-pending-bg);
-  color: var(--status-pending-text);
+.status-init {
+  background-color: var(--status-init-bg);
+  color: var(--status-init-text);
+}
+
+.status-accept {
+  background-color: var(--status-accept-bg);
+  color: var(--status-accept-text);
 }
 
 .status-in-progress {
@@ -184,6 +205,23 @@ h3 {
 .status-done {
   background-color: var(--status-done-bg);
   color: var(--status-done-text);
+}
+
+.status-delete {
+  background-color: var(--status-delete-bg);
+  color: var(--status-delete-text);
+  opacity: 0.7;
+  text-decoration: line-through;
+}
+
+.status-hold {
+  background-color: var(--status-hold-bg);
+  color: var(--status-hold-text);
+}
+
+.status-split {
+  background-color: var(--status-split-bg);
+  color: var(--status-split-text);
 }
 
 /* 텍스트 스타일 */

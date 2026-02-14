@@ -55,7 +55,7 @@ describe("dnc-get-job-relations tool", () => {
     expect(result.content[0].text).toContain("job-simple");
     expect(result.content[0].text).toContain("Simple Task");
     expect(result.content[0].text).toContain("Task completed successfully");
-    expect(result.content[0].text).toContain("pending");
+    expect(result.content[0].text).toContain("init");
   });
 
   it("should return task with subtasks", async () => {
@@ -106,7 +106,7 @@ describe("dnc-get-job-relations tool", () => {
     expect(text).toContain("done");
     expect(text).toContain("job-child-2");
     expect(text).toContain("Child 2");
-    expect(text).toContain("pending");
+    expect(text).toContain("init");
   });
 
   it("should return deeply nested task structure", async () => {

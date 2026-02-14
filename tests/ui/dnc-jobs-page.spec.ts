@@ -105,9 +105,62 @@ test.describe("DnC Jobs List Page UI", () => {
       const firstStatus = statusElements.first();
       await expect(firstStatus).toBeVisible();
 
-      // 텍스트가 pending, in-progress, done 중 하나를 포함해야 함
+      // 텍스트가 7가지 상태 중 하나를 포함해야 함
       const text = await firstStatus.textContent();
-      expect(text).toMatch(/pending|in-progress|done/i);
+      expect(text).toMatch(/init|accept|in-progress|done|delete|hold|split/i);
+    }
+  });
+
+  test("should display all 7 status badges with correct styles", async ({ page }) => {
+    // Given: 메인 페이지 방문
+    await page.goto(`${baseUrl}/`);
+
+    // Then: 각 상태별 배지가 올바른 CSS 클래스를 가져야 함
+    const statusBadges = page.locator(".status-badge");
+    const count = await statusBadges.count();
+
+    if (count > 0) {
+      for (let i = 0; i < count; i++) {
+        const badge = statusBadges.nth(i);
+        const text = await badge.textContent();
+
+        if (text) {
+          const status = text.trim().toLowerCase();
+
+          if (
+            ["init", "accept", "in-progress", "done", "delete", "hold", "split"].includes(status)
+          ) {
+            // 각 상태에 해당하는 CSS 클래스가 있어야 함
+            const className = await badge.getAttribute("class");
+            expect(className).toContain(`status-${status}`);
+          }
+        }
+      }
+    }
+  });
+
+  test("delete status should have strikethrough style", async ({ page }) => {
+    // Given: 메인 페이지 방문
+    await page.goto(`${baseUrl}/`);
+
+    // Then: delete 상태 배지가 있다면 strikethrough 스타일을 가져야 함
+    const deleteBadges = page.locator(".status-badge.status-delete");
+    const count = await deleteBadges.count();
+
+    if (count > 0) {
+      const firstDeleteBadge = deleteBadges.first();
+      await expect(firstDeleteBadge).toBeVisible();
+
+      // CSS 스타일 확인
+      const textDecoration = await firstDeleteBadge.evaluate((el) =>
+        window.getComputedStyle(el).getPropertyValue("text-decoration")
+      );
+      const opacity = await firstDeleteBadge.evaluate((el) =>
+        window.getComputedStyle(el).getPropertyValue("opacity")
+      );
+
+      expect(textDecoration).toContain("line-through");
+      expect(parseFloat(opacity as string)).toBe(0.7);
     }
   });
 

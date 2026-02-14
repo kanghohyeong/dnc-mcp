@@ -71,6 +71,7 @@ describe("dnc-append-divided-job tool", () => {
     expect(updatedParent.tasks[0].goal).toBe("Child Task");
     expect(updatedParent.tasks[0].id).toBe("child-task");
     expect(updatedParent.tasks[0].acceptance).toBe("Child done");
+    expect(updatedParent.tasks[0].status).toBe("init");
   });
 
   it("should return error when root_task_id does not exist", async () => {

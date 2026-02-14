@@ -153,7 +153,7 @@ export function registerDncAppendDividedJobTool(mcpServer: McpServer) {
           id: child_job_title,
           goal: child_goal,
           acceptance: acceptance,
-          status: "pending",
+          status: "init",
           tasks: [],
         };
 
