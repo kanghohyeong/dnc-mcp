@@ -5,6 +5,7 @@ import {
   writeTask,
   updateTaskInTree,
   validateTaskStatus,
+  validateTaskId,
   taskExists,
   type TaskStatus,
 } from "../utils/dnc-utils.js";
@@ -15,11 +16,12 @@ export function registerDncUpdateJobTool(mcpServer: McpServer) {
     {
       description: "task의 goal, status, acceptance를 업데이트합니다.",
       inputSchema: {
-        job_title: z.string().describe("업데이트할 job title (필수, 영문 10단어 이하, kebab-case)"),
-        parent_job_title: z
+        root_task_id: z
           .string()
-          .optional()
-          .describe("부모 job title (child task 업데이트 시 지정)"),
+          .describe("Root task의 job title (필수, 영문 10단어 이하, kebab-case)"),
+        task_id: z
+          .string()
+          .describe("업데이트할 task의 job title (필수, 영문 10단어 이하, kebab-case)"),
         goal: z.string().optional().describe("새로운 목표 (선택)"),
         status: z
           .enum(["pending", "in-progress", "done"])
@@ -30,7 +32,7 @@ export function registerDncUpdateJobTool(mcpServer: McpServer) {
     },
     async (args) => {
       try {
-        const { job_title, parent_job_title, goal, status, acceptance } = args;
+        const { root_task_id, task_id, goal, status, acceptance } = args;
 
         // 최소 하나의 업데이트 필드 검증
         if (!goal && !status && !acceptance) {
@@ -58,16 +60,41 @@ export function registerDncUpdateJobTool(mcpServer: McpServer) {
           };
         }
 
-        // Root task title 결정
-        const rootJobTitle = parent_job_title || job_title;
-
-        // Root task 존재 확인
-        if (!(await taskExists(rootJobTitle))) {
+        // root_task_id 검증
+        const rootValidation = validateTaskId(root_task_id);
+        if (!rootValidation.isValid) {
           return {
             content: [
               {
                 type: "text" as const,
-                text: `오류: job_title "${rootJobTitle}"이(가) 존재하지 않습니다.`,
+                text: `오류: root_task_id이 유효하지 않습니다. ${rootValidation.error}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        // task_id 검증
+        const taskValidation = validateTaskId(task_id);
+        if (!taskValidation.isValid) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `오류: task_id가 유효하지 않습니다. ${taskValidation.error}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        // Root task 존재 확인
+        if (!(await taskExists(root_task_id))) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `오류: Root task "${root_task_id}"이(가) 존재하지 않습니다.`,
               },
             ],
             isError: true,
@@ -75,7 +102,7 @@ export function registerDncUpdateJobTool(mcpServer: McpServer) {
         }
 
         // Root task 읽기
-        const rootTask = await readTask(rootJobTitle);
+        const rootTask = await readTask(root_task_id);
 
         // Task 업데이트
         const updates: { goal?: string; status?: TaskStatus; acceptance?: string } = {};
@@ -83,14 +110,14 @@ export function registerDncUpdateJobTool(mcpServer: McpServer) {
         if (status) updates.status = status;
         if (acceptance) updates.acceptance = acceptance;
 
-        const success = updateTaskInTree(rootTask, job_title, updates);
+        const success = updateTaskInTree(rootTask, task_id, updates);
 
         if (!success) {
           return {
             content: [
               {
                 type: "text" as const,
-                text: `오류: job_title "${job_title}"을(를) 찾을 수 없습니다.`,
+                text: `오류: Task "${task_id}"를 트리에서 찾을 수 없습니다.`,
               },
             ],
             isError: true,
@@ -98,7 +125,7 @@ export function registerDncUpdateJobTool(mcpServer: McpServer) {
         }
 
         // Root task 저장
-        await writeTask(rootJobTitle, rootTask);
+        await writeTask(root_task_id, rootTask);
 
         return {
           content: [
@@ -106,7 +133,8 @@ export function registerDncUpdateJobTool(mcpServer: McpServer) {
               type: "text" as const,
               text: `Task가 성공적으로 업데이트되었습니다!
 
-📋 Task: ${job_title}
+📋 Root Task: ${root_task_id}
+📋 Updated Task: ${task_id}
 ${goal ? `🎯 New Goal: ${goal}\n` : ""}${status ? `📊 New Status: ${status}\n` : ""}${acceptance ? `✅ New Acceptance: ${acceptance}\n` : ""}
 Task 파일이 업데이트되었습니다.`,
             },

@@ -46,11 +46,11 @@ describe("dnc-delete-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncDeleteJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
-      parent_job_title?: string;
+      root_task_id: string;
+      task_id: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_title: "job-to-delete" });
+    const result = await handler({ root_task_id: "job-to-delete", task_id: "job-to-delete" });
 
     expect(result.isError).toBeUndefined();
     expect(result.content[0].text).toContain("삭제되었습니다");
@@ -86,13 +86,13 @@ describe("dnc-delete-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncDeleteJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
-      parent_job_title?: string;
+      root_task_id: string;
+      task_id: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_title: "job-child-to-delete",
-      parent_job_title: "job-parent",
+      root_task_id: "job-parent",
+      task_id: "job-child-to-delete",
     });
 
     expect(result.isError).toBeUndefined();
@@ -135,13 +135,13 @@ describe("dnc-delete-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncDeleteJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
-      parent_job_title?: string;
+      root_task_id: string;
+      task_id: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_title: "job-level-2",
-      parent_job_title: "job-root",
+      root_task_id: "job-root",
+      task_id: "job-level-2",
     });
 
     expect(result.isError).toBeUndefined();
@@ -156,13 +156,14 @@ describe("dnc-delete-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncDeleteJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
-      parent_job_title?: string;
+      root_task_id: string;
+      task_id: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_title: "non-existent-job" });
+    const result = await handler({ root_task_id: "non-existent-job", task_id: "non-existent-job" });
 
     expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("Root task");
     expect(result.content[0].text).toContain("존재하지 않습니다");
   });
 
@@ -171,11 +172,119 @@ describe("dnc-delete-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncDeleteJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title?: string;
+      root_task_id?: string;
+      task_id: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_title: "" });
+    const result = await handler({ root_task_id: "", task_id: "valid-task" });
 
     expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("root_task_id");
+    expect(result.content[0].text).toContain("유효하지 않습니다");
+  });
+
+  it("should return error when task_id is invalid", async () => {
+    const mcpServer = createTestMcpServer();
+    const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
+    registerDncDeleteJobTool(mcpServer);
+    const handler = registerToolSpy.mock.calls[0][2] as (args: {
+      root_task_id: string;
+      task_id: string;
+    }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
+
+    const result = await handler({ root_task_id: "valid-root", task_id: "Invalid Task" });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("task_id");
+    expect(result.content[0].text).toContain("유효하지 않습니다");
+  });
+
+  it("should return error when child task not in tree", async () => {
+    const task: Task = {
+      id: "job-root",
+      goal: "Root",
+      acceptance: "Done",
+      status: "pending",
+      tasks: [
+        {
+          id: "child-1",
+          goal: "Child 1",
+          acceptance: "Done",
+          status: "pending",
+          tasks: [],
+        },
+      ],
+    };
+
+    await ensureDncDirectory("job-root");
+    await writeTask("job-root", task);
+
+    const mcpServer = createTestMcpServer();
+    const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
+    registerDncDeleteJobTool(mcpServer);
+    const handler = registerToolSpy.mock.calls[0][2] as (args: {
+      root_task_id: string;
+      task_id: string;
+    }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
+
+    const result = await handler({ root_task_id: "job-root", task_id: "wrong-child" });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("wrong-child");
+    expect(result.content[0].text).toContain("트리에서 찾을 수 없습니다");
+  });
+
+  it("should delete deeply nested child (level-3)", async () => {
+    const task: Task = {
+      id: "job-root",
+      goal: "Root",
+      acceptance: "Done",
+      status: "pending",
+      tasks: [
+        {
+          id: "child-1",
+          goal: "Child 1",
+          acceptance: "Done",
+          status: "pending",
+          tasks: [
+            {
+              id: "child-2",
+              goal: "Child 2",
+              acceptance: "Done",
+              status: "pending",
+              tasks: [
+                {
+                  id: "child-3",
+                  goal: "Child 3",
+                  acceptance: "Done",
+                  status: "pending",
+                  tasks: [],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    await ensureDncDirectory("job-root");
+    await writeTask("job-root", task);
+
+    const mcpServer = createTestMcpServer();
+    const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
+    registerDncDeleteJobTool(mcpServer);
+    const handler = registerToolSpy.mock.calls[0][2] as (args: {
+      root_task_id: string;
+      task_id: string;
+    }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
+
+    const result = await handler({ root_task_id: "job-root", task_id: "child-3" });
+
+    expect(result.isError).toBeUndefined();
+    expect(result.content[0].text).toContain("삭제되었습니다");
+
+    const taskContent = await fs.readFile(".dnc/job-root/task.json", "utf-8");
+    const updatedRoot = JSON.parse(taskContent) as Task;
+    expect(updatedRoot.tasks[0].tasks[0].tasks).toHaveLength(0);
   });
 });

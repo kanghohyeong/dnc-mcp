@@ -46,14 +46,16 @@ describe("dnc-update-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncUpdateJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
+      root_task_id: string;
+      task_id: string;
       goal?: string;
       status?: string;
       acceptance?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_title: "job-to-update",
+      root_task_id: "job-to-update",
+      task_id: "job-to-update",
       goal: "Updated Goal",
     });
 
@@ -84,12 +86,14 @@ describe("dnc-update-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncUpdateJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
+      root_task_id: string;
+      task_id: string;
       status?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_title: "job-to-update",
+      root_task_id: "job-to-update",
+      task_id: "job-to-update",
       status: "in-progress",
     });
 
@@ -117,12 +121,14 @@ describe("dnc-update-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncUpdateJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
+      root_task_id: string;
+      task_id: string;
       acceptance?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_title: "job-to-update",
+      root_task_id: "job-to-update",
+      task_id: "job-to-update",
       acceptance: "Updated acceptance criteria",
     });
 
@@ -150,14 +156,16 @@ describe("dnc-update-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncUpdateJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
+      root_task_id: string;
+      task_id: string;
       goal?: string;
       status?: string;
       acceptance?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_title: "job-to-update",
+      root_task_id: "job-to-update",
+      task_id: "job-to-update",
       goal: "New Goal",
       status: "done",
       acceptance: "New acceptance",
@@ -197,15 +205,15 @@ describe("dnc-update-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncUpdateJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
-      parent_job_title?: string;
+      root_task_id: string;
+      task_id: string;
       goal?: string;
       status?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_title: "job-child",
-      parent_job_title: "job-parent",
+      root_task_id: "job-parent",
+      task_id: "job-child",
       goal: "Updated Child Goal",
       status: "done",
     });
@@ -235,12 +243,14 @@ describe("dnc-update-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncUpdateJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
+      root_task_id: string;
+      task_id: string;
       status?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_title: "job-to-update",
+      root_task_id: "job-to-update",
+      task_id: "job-to-update",
       status: "invalid-status",
     });
 
@@ -253,16 +263,19 @@ describe("dnc-update-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncUpdateJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
+      root_task_id: string;
+      task_id: string;
       goal?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_title: "non-existent",
+      root_task_id: "non-existent",
+      task_id: "non-existent",
       goal: "New Goal",
     });
 
     expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("Root task");
     expect(result.content[0].text).toContain("존재하지 않습니다");
   });
 
@@ -282,10 +295,11 @@ describe("dnc-update-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncUpdateJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
+      root_task_id: string;
+      task_id: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_title: "job-to-update" });
+    const result = await handler({ root_task_id: "job-to-update", task_id: "job-to-update" });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain("최소 하나");
@@ -296,11 +310,182 @@ describe("dnc-update-job tool", () => {
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
     registerDncUpdateJobTool(mcpServer);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title?: string;
+      root_task_id?: string;
+      task_id: string;
+      goal?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_title: "" });
+    const result = await handler({ root_task_id: "", task_id: "valid", goal: "New Goal" });
 
     expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("root_task_id");
+    expect(result.content[0].text).toContain("유효하지 않습니다");
+  });
+
+  it("should return error when task_id is invalid", async () => {
+    const mcpServer = createTestMcpServer();
+    const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
+    registerDncUpdateJobTool(mcpServer);
+    const handler = registerToolSpy.mock.calls[0][2] as (args: {
+      root_task_id: string;
+      task_id: string;
+      goal?: string;
+    }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
+
+    const result = await handler({ root_task_id: "valid", task_id: "Invalid", goal: "New Goal" });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("task_id");
+    expect(result.content[0].text).toContain("유효하지 않습니다");
+  });
+
+  it("should return error when child task not in tree", async () => {
+    const task: Task = {
+      id: "job-root",
+      goal: "Root",
+      acceptance: "Done",
+      status: "pending",
+      tasks: [
+        {
+          id: "child-1",
+          goal: "Child 1",
+          acceptance: "Done",
+          status: "pending",
+          tasks: [],
+        },
+      ],
+    };
+
+    await ensureDncDirectory("job-root");
+    await writeTask("job-root", task);
+
+    const mcpServer = createTestMcpServer();
+    const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
+    registerDncUpdateJobTool(mcpServer);
+    const handler = registerToolSpy.mock.calls[0][2] as (args: {
+      root_task_id: string;
+      task_id: string;
+      goal?: string;
+    }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
+
+    const result = await handler({
+      root_task_id: "job-root",
+      task_id: "wrong-child",
+      goal: "New Goal",
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("wrong-child");
+    expect(result.content[0].text).toContain("트리에서 찾을 수 없습니다");
+  });
+
+  it("should update nested child task (level-2)", async () => {
+    const task: Task = {
+      id: "job-root",
+      goal: "Root",
+      acceptance: "Done",
+      status: "pending",
+      tasks: [
+        {
+          id: "child-1",
+          goal: "Child 1",
+          acceptance: "Done",
+          status: "pending",
+          tasks: [
+            {
+              id: "child-2",
+              goal: "Child 2",
+              acceptance: "Done",
+              status: "pending",
+              tasks: [],
+            },
+          ],
+        },
+      ],
+    };
+
+    await ensureDncDirectory("job-root");
+    await writeTask("job-root", task);
+
+    const mcpServer = createTestMcpServer();
+    const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
+    registerDncUpdateJobTool(mcpServer);
+    const handler = registerToolSpy.mock.calls[0][2] as (args: {
+      root_task_id: string;
+      task_id: string;
+      status?: string;
+    }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
+
+    const result = await handler({
+      root_task_id: "job-root",
+      task_id: "child-2",
+      status: "done",
+    });
+
+    expect(result.isError).toBeUndefined();
+
+    const taskContent = await fs.readFile(".dnc/job-root/task.json", "utf-8");
+    const updatedRoot = JSON.parse(taskContent) as Task;
+
+    expect(updatedRoot.tasks[0].tasks[0].status).toBe("done");
+  });
+
+  it("should update nested child task (level-3)", async () => {
+    const task: Task = {
+      id: "job-root",
+      goal: "Root",
+      acceptance: "Done",
+      status: "pending",
+      tasks: [
+        {
+          id: "child-1",
+          goal: "Child 1",
+          acceptance: "Done",
+          status: "pending",
+          tasks: [
+            {
+              id: "child-2",
+              goal: "Child 2",
+              acceptance: "Done",
+              status: "pending",
+              tasks: [
+                {
+                  id: "child-3",
+                  goal: "Child 3",
+                  acceptance: "Done",
+                  status: "pending",
+                  tasks: [],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    await ensureDncDirectory("job-root");
+    await writeTask("job-root", task);
+
+    const mcpServer = createTestMcpServer();
+    const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
+    registerDncUpdateJobTool(mcpServer);
+    const handler = registerToolSpy.mock.calls[0][2] as (args: {
+      root_task_id: string;
+      task_id: string;
+      goal?: string;
+    }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
+
+    const result = await handler({
+      root_task_id: "job-root",
+      task_id: "child-3",
+      goal: "Updated",
+    });
+
+    expect(result.isError).toBeUndefined();
+
+    const taskContent = await fs.readFile(".dnc/job-root/task.json", "utf-8");
+    const updatedRoot = JSON.parse(taskContent) as Task;
+
+    expect(updatedRoot.tasks[0].tasks[0].tasks[0].goal).toBe("Updated");
   });
 });
