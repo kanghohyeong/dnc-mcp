@@ -211,3 +211,45 @@ export function deleteTaskInTree(task: Task, targetTaskId: string): boolean {
 
   return false;
 }
+
+/**
+ * 모든 루트 task ID 목록을 조회합니다.
+ * @returns 알파벳순으로 정렬된 루트 task ID 배열
+ */
+export async function listRootTaskIds(): Promise<string[]> {
+  try {
+    const entries = await fs.readdir(".dnc", { withFileTypes: true });
+    const taskIds = entries
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort();
+    return taskIds;
+  } catch (error) {
+    // .dnc 디렉토리가 없으면 빈 배열 반환
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return [];
+    }
+    throw error;
+  }
+}
+
+/**
+ * 루트 task의 요약 정보를 조회합니다.
+ * @param taskId - task ID
+ * @returns task 요약 정보 (id, goal, status) 또는 null (실패 시)
+ */
+export async function getRootTaskSummary(
+  taskId: string
+): Promise<{ id: string; goal: string; status: TaskStatus } | null> {
+  try {
+    const task = await readTask(taskId);
+    return {
+      id: task.id,
+      goal: task.goal,
+      status: task.status,
+    };
+  } catch {
+    // 손상된 파일이나 읽기 실패 시 null 반환
+    return null;
+  }
+}

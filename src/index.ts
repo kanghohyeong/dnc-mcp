@@ -8,6 +8,7 @@ import { registerDncAppendDividedJobTool } from "./tools/dnc-append-divided-job.
 import { registerDncDeleteJobTool } from "./tools/dnc-delete-job.js";
 import { registerDncUpdateJobTool } from "./tools/dnc-update-job.js";
 import { registerDncGetJobRelationsTool } from "./tools/dnc-get-job-relations.js";
+import { registerDncListRootJobsTool } from "./tools/dnc-list-root-jobs.js";
 import { UIWebServer } from "./services/web-server.js";
 
 /**
@@ -42,6 +43,7 @@ registerDncAppendDividedJobTool(mcpServer);
 registerDncDeleteJobTool(mcpServer);
 registerDncUpdateJobTool(mcpServer);
 registerDncGetJobRelationsTool(mcpServer);
+registerDncListRootJobsTool(mcpServer);
 
 /**
  * Setup client connection handler
