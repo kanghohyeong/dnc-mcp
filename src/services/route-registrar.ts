@@ -1,8 +1,5 @@
 import type { Express, Request, Response } from "express";
 import { DncJobService } from "./dnc-job-service.js";
-import type { Task } from "../utils/dnc-utils.js";
-import { marked } from "marked";
-import sanitizeHtml from "sanitize-html";
 
 /**
  * Express 라우트를 등록하는 클래스
@@ -46,41 +43,6 @@ export class RouteRegistrar {
   }
 
   /**
-   * 마크다운을 HTML로 변환
-   */
-  private async convertMarkdownToHtml(markdown: string): Promise<string> {
-    const rawHtml = await marked.parse(markdown, {
-      breaks: true,
-      gfm: true,
-    });
-
-    return sanitizeHtml(rawHtml, {
-      allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img", "h1", "h2", "h3"]),
-      allowedAttributes: {
-        ...sanitizeHtml.defaults.allowedAttributes,
-        code: ["class"],
-      },
-    });
-  }
-
-  /**
-   * Task 객체에 재귀적으로 acceptanceHtml 추가
-   */
-  private async addHtmlToTask(task: Task): Promise<Task & { acceptanceHtml: string }> {
-    const acceptanceHtml = await this.convertMarkdownToHtml(task.acceptance);
-
-    const tasksWithHtml = await Promise.all(
-      task.tasks.map((childTask) => this.addHtmlToTask(childTask))
-    );
-
-    return {
-      ...task,
-      acceptanceHtml,
-      tasks: tasksWithHtml,
-    };
-  }
-
-  /**
    * GET /:jobTitle - DnC job 상세 페이지
    */
   private registerDncJobDetailRoute(app: Express): void {
@@ -98,13 +60,8 @@ export class RouteRegistrar {
           return;
         }
 
-        // 재귀적으로 acceptance를 HTML로 변환
-        const taskWithHtml = await this.addHtmlToTask(task);
-
         res.render("dnc-job-detail", {
-          job: taskWithHtml,
-          acceptanceHtml: taskWithHtml.acceptanceHtml,
-          specContentHtml: "",
+          job: task,
         });
       } catch (error) {
         res.status(500).render("error", {

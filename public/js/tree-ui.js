@@ -4,121 +4,68 @@
  */
 
 /**
- * 트리 아이템을 렌더링
+ * 재귀적 섹션 구조로 task 아이템 렌더링
  * @param {Object} task - 작업 객체
  * @param {number} depth - 트리 깊이
  * @returns {string} HTML 문자열
  */
-function renderTreeItem(task, depth = 0) {
+function renderTaskItem(task, depth = 0) {
   const hasChildren = task.tasks && task.tasks.length > 0;
-  const toggleClass = hasChildren ? '' : 'no-children';
-  const childrenId = `children-${task.id}`;
-  const detailsId = `details-${task.id}`;
-  const detailsContentId = `details-content-${task.id}`;
 
   let html = `
-    <div class="tree-item" data-depth="${depth}" data-testid="tree-item-${task.id}">
-      <div class="tree-item-header" onclick="toggleTreeItem('${task.id}')">
-        <span class="tree-toggle ${toggleClass}" id="toggle-${task.id}">▶</span>
-        <div class="tree-item-content">
-          <span class="tree-item-title" data-testid="tree-item-title">${escapeHtml(task.id)}</span>
-          <span class="tree-item-status status-${task.status}" data-testid="tree-item-status">${task.status}</span>
+    <div class="task-item" data-depth="${depth}" data-testid="tree-item-${task.id}">
+      <!-- Header: ID + Status -->
+      <div class="task-header">
+        <div class="task-id" data-testid="tree-item-title">${escapeHtml(task.id)}</div>
+        <div class="status-badge status-${task.status}" data-testid="tree-item-status">${task.status}</div>
+      </div>
+
+      <!-- Goal 섹션 -->
+      <div class="section">
+        <div class="section-label">Goal</div>
+        <div class="section-content" data-testid="tree-item-description">
+          ${escapeHtml(task.goal)}
         </div>
       </div>
-      <div class="tree-item-description" data-testid="tree-item-description">
-        ${escapeHtml(task.goal)}
+
+      <!-- Acceptance Criteria 섹션 -->
+      <div class="section">
+        <div class="section-label">Acceptance Criteria</div>
+        <div class="section-content">
+          ${escapeHtml(task.acceptance || '')}
+        </div>
       </div>
   `;
 
-  // 상세 정보 (Acceptance Criteria)
-  if (task.acceptanceHtml) {
+  // Subtasks 섹션 (자식이 있으면)
+  if (hasChildren) {
     html += `
-      <div class="tree-item-details" id="${detailsId}">
-        <div class="tree-item-details-header" onclick="toggleDetails('${task.id}')">
-          <span class="tree-item-details-title">Acceptance Criteria</span>
-          <span class="tree-item-details-toggle" id="details-toggle-${task.id}">▼</span>
-        </div>
-        <div class="tree-item-details-content" id="${detailsContentId}">
-          ${task.acceptanceHtml}
+      <div class="section">
+        <div class="section-label">Subtasks</div>
+        <div class="task-children">
+    `;
+
+    for (const child of task.tasks) {
+      html += renderTaskItem(child, depth + 1);  // 재귀 호출
+    }
+
+    html += `
         </div>
       </div>
     `;
-  }
-
-  // 자식 작업들
-  if (hasChildren) {
-    html += `<div class="tree-children" id="${childrenId}">`;
-    for (const child of task.tasks) {
-      html += renderTreeItem(child, depth + 1);
-    }
-    html += '</div>';
   }
 
   html += '</div>';
   return html;
 }
 
-/**
- * 트리 아이템 펼치기/접기
- * @param {string} taskId - 작업 ID
- */
-function toggleTreeItem(taskId) {
-  const toggle = document.getElementById(`toggle-${taskId}`);
-  const children = document.getElementById(`children-${taskId}`);
-  const details = document.getElementById(`details-${taskId}`);
-  const treeItem = document.querySelector(`[data-testid="tree-item-${taskId}"]`);
-
-  if (!toggle || toggle.classList.contains('no-children')) {
-    return;
-  }
-
-  if (children) {
-    const isExpanded = children.classList.contains('expanded');
-
-    if (isExpanded) {
-      children.classList.remove('expanded');
-      toggle.classList.remove('expanded');
-      if (treeItem) {
-        treeItem.classList.remove('expanded');
-      }
-      if (details) {
-        details.style.display = 'none';
-      }
-    } else {
-      children.classList.add('expanded');
-      toggle.classList.add('expanded');
-      if (treeItem) {
-        treeItem.classList.add('expanded');
-      }
-      if (details) {
-        details.style.display = 'block';
-      }
-    }
-  }
+// 하위 호환성을 위해 renderTreeItem을 renderTaskItem으로 aliasing
+function renderTreeItem(task, depth = 0) {
+  return renderTaskItem(task, depth);
 }
 
-/**
- * 상세 정보 표시/숨기기
- * @param {string} taskId - 작업 ID
- */
-function toggleDetails(taskId) {
-  const content = document.getElementById(`details-content-${taskId}`);
-  const toggleIcon = document.getElementById(`details-toggle-${taskId}`);
-
-  if (!content || !toggleIcon) {
-    return;
-  }
-
-  const isVisible = content.classList.contains('visible');
-
-  if (isVisible) {
-    content.classList.remove('visible');
-    toggleIcon.classList.remove('expanded');
-  } else {
-    content.classList.add('visible');
-    toggleIcon.classList.add('expanded');
-  }
-}
+// toggleTreeItem과 toggleDetails 함수는 재귀적 섹션 구조에서 제거됨
+// (펼치기/접기 기능 없음)
 
 /**
  * HTML 이스케이프
@@ -131,53 +78,8 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-/**
- * 모든 트리 아이템 펼치기
- */
-function expandAll() {
-  const allToggles = document.querySelectorAll('.tree-toggle:not(.no-children)');
-  allToggles.forEach(toggle => {
-    const taskId = toggle.id.replace('toggle-', '');
-    const children = document.getElementById(`children-${taskId}`);
-    const details = document.getElementById(`details-${taskId}`);
-    const treeItem = document.querySelector(`[data-testid="tree-item-${taskId}"]`);
-
-    if (children && !children.classList.contains('expanded')) {
-      children.classList.add('expanded');
-      toggle.classList.add('expanded');
-      if (treeItem) {
-        treeItem.classList.add('expanded');
-      }
-      if (details) {
-        details.style.display = 'block';
-      }
-    }
-  });
-}
-
-/**
- * 모든 트리 아이템 접기
- */
-function collapseAll() {
-  const allToggles = document.querySelectorAll('.tree-toggle:not(.no-children)');
-  allToggles.forEach(toggle => {
-    const taskId = toggle.id.replace('toggle-', '');
-    const children = document.getElementById(`children-${taskId}`);
-    const details = document.getElementById(`details-${taskId}`);
-    const treeItem = document.querySelector(`[data-testid="tree-item-${taskId}"]`);
-
-    if (children && children.classList.contains('expanded')) {
-      children.classList.remove('expanded');
-      toggle.classList.remove('expanded');
-      if (treeItem) {
-        treeItem.classList.remove('expanded');
-      }
-      if (details) {
-        details.style.display = 'none';
-      }
-    }
-  });
-}
+// expandAll과 collapseAll 함수는 재귀적 섹션 구조에서 제거됨
+// (모든 항목이 항상 표시됨)
 
 /**
  * 트리 초기화

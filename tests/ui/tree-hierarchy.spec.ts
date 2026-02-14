@@ -68,209 +68,184 @@ test.describe.serial("Tree Hierarchy UI", () => {
     }
   });
 
-  test.describe("트리 렌더링", () => {
+  test.describe("재귀적 섹션 렌더링", () => {
     test("계층 구조가 화면에 표시된다", async ({ page }) => {
       // Given: task 상세 페이지 방문
       await page.goto(`${baseUrl}/${testTaskId}`);
 
-      // Then: tree-item 요소들이 존재하는지
-      const treeItems = page.locator('[data-testid^="tree-item-"]');
-      const count = await treeItems.count();
+      // Then: task-item 요소들이 존재하는지 (루트 포함 총 4개)
+      const taskItems = page.locator(".task-item");
+      const count = await taskItems.count();
 
-      // Root task의 하위 task들 (child-1, child-2, grandchild-1) = 3개
-      expect(count).toBeGreaterThanOrEqual(3);
+      // Root task + child-1 + child-2 + grandchild-1 = 4개
+      expect(count).toBe(4);
     });
 
-    test("3-level 계층 구조가 올바른 depth로 렌더링된다", async ({ page }) => {
+    test("3-level 계층 구조가 올바른 depth 속성으로 렌더링된다", async ({ page }) => {
       // Given: task 상세 페이지 방문
       await page.goto(`${baseUrl}/${testTaskId}`);
 
-      // Then: 각 레벨의 depth 확인
+      // Then: 각 레벨의 data-depth 확인
+      const rootTask = page.locator(`[data-testid="tree-item-${testTaskId}"]`);
+      const child1 = page.locator('[data-testid="tree-item-child-1"]');
+      const child2 = page.locator('[data-testid="tree-item-child-2"]');
+      const grandchild1 = page.locator('[data-testid="tree-item-grandchild-1"]');
+
+      await expect(rootTask).toHaveAttribute("data-depth", "0");
+      await expect(child1).toHaveAttribute("data-depth", "1");
+      await expect(child2).toHaveAttribute("data-depth", "1");
+      await expect(grandchild1).toHaveAttribute("data-depth", "2");
+    });
+
+    test("모든 레벨이 동일한 섹션 구조를 가진다", async ({ page }) => {
+      // Given: task 상세 페이지 방문
+      await page.goto(`${baseUrl}/${testTaskId}`);
+
+      // Then: 루트 task가 Goal, Acceptance Criteria 섹션을 가짐
+      const rootTask = page.locator(`[data-testid="tree-item-${testTaskId}"]`);
+      await expect(rootTask.locator('.section-label:has-text("Goal")').first()).toBeVisible();
+      await expect(
+        rootTask.locator('.section-label:has-text("Acceptance Criteria")').first()
+      ).toBeVisible();
+
+      // child-1도 동일한 섹션 구조
+      const child1 = page.locator('[data-testid="tree-item-child-1"]');
+      await expect(child1.locator('.section-label:has-text("Goal")').first()).toBeVisible();
+      await expect(
+        child1.locator('.section-label:has-text("Acceptance Criteria")').first()
+      ).toBeVisible();
+    });
+
+    test("부모-자식 관계가 올바르게 중첩된다", async ({ page }) => {
+      // Given: task 상세 페이지 방문
+      await page.goto(`${baseUrl}/${testTaskId}`);
+
+      // Then: child-1 아래에 grandchild-1이 중첩되어 있는지
+      const child1 = page.locator('[data-testid="tree-item-child-1"]');
+      const grandchild1InChild1 = child1.locator('[data-testid="tree-item-grandchild-1"]');
+
+      await expect(grandchild1InChild1).toBeVisible();
+    });
+  });
+
+  test.describe("Acceptance Criteria 표시", () => {
+    test("Acceptance Criteria가 일반 텍스트로 표시된다 (마크다운 없음)", async ({ page }) => {
+      // Given: task 상세 페이지 방문
+      await page.goto(`${baseUrl}/${testTaskId}`);
+
+      // Then: 루트 task의 Acceptance Criteria가 일반 텍스트
+      const rootTask = page.locator(`[data-testid="tree-item-${testTaskId}"]`);
+      const acceptanceContent = rootTask
+        .locator('.section-label:has-text("Acceptance Criteria")')
+        .first()
+        .locator("..")
+        .locator(".section-content");
+
+      // HTML 태그가 아닌 일반 텍스트로 표시되어야 함
+      const content = await acceptanceContent.textContent();
+      expect(content).toContain("Root Acceptance");
+
+      // HTML 태그가 렌더링되지 않아야 함 (예: <h1>, <strong> 등)
+      const innerHTML = await acceptanceContent.innerHTML();
+      expect(innerHTML).not.toContain("<h1>");
+      expect(innerHTML).not.toContain("<strong>");
+    });
+
+    test("모든 레벨의 task에 Acceptance Criteria 섹션이 존재한다", async ({ page }) => {
+      // Given: task 상세 페이지 방문
+      await page.goto(`${baseUrl}/${testTaskId}`);
+
+      // Then: 각 레벨에 Acceptance Criteria 섹션 존재
+      const child1 = page.locator('[data-testid="tree-item-child-1"]');
+      const grandchild1 = page.locator('[data-testid="tree-item-grandchild-1"]');
+
+      await expect(
+        child1.locator('.section-label:has-text("Acceptance Criteria")').first()
+      ).toBeVisible();
+      await expect(
+        grandchild1.locator('.section-label:has-text("Acceptance Criteria")').first()
+      ).toBeVisible();
+    });
+  });
+
+  test.describe("Subtasks 섹션", () => {
+    test("자식이 있는 task에만 Subtasks 섹션이 표시된다", async ({ page }) => {
+      // Given: task 상세 페이지 방문
+      await page.goto(`${baseUrl}/${testTaskId}`);
+
+      // Then: 루트 task와 child-1은 Subtasks 섹션이 있음
+      const rootTask = page.locator(`[data-testid="tree-item-${testTaskId}"]`);
+      const child1 = page.locator('[data-testid="tree-item-child-1"]');
+      const child2 = page.locator('[data-testid="tree-item-child-2"]');
+
+      await expect(rootTask.locator('.section-label:has-text("Subtasks")').first()).toBeVisible();
+      await expect(child1.locator('.section-label:has-text("Subtasks")').first()).toBeVisible();
+
+      // child-2는 자식이 없으므로 Subtasks 섹션이 없어야 함
+      const child2SubtasksSection = child2.locator('.section-label:has-text("Subtasks")');
+      await expect(child2SubtasksSection).toHaveCount(0);
+    });
+
+    test("모든 자식 task가 항상 표시된다 (펼치기/접기 없음)", async ({ page }) => {
+      // Given: task 상세 페이지 방문
+      await page.goto(`${baseUrl}/${testTaskId}`);
+
+      // Then: 모든 subtask가 즉시 visible
       const child1 = page.locator('[data-testid="tree-item-child-1"]');
       const child2 = page.locator('[data-testid="tree-item-child-2"]');
       const grandchild1 = page.locator('[data-testid="tree-item-grandchild-1"]');
 
       await expect(child1).toBeVisible();
       await expect(child2).toBeVisible();
-
-      // grandchild는 초기에 접혀있을 수 있음 (DOM에는 존재하지만 hidden)
-      const grandchildExists = await grandchild1.count();
-      expect(grandchildExists).toBeGreaterThan(0);
-    });
-
-    test("부모-자식 관계가 올바르게 표현된다", async ({ page }) => {
-      // Given: task 상세 페이지 방문
-      await page.goto(`${baseUrl}/${testTaskId}`);
-
-      // Then: child-1 아래에 grandchild-1이 중첩되어 있는지
-      const child1Container = page.locator('[data-testid="tree-item-child-1"]').locator("..");
-      const grandchild1InChild1 = child1Container.locator('[data-testid="tree-item-grandchild-1"]');
-
-      const exists = await grandchild1InChild1.count();
-      expect(exists).toBeGreaterThan(0);
-    });
-  });
-
-  test.describe("펼치기/접기 기능", () => {
-    test("초기 상태: 자식 노드가 접혀있다", async ({ page }) => {
-      // Given: task 상세 페이지 방문
-      await page.goto(`${baseUrl}/${testTaskId}`);
-
-      // Then: grandchild가 숨겨져 있는지 (CSS로 hidden)
-      const grandchild1 = page.locator('[data-testid="tree-item-grandchild-1"]');
-
-      // hidden 또는 display: none 상태 확인
-      const isHidden = await grandchild1.isHidden().catch(() => true);
-      expect(isHidden).toBeTruthy();
-    });
-
-    test("토글 아이콘 클릭 시 자식 노드가 표시/숨김된다", async ({ page }) => {
-      // Given: task 상세 페이지 방문
-      await page.goto(`${baseUrl}/${testTaskId}`);
-
-      // When: child-1의 토글 아이콘 클릭 (직접 자식만 선택)
-      const toggleIcon = page.locator(
-        '[data-testid="tree-item-child-1"] > .tree-item-header .tree-toggle'
-      );
-      await toggleIcon.click();
-
-      // Then: grandchild-1이 표시됨
-      const grandchild1 = page.locator('[data-testid="tree-item-grandchild-1"]');
-      await expect(grandchild1).toBeVisible();
-
-      // When: 다시 토글 아이콘 클릭
-      await toggleIcon.click();
-
-      // Then: grandchild-1이 숨겨짐
-      await expect(grandchild1).toBeHidden();
-    });
-
-    test("expanded 클래스가 토글된다", async ({ page }) => {
-      // Given: task 상세 페이지 방문
-      await page.goto(`${baseUrl}/${testTaskId}`);
-
-      // When: child-1의 토글 아이콘 클릭 (직접 자식만 선택)
-      const child1Item = page.locator('[data-testid="tree-item-child-1"]');
-      const toggleIcon = page.locator(
-        '[data-testid="tree-item-child-1"] > .tree-item-header .tree-toggle'
-      );
-
-      // 요소가 렌더링될 때까지 대기
-      await expect(child1Item).toBeVisible();
-
-      // 초기 상태: expanded 클래스 없음
-      const initialClass = await child1Item.getAttribute("class");
-      expect(initialClass).not.toMatch(/expanded/);
-
-      // 펼치기
-      await toggleIcon.click();
-
-      // Then: expanded 클래스 추가
-      await expect(child1Item).toHaveClass(/expanded/);
-
-      // 접기
-      await toggleIcon.click();
-
-      // Then: expanded 클래스 제거
-      await expect(child1Item).not.toHaveClass(/expanded/);
-    });
-  });
-
-  test.describe("일괄 제어 버튼", () => {
-    test("모두 펼치기 버튼이 모든 노드를 확장한다", async ({ page }) => {
-      // Given: task 상세 페이지 방문
-      await page.goto(`${baseUrl}/${testTaskId}`);
-
-      // When: "모두 펼치기" 버튼 클릭
-      const expandAllBtn = page.locator(
-        'button:has-text("모두 펼치기"), button[data-action="expand-all"]'
-      );
-      await expandAllBtn.click();
-
-      // Then: 모든 tree-item이 expanded 클래스를 가짐
-      const child1 = page.locator('[data-testid="tree-item-child-1"]');
-
-      await expect(child1).toHaveClass(/expanded/);
-      // child2는 자식이 없어도 expanded 클래스를 가질 수 있음 (구현에 따라)
-
-      // grandchild가 visible 상태인지 확인
-      const grandchild1 = page.locator('[data-testid="tree-item-grandchild-1"]');
       await expect(grandchild1).toBeVisible();
     });
-
-    test("모두 접기 버튼이 모든 노드를 축소한다", async ({ page }) => {
-      // Given: task 상세 페이지 방문 및 모두 펼치기
-      await page.goto(`${baseUrl}/${testTaskId}`);
-
-      // subtasks 섹션이 렌더링될 때까지 대기
-      await page.waitForSelector('[data-testid="subtasks-section"]', { timeout: 5000 });
-
-      const expandAllBtn = page.locator('button:has-text("모두 펼치기")').first();
-      await expandAllBtn.click();
-
-      // When: "모두 접기" 버튼 클릭
-      const collapseAllBtn = page.locator(
-        'button:has-text("모두 접기"), button[data-action="collapse-all"]'
-      );
-      await collapseAllBtn.click();
-
-      // Then: 모든 tree-item에서 expanded 클래스 제거
-      const child1 = page.locator('[data-testid="tree-item-child-1"]');
-      const grandchild1 = page.locator('[data-testid="tree-item-grandchild-1"]');
-
-      await expect(child1).not.toHaveClass(/expanded/);
-      await expect(grandchild1).toBeHidden();
-    });
   });
 
-  test.describe("시각적 표현", () => {
+  test.describe("시각적 위계", () => {
     test("들여쓰기로 계층 구조가 표현된다", async ({ page }) => {
-      // Given: task 상세 페이지 방문 및 모두 펼치기
-      await page.goto(`${baseUrl}/${testTaskId}`);
-      const expandAllBtn = page.locator(
-        'button:has-text("모두 펼치기"), button[data-action="expand-all"]'
-      );
-      await expandAllBtn.click();
-
-      // Then: 각 레벨마다 다른 padding-left 값
-      const child1 = page.locator('[data-testid="tree-item-child-1"]');
-      const grandchild1 = page.locator('[data-testid="tree-item-grandchild-1"]');
-
-      const child1Style = await child1.evaluate((el: HTMLElement) => {
-        return window.getComputedStyle(el).paddingLeft;
-      });
-
-      const grandchildStyle = await grandchild1.evaluate((el: HTMLElement) => {
-        return window.getComputedStyle(el).paddingLeft;
-      });
-
-      // grandchild의 padding이 child보다 커야 함
-      const child1Padding = parseInt(child1Style as string);
-      const grandchildPadding = parseInt(grandchildStyle as string);
-
-      expect(grandchildPadding).toBeGreaterThan(child1Padding);
-    });
-
-    test("토글 아이콘이 존재한다", async ({ page }) => {
       // Given: task 상세 페이지 방문
       await page.goto(`${baseUrl}/${testTaskId}`);
 
-      // Then: child-1에 토글 아이콘 존재 (자식이 있음)
-      const child1Toggle = page.locator(
-        '[data-testid="tree-item-child-1"] > .tree-item-header .tree-toggle'
+      // Then: depth=0은 들여쓰기 없음
+      const rootTask = page.locator(`[data-testid="tree-item-${testTaskId}"]`);
+      const rootPadding = await rootTask.evaluate((el: HTMLElement) => {
+        return window.getComputedStyle(el).paddingLeft;
+      });
+
+      // depth=1은 들여쓰기 있음
+      const child1 = page.locator('[data-testid="tree-item-child-1"]');
+      const child1Padding = await child1.evaluate((el: HTMLElement) => {
+        return window.getComputedStyle(el).paddingLeft;
+      });
+
+      // depth=2는 더 큰 들여쓰기
+      const grandchild1 = page.locator('[data-testid="tree-item-grandchild-1"]');
+      const grandchildPadding = await grandchild1.evaluate((el: HTMLElement) => {
+        return window.getComputedStyle(el).paddingLeft;
+      });
+
+      // 위계에 따라 padding이 증가해야 함
+      const rootPx = parseInt(rootPadding as string);
+      const child1Px = parseInt(child1Padding as string);
+      const grandchildPx = parseInt(grandchildPadding as string);
+
+      expect(child1Px).toBeGreaterThan(rootPx);
+      expect(grandchildPx).toBeGreaterThan(child1Px);
+    });
+
+    test("task header에 ID와 Status가 표시된다", async ({ page }) => {
+      // Given: task 상세 페이지 방문
+      await page.goto(`${baseUrl}/${testTaskId}`);
+
+      // Then: child-1의 header에 ID와 Status
+      const child1 = page.locator('[data-testid="tree-item-child-1"]');
+      const child1Header = child1.locator(".task-header").first();
+
+      await expect(child1Header).toBeVisible();
+      await expect(child1Header.locator('[data-testid="tree-item-title"]')).toContainText(
+        "child-1"
       );
-      await expect(child1Toggle).toBeVisible();
-
-      // child-2에는 토글 아이콘이 없거나 disabled (자식 없음)
-      const child2 = page.locator('[data-testid="tree-item-child-2"]');
-      const child2Toggle = child2.locator("> .tree-item-header .tree-toggle");
-      const child2HasToggle = await child2Toggle.count();
-
-      // 자식이 없으면 토글 아이콘이 없거나 보이지 않아야 함
-      if (child2HasToggle > 0) {
-        const isVisible = await child2Toggle.isVisible();
-        expect(isVisible).toBeFalsy();
-      }
+      await expect(child1Header.locator('[data-testid="tree-item-status"]')).toContainText("done");
     });
   });
 });

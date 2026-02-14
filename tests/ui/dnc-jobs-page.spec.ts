@@ -181,8 +181,8 @@ test.describe("DnC Jobs List Page UI", () => {
       // When: 상세 페이지로 직접 이동
       await page.goto(`${baseUrl}/${firstJobId}`);
 
-      // Then: 상세 페이지에 job ID가 표시되어야 함
-      const detailPageJobId = page.locator('[data-testid="job-id"]');
+      // Then: 상세 페이지에 job ID가 표시되어야 함 (루트 task의 task-id)
+      const detailPageJobId = page.locator(".task-id").first();
       await expect(detailPageJobId).toBeVisible();
       await expect(detailPageJobId).toHaveText(firstJobId || "");
     }

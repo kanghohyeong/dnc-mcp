@@ -104,8 +104,8 @@ describe("DnC Job Detail Route", () => {
 
         // Assert
         expect(response.status).toBe(200);
-        expect(response.text).toContain(`status-${status}`);
-        expect(response.text).toContain(status);
+        // JavaScript가 클라이언트 사이드에서 렌더링하므로, jobData에 status가 포함되어 있는지 확인
+        expect(response.text).toContain(`"status":"${status}"`);
       }
     });
 
@@ -130,9 +130,10 @@ describe("DnC Job Detail Route", () => {
 
       // Assert
       expect(response.status).toBe(200);
-      expect(response.text).toContain("test-job-id");
-      // job.id가 표시되는지 확인 (job.job_title이 아님)
-      expect(response.text).toMatch(/data-testid="job-id"[^>]*>[\s\S]*?test-job-id/);
+      // JavaScript가 클라이언트 사이드에서 렌더링하므로, jobData에 id가 포함되어 있는지 확인
+      expect(response.text).toContain('"id":"test-job-id"');
+      // renderTaskItem 함수가 포함되어 있는지 확인
+      expect(response.text).toContain("renderTaskItem");
     });
   });
 });
