@@ -15,13 +15,18 @@ export function registerDncAppendDividedJobTool(mcpServer: McpServer) {
     {
       description: "부모 task의 tasks 목록에 하위 작업을 추가합니다.",
       inputSchema: {
-        parent_job_title: z
+        root_task_id: z
           .string()
-          .describe("부모 job title (필수, 영문 10단어 이하, kebab-case, 예: implement-user-auth)"),
+          .describe("Root task의 job title (필수, 영문 10단어 이하, kebab-case, 예: my-project)"),
+        parent_task_id: z
+          .string()
+          .describe(
+            "하위 작업을 추가할 부모 task의 job title (필수, 영문 10단어 이하, kebab-case, 예: setup-database)"
+          ),
         child_job_title: z
           .string()
           .describe(
-            "하위 작업의 고유 식별자 (필수, 영문 10단어 이하, kebab-case, 예: create-database-schema)"
+            "하위 작업의 고유 식별자 (필수, 영문 10단어 이하, kebab-case, 예: create-tables)"
           ),
         child_goal: z.string().describe("하위 작업의 목표 (필수)"),
         acceptance: z.string().describe("완료 기준 (필수)"),
@@ -29,16 +34,30 @@ export function registerDncAppendDividedJobTool(mcpServer: McpServer) {
     },
     async (args) => {
       try {
-        const { parent_job_title, child_job_title, child_goal, acceptance } = args;
+        const { root_task_id, parent_task_id, child_job_title, child_goal, acceptance } = args;
 
-        // parent_job_title 검증
-        const parentValidation = validateTaskId(parent_job_title);
+        // root_task_id 검증
+        const rootValidation = validateTaskId(root_task_id);
+        if (!rootValidation.isValid) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `오류: root_task_id이 유효하지 않습니다. ${rootValidation.error}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        // parent_task_id 검증
+        const parentValidation = validateTaskId(parent_task_id);
         if (!parentValidation.isValid) {
           return {
             content: [
               {
                 type: "text" as const,
-                text: `오류: parent_job_title이 유효하지 않습니다. ${parentValidation.error}`,
+                text: `오류: parent_task_id가 유효하지 않습니다. ${parentValidation.error}`,
               },
             ],
             isError: true,
@@ -85,13 +104,13 @@ export function registerDncAppendDividedJobTool(mcpServer: McpServer) {
           };
         }
 
-        // parent 존재 확인
-        if (!(await taskExists(parent_job_title))) {
+        // Root task 존재 확인
+        if (!(await taskExists(root_task_id))) {
           return {
             content: [
               {
                 type: "text" as const,
-                text: `오류: parent_job_title "${parent_job_title}"이(가) 존재하지 않습니다.`,
+                text: `오류: Root task "${root_task_id}"이(가) 존재하지 않습니다.`,
               },
             ],
             isError: true,
@@ -99,16 +118,16 @@ export function registerDncAppendDividedJobTool(mcpServer: McpServer) {
         }
 
         // Root task 읽기
-        const rootTask = await readTask(parent_job_title);
+        const rootTask = await readTask(root_task_id);
 
         // 부모 task 찾기
-        const parentTask = findTaskInTree(rootTask, parent_job_title);
+        const parentTask = findTaskInTree(rootTask, parent_task_id);
         if (!parentTask) {
           return {
             content: [
               {
                 type: "text" as const,
-                text: `오류: parent_job_title "${parent_job_title}"이(가) 존재하지 않습니다.`,
+                text: `오류: Parent task "${parent_task_id}"를 트리에서 찾을 수 없습니다.`,
               },
             ],
             isError: true,
@@ -142,7 +161,7 @@ export function registerDncAppendDividedJobTool(mcpServer: McpServer) {
         parentTask.tasks.push(childTask);
 
         // Root task 저장
-        await writeTask(parent_job_title, rootTask);
+        await writeTask(root_task_id, rootTask);
 
         return {
           content: [
@@ -150,7 +169,8 @@ export function registerDncAppendDividedJobTool(mcpServer: McpServer) {
               type: "text" as const,
               text: `하위 작업이 성공적으로 추가되었습니다!
 
-📋 Parent Task: ${parent_job_title}
+📋 Root Task: ${root_task_id}
+📋 Parent Task: ${parent_task_id}
   ↳ 📋 Child Task: ${child_job_title}
   🎯 Goal: ${child_goal}
   ✅ Acceptance: ${acceptance}
