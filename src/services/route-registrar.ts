@@ -1,12 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { DncJobService } from "./dnc-job-service.js";
-import {
-  readTask,
-  writeTask,
-  updateTaskInTree,
-  validateTaskStatus,
-  type TaskStatus,
-} from "../utils/dnc-utils.js";
+import { updateTaskInTree, validateTaskStatus } from "../utils/dnc-utils.js";
+import type { IDncTaskRepository, TaskStatus } from "../repositories/index.js";
 
 /**
  * Batch update request 타입
@@ -33,9 +28,11 @@ interface BatchUpdateResult {
  */
 export class RouteRegistrar {
   private dncJobService: DncJobService;
+  private repository: IDncTaskRepository;
 
-  constructor(dncJobService?: DncJobService) {
-    this.dncJobService = dncJobService || new DncJobService();
+  constructor(repository: IDncTaskRepository) {
+    this.repository = repository;
+    this.dncJobService = new DncJobService(repository);
   }
 
   /**
@@ -122,7 +119,7 @@ export class RouteRegistrar {
         for (const [rootTaskId, taskUpdates] of updatesByRoot.entries()) {
           try {
             // Root task 읽기
-            const rootTask = await readTask(rootTaskId);
+            const rootTask = await this.repository.findRootTask(rootTaskId);
 
             if (!rootTask) {
               // Root task가 없으면 해당 그룹의 모든 업데이트 실패
@@ -150,7 +147,7 @@ export class RouteRegistrar {
             }
 
             // 변경사항을 한 번만 저장 (race condition 방지)
-            await writeTask(rootTaskId, rootTask);
+            await this.repository.saveRootTask(rootTaskId, rootTask);
           } catch (error) {
             // 에러 발생 시 해당 그룹의 모든 업데이트 실패
             for (const { taskId } of taskUpdates) {

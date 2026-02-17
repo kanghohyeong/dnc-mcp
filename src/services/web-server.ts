@@ -5,11 +5,12 @@ import { ConnectionManager } from "./connection-manager.js";
 import { ExpressAppConfigurator } from "./express-app-configurator.js";
 import { PortFinder } from "./port-finder.js";
 import { RouteRegistrar } from "./route-registrar.js";
-import { DncJobService } from "./dnc-job-service.js";
+import { FileSystemDncTaskRepository } from "../repositories/index.js";
+import type { IDncTaskRepository } from "../repositories/index.js";
 
 export interface UIWebServerOptions {
   autoOpenBrowser?: boolean;
-  dncJobService?: DncJobService;
+  repository?: IDncTaskRepository;
 }
 
 /**
@@ -38,9 +39,10 @@ export class UIWebServer {
     this.autoOpenBrowser = options?.autoOpenBrowser ?? process.env.NODE_ENV !== "test";
 
     // 컴포넌트 초기화
+    const repository = options?.repository ?? new FileSystemDncTaskRepository();
     this.connectionManager = new ConnectionManager();
     this.configurator = new ExpressAppConfigurator();
-    this.routeRegistrar = new RouteRegistrar(options?.dncJobService);
+    this.routeRegistrar = new RouteRegistrar(repository);
     this.portFinder = new PortFinder(3331, 100);
 
     // Express 앱 설정

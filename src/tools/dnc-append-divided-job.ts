@@ -1,15 +1,12 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod";
-import {
-  readTask,
-  writeTask,
-  findTaskInTree,
-  validateTaskId,
-  taskExists,
-  type Task,
-} from "../utils/dnc-utils.js";
+import { findTaskInTree, validateTaskId } from "../utils/dnc-utils.js";
+import type { IDncTaskRepository, Task } from "../repositories/index.js";
 
-export function registerDncAppendDividedJobTool(mcpServer: McpServer) {
+export function registerDncAppendDividedJobTool(
+  mcpServer: McpServer,
+  repository: IDncTaskRepository
+) {
   mcpServer.registerTool(
     "dnc_append_divided_job",
     {
@@ -105,7 +102,7 @@ export function registerDncAppendDividedJobTool(mcpServer: McpServer) {
         }
 
         // Root task 존재 확인
-        if (!(await taskExists(root_task_id))) {
+        if (!(await repository.rootTaskExists(root_task_id))) {
           return {
             content: [
               {
@@ -118,7 +115,7 @@ export function registerDncAppendDividedJobTool(mcpServer: McpServer) {
         }
 
         // Root task 읽기
-        const rootTask = await readTask(root_task_id);
+        const rootTask = await repository.findRootTask(root_task_id);
 
         // 부모 task 찾기
         const parentTask = findTaskInTree(rootTask, parent_task_id);
@@ -161,21 +158,13 @@ export function registerDncAppendDividedJobTool(mcpServer: McpServer) {
         parentTask.tasks.push(childTask);
 
         // Root task 저장
-        await writeTask(root_task_id, rootTask);
+        await repository.saveRootTask(root_task_id, rootTask);
 
         return {
           content: [
             {
               type: "text" as const,
-              text: `하위 작업이 성공적으로 추가되었습니다!
-
-📋 Root Task: ${root_task_id}
-📋 Parent Task: ${parent_task_id}
-  ↳ 📋 Child Task: ${child_job_title}
-  🎯 Goal: ${child_goal}
-  ✅ Acceptance: ${acceptance}
-
-다음 단계: 필요시 dnc_append_divided_job로 추가 하위 작업을 분할하거나, dnc_update_job로 상태를 업데이트하세요.`,
+              text: `하위 작업이 성공적으로 추가되었습니다!\n\n📋 Root Task: ${root_task_id}\n📋 Parent Task: ${parent_task_id}\n  ↳ 📋 Child Task: ${child_job_title}\n  🎯 Goal: ${child_goal}\n  ✅ Acceptance: ${acceptance}\n\n다음 단계: 필요시 dnc_append_divided_job로 추가 하위 작업을 분할하거나, dnc_update_job로 상태를 업데이트하세요.`,
             },
           ],
         };

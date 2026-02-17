@@ -1,15 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod";
-import * as fs from "fs/promises";
-import {
-  readTask,
-  writeTask,
-  deleteTaskInTree,
-  taskExists,
-  validateTaskId,
-} from "../utils/dnc-utils.js";
+import { deleteTaskInTree, validateTaskId } from "../utils/dnc-utils.js";
+import type { IDncTaskRepository } from "../repositories/index.js";
 
-export function registerDncDeleteJobTool(mcpServer: McpServer) {
+export function registerDncDeleteJobTool(mcpServer: McpServer, repository: IDncTaskRepository) {
   mcpServer.registerTool(
     "dnc_delete_job",
     {
@@ -58,7 +52,7 @@ export function registerDncDeleteJobTool(mcpServer: McpServer) {
 
         // Root task 삭제 (root_task_id === task_id)
         if (root_task_id === task_id) {
-          if (!(await taskExists(root_task_id))) {
+          if (!(await repository.rootTaskExists(root_task_id))) {
             return {
               content: [
                 {
@@ -70,23 +64,20 @@ export function registerDncDeleteJobTool(mcpServer: McpServer) {
             };
           }
 
-          await fs.rm(`.dnc/${root_task_id}`, { recursive: true, force: true });
+          await repository.deleteRootTask(root_task_id);
 
           return {
             content: [
               {
                 type: "text" as const,
-                text: `Root task가 성공적으로 삭제되었습니다!
-
-📋 Deleted Task: ${task_id}
-🗑️  전체 디렉토리가 삭제되었습니다: .dnc/${root_task_id}`,
+                text: `Root task가 성공적으로 삭제되었습니다!\n\n📋 Deleted Task: ${task_id}\n🗑️  전체 디렉토리가 삭제되었습니다: .dnc/${root_task_id}`,
               },
             ],
           };
         }
 
         // Child task 삭제 (root_task_id !== task_id)
-        if (!(await taskExists(root_task_id))) {
+        if (!(await repository.rootTaskExists(root_task_id))) {
           return {
             content: [
               {
@@ -98,7 +89,7 @@ export function registerDncDeleteJobTool(mcpServer: McpServer) {
           };
         }
 
-        const rootTask = await readTask(root_task_id);
+        const rootTask = await repository.findRootTask(root_task_id);
         const success = deleteTaskInTree(rootTask, task_id);
 
         if (!success) {
@@ -113,17 +104,13 @@ export function registerDncDeleteJobTool(mcpServer: McpServer) {
           };
         }
 
-        await writeTask(root_task_id, rootTask);
+        await repository.saveRootTask(root_task_id, rootTask);
 
         return {
           content: [
             {
               type: "text" as const,
-              text: `Child task가 성공적으로 삭제되었습니다!
-
-📋 Root Task: ${root_task_id}
-📋 Deleted Task: ${task_id}
-🗑️  트리에서 제거되었습니다.`,
+              text: `Child task가 성공적으로 삭제되었습니다!\n\n📋 Root Task: ${root_task_id}\n📋 Deleted Task: ${task_id}\n🗑️  트리에서 제거되었습니다.`,
             },
           ],
         };

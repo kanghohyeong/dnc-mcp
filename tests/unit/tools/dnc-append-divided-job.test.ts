@@ -3,15 +3,19 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { registerDncAppendDividedJobTool } from "../../../src/tools/dnc-append-divided-job.js";
 import { createTestMcpServer } from "../../helpers/test-utils.js";
-import { writeTask, ensureDncDirectory, type Task } from "../../../src/utils/dnc-utils.js";
+import { writeTask, ensureDncDirectory } from "../../../src/utils/dnc-utils.js";
+import { FileSystemDncTaskRepository } from "../../../src/repositories/index.js";
+import type { Task } from "../../../src/repositories/index.js";
 
 describe("dnc-append-divided-job tool", () => {
   const testRoot = path.join(process.cwd(), ".dnc-test-append");
   const originalCwd = process.cwd();
+  let repository: FileSystemDncTaskRepository;
 
   beforeEach(async () => {
     await fs.mkdir(testRoot, { recursive: true });
     process.chdir(testRoot);
+    repository = new FileSystemDncTaskRepository();
   });
 
   afterEach(async () => {
@@ -24,7 +28,7 @@ describe("dnc-append-divided-job tool", () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
 
-    registerDncAppendDividedJobTool(mcpServer);
+    registerDncAppendDividedJobTool(mcpServer, repository);
 
     expect(registerToolSpy).toHaveBeenCalledTimes(1);
     expect(registerToolSpy.mock.calls[0][0]).toBe("dnc_append_divided_job");
@@ -44,7 +48,7 @@ describe("dnc-append-divided-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncAppendDividedJobTool(mcpServer);
+    registerDncAppendDividedJobTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       parent_task_id: string;
@@ -77,7 +81,7 @@ describe("dnc-append-divided-job tool", () => {
   it("should return error when root_task_id does not exist", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncAppendDividedJobTool(mcpServer);
+    registerDncAppendDividedJobTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       parent_task_id: string;
@@ -121,7 +125,7 @@ describe("dnc-append-divided-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncAppendDividedJobTool(mcpServer);
+    registerDncAppendDividedJobTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       parent_task_id: string;
@@ -145,7 +149,7 @@ describe("dnc-append-divided-job tool", () => {
   it("should handle empty child_goal", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncAppendDividedJobTool(mcpServer);
+    registerDncAppendDividedJobTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       parent_task_id: string;
@@ -180,7 +184,7 @@ describe("dnc-append-divided-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncAppendDividedJobTool(mcpServer);
+    registerDncAppendDividedJobTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       parent_task_id: string;
@@ -223,7 +227,7 @@ describe("dnc-append-divided-job tool", () => {
   it("should return error for invalid child_job_title format", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncAppendDividedJobTool(mcpServer);
+    registerDncAppendDividedJobTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       parent_task_id: string;
@@ -259,7 +263,7 @@ describe("dnc-append-divided-job tool", () => {
 
       const mcpServer = createTestMcpServer();
       const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-      registerDncAppendDividedJobTool(mcpServer);
+      registerDncAppendDividedJobTool(mcpServer, repository);
       const handler = registerToolSpy.mock.calls[0][2] as (args: {
         root_task_id: string;
         parent_task_id: string;
@@ -309,7 +313,7 @@ describe("dnc-append-divided-job tool", () => {
 
       const mcpServer = createTestMcpServer();
       const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-      registerDncAppendDividedJobTool(mcpServer);
+      registerDncAppendDividedJobTool(mcpServer, repository);
       const handler = registerToolSpy.mock.calls[0][2] as (args: {
         root_task_id: string;
         parent_task_id: string;
@@ -375,7 +379,7 @@ describe("dnc-append-divided-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncAppendDividedJobTool(mcpServer);
+    registerDncAppendDividedJobTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       parent_task_id: string;
@@ -411,7 +415,7 @@ describe("dnc-append-divided-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncAppendDividedJobTool(mcpServer);
+    registerDncAppendDividedJobTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       parent_task_id: string;

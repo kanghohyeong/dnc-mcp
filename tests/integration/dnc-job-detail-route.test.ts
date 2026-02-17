@@ -6,7 +6,8 @@ import os from "os";
 import type { Express } from "express";
 import express from "express";
 import { RouteRegistrar } from "../../src/services/route-registrar.js";
-import type { Task } from "../../src/utils/dnc-utils.js";
+import { FileSystemDncTaskRepository } from "../../src/repositories/index.js";
+import type { Task } from "../../src/repositories/index.js";
 
 describe("DnC Job Detail Route", () => {
   let app: Express;
@@ -26,7 +27,8 @@ describe("DnC Job Detail Route", () => {
     app.set("view engine", "ejs");
     app.set("views", path.join(originalCwd, "views"));
 
-    const routeRegistrar = new RouteRegistrar();
+    const repository = new FileSystemDncTaskRepository(path.join(tempDir, ".dnc"));
+    const routeRegistrar = new RouteRegistrar(repository);
     routeRegistrar.registerRoutes(app);
   });
 
@@ -49,7 +51,7 @@ describe("DnC Job Detail Route", () => {
         id: "job-test-123",
         goal: "Test job",
         acceptance: "All tests pass",
-        status: "pending",
+        status: "init",
         tasks: [],
       };
 
@@ -63,7 +65,7 @@ describe("DnC Job Detail Route", () => {
       expect(response.type).toBe("text/html");
       expect(response.text).toContain("job-test-123");
       expect(response.text).toContain("Test job");
-      expect(response.text).toContain("pending");
+      expect(response.text).toContain("init");
     });
 
     it("should return 404 for non-existent job", async () => {
@@ -79,8 +81,8 @@ describe("DnC Job Detail Route", () => {
       // Arrange: pending, in-progress, done 상태의 task 생성
       const dncDir = path.join(tempDir, ".dnc");
 
-      const statuses: Array<"pending" | "in-progress" | "done"> = [
-        "pending",
+      const statuses: Array<"init" | "in-progress" | "done"> = [
+        "init",
         "in-progress",
         "done",
       ];

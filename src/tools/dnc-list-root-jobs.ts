@@ -1,11 +1,14 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { listRootTaskIds, getRootTaskSummary } from "../utils/dnc-utils.js";
+import type { IDncTaskRepository } from "../repositories/index.js";
 
 /**
  * DNC 루트 task 목록 조회 도구를 등록합니다.
  * @param mcpServer - MCP 서버 인스턴스
  */
-export function registerDncListRootJobsTool(mcpServer: McpServer): void {
+export function registerDncListRootJobsTool(
+  mcpServer: McpServer,
+  repository: IDncTaskRepository
+): void {
   mcpServer.registerTool(
     "dnc_list_root_jobs",
     {
@@ -15,7 +18,7 @@ export function registerDncListRootJobsTool(mcpServer: McpServer): void {
     async () => {
       try {
         // 모든 루트 task ID 조회
-        const taskIds = await listRootTaskIds();
+        const taskIds = await repository.listRootTaskIds();
 
         // 루트 task가 없는 경우
         if (taskIds.length === 0) {
@@ -32,11 +35,13 @@ export function registerDncListRootJobsTool(mcpServer: McpServer): void {
         // 각 루트 task의 요약 정보 수집
         const summaries = await Promise.all(
           taskIds.map(async (taskId) => {
-            const summary = await getRootTaskSummary(taskId);
-            if (!summary) {
+            try {
+              const task = await repository.findRootTask(taskId);
+              return { id: task.id, goal: task.goal, status: task.status };
+            } catch {
               console.error(`Warning: Failed to read task ${taskId}`);
+              return null;
             }
-            return summary;
           })
         );
 

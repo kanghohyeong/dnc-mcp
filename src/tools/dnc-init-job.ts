@@ -1,14 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod";
-import {
-  ensureDncDirectory,
-  writeTask,
-  taskExists,
-  validateTaskId,
-  type Task,
-} from "../utils/dnc-utils.js";
+import { validateTaskId } from "../utils/dnc-utils.js";
+import type { IDncTaskRepository, Task } from "../repositories/index.js";
 
-export function registerDncInitJobTool(mcpServer: McpServer) {
+export function registerDncInitJobTool(mcpServer: McpServer, repository: IDncTaskRepository) {
   mcpServer.registerTool(
     "dnc_init_job",
     {
@@ -68,7 +63,7 @@ export function registerDncInitJobTool(mcpServer: McpServer) {
         }
 
         // 중복 확인
-        if (await taskExists(job_title)) {
+        if (await repository.rootTaskExists(job_title)) {
           return {
             content: [
               {
@@ -80,9 +75,6 @@ export function registerDncInitJobTool(mcpServer: McpServer) {
           };
         }
 
-        // 디렉토리 생성
-        await ensureDncDirectory(job_title);
-
         // task 데이터 생성
         const task: Task = {
           id: job_title,
@@ -92,21 +84,14 @@ export function registerDncInitJobTool(mcpServer: McpServer) {
           tasks: [],
         };
 
-        // task 파일 저장
-        await writeTask(job_title, task);
+        // task 파일 저장 (디렉토리 생성 포함)
+        await repository.saveRootTask(job_title, task);
 
         return {
           content: [
             {
               type: "text" as const,
-              text: `Root task가 성공적으로 생성되었습니다!
-
-📋 Task ID: ${job_title}
-🎯 Goal: ${goal}
-✅ Acceptance: ${acceptance}
-📄 Task File: .dnc/${job_title}/task.json
-
-다음 단계: dnc_append_divided_job 명령으로 하위 작업을 분할하세요.`,
+              text: `Root task가 성공적으로 생성되었습니다!\n\n📋 Task ID: ${job_title}\n🎯 Goal: ${goal}\n✅ Acceptance: ${acceptance}\n📄 Task File: .dnc/${job_title}/task.json\n\n다음 단계: dnc_append_divided_job 명령으로 하위 작업을 분할하세요.`,
             },
           ],
         };

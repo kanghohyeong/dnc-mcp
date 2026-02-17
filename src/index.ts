@@ -10,6 +10,7 @@ import { registerDncUpdateJobTool } from "./tools/dnc-update-job.js";
 import { registerDncGetJobRelationsTool } from "./tools/dnc-get-job-relations.js";
 import { registerDncListRootJobsTool } from "./tools/dnc-list-root-jobs.js";
 import { UIWebServer } from "./services/web-server.js";
+import { FileSystemDncTaskRepository } from "./repositories/index.js";
 
 /**
  * MCP Server for interlock_mcp
@@ -25,8 +26,11 @@ const mcpServer = new McpServer({
   version: "1.0.0",
 });
 
+// Initialize repository
+const repository = new FileSystemDncTaskRepository();
+
 // Initialize the web server
-const webServer = new UIWebServer();
+const webServer = new UIWebServer({ repository });
 
 /**
  * Register all tools
@@ -38,12 +42,12 @@ const webServer = new UIWebServer();
 registerGetKstTimeTool(mcpServer);
 
 // DnC (Divide and Conquer) job 관리 도구들
-registerDncInitJobTool(mcpServer);
-registerDncAppendDividedJobTool(mcpServer);
-registerDncDeleteJobTool(mcpServer);
-registerDncUpdateJobTool(mcpServer);
-registerDncGetJobRelationsTool(mcpServer);
-registerDncListRootJobsTool(mcpServer);
+registerDncInitJobTool(mcpServer, repository);
+registerDncAppendDividedJobTool(mcpServer, repository);
+registerDncDeleteJobTool(mcpServer, repository);
+registerDncUpdateJobTool(mcpServer, repository);
+registerDncGetJobRelationsTool(mcpServer, repository);
+registerDncListRootJobsTool(mcpServer, repository);
 
 /**
  * Setup client connection handler

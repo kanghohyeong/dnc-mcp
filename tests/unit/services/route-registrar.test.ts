@@ -1,20 +1,32 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import * as fs from "fs/promises";
+import * as path from "path";
 import express, { type Express } from "express";
 import request from "supertest";
 import { RouteRegistrar } from "../../../src/services/route-registrar.js";
+import { FileSystemDncTaskRepository } from "../../../src/repositories/index.js";
 
 describe("RouteRegistrar", () => {
+  const testRoot = path.join(process.cwd(), ".dnc-test-route-registrar");
   let app: Express;
   let routeRegistrar: RouteRegistrar;
+  let repository: FileSystemDncTaskRepository;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await fs.mkdir(testRoot, { recursive: true });
+    repository = new FileSystemDncTaskRepository(testRoot);
+
     app = express();
 
     // EJS 설정
     app.set("view engine", "ejs");
     app.set("views", new URL("../../../views", import.meta.url).pathname);
 
-    routeRegistrar = new RouteRegistrar();
+    routeRegistrar = new RouteRegistrar(repository);
+  });
+
+  afterEach(async () => {
+    await fs.rm(testRoot, { recursive: true, force: true });
   });
 
   describe("정상 케이스", () => {

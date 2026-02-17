@@ -3,15 +3,19 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { registerDncGetJobRelationsTool } from "../../../src/tools/dnc-get-job-relations.js";
 import { createTestMcpServer } from "../../helpers/test-utils.js";
-import { writeTask, ensureDncDirectory, type Task } from "../../../src/utils/dnc-utils.js";
+import { writeTask, ensureDncDirectory } from "../../../src/utils/dnc-utils.js";
+import { FileSystemDncTaskRepository } from "../../../src/repositories/index.js";
+import type { Task } from "../../../src/repositories/index.js";
 
 describe("dnc-get-job-relations tool", () => {
+  let repository: FileSystemDncTaskRepository;
   const testRoot = path.join(process.cwd(), ".dnc-test-get");
   const originalCwd = process.cwd();
 
   beforeEach(async () => {
     await fs.mkdir(testRoot, { recursive: true });
     process.chdir(testRoot);
+    repository = new FileSystemDncTaskRepository();
   });
 
   afterEach(async () => {
@@ -24,7 +28,7 @@ describe("dnc-get-job-relations tool", () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
 
-    registerDncGetJobRelationsTool(mcpServer);
+    registerDncGetJobRelationsTool(mcpServer, repository);
 
     expect(registerToolSpy).toHaveBeenCalledTimes(1);
     expect(registerToolSpy.mock.calls[0][0]).toBe("dnc_get_job_relations");
@@ -44,7 +48,7 @@ describe("dnc-get-job-relations tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncGetJobRelationsTool(mcpServer);
+    registerDncGetJobRelationsTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       job_title: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
@@ -87,7 +91,7 @@ describe("dnc-get-job-relations tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncGetJobRelationsTool(mcpServer);
+    registerDncGetJobRelationsTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       job_title: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
@@ -139,7 +143,7 @@ describe("dnc-get-job-relations tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncGetJobRelationsTool(mcpServer);
+    registerDncGetJobRelationsTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       job_title: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
@@ -160,7 +164,7 @@ describe("dnc-get-job-relations tool", () => {
   it("should return error when task not found", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncGetJobRelationsTool(mcpServer);
+    registerDncGetJobRelationsTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       job_title: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
@@ -174,7 +178,7 @@ describe("dnc-get-job-relations tool", () => {
   it("should return error when job_title is missing", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncGetJobRelationsTool(mcpServer);
+    registerDncGetJobRelationsTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       job_title?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
@@ -190,7 +194,7 @@ describe("dnc-get-job-relations tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncGetJobRelationsTool(mcpServer);
+    registerDncGetJobRelationsTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       job_title: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
@@ -215,7 +219,7 @@ describe("dnc-get-job-relations tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncGetJobRelationsTool(mcpServer);
+    registerDncGetJobRelationsTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       job_title: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;

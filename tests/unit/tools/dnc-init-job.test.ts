@@ -3,15 +3,18 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { registerDncInitJobTool } from "../../../src/tools/dnc-init-job.js";
 import { createTestMcpServer } from "../../helpers/test-utils.js";
-import type { Task } from "../../../src/utils/dnc-utils.js";
+import { FileSystemDncTaskRepository } from "../../../src/repositories/index.js";
+import type { Task } from "../../../src/repositories/index.js";
 
 describe("dnc-init-job tool", () => {
   const testRoot = path.join(process.cwd(), ".dnc-test-init");
   const originalCwd = process.cwd();
+  let repository: FileSystemDncTaskRepository;
 
   beforeEach(async () => {
     await fs.mkdir(testRoot, { recursive: true });
     process.chdir(testRoot);
+    repository = new FileSystemDncTaskRepository();
   });
 
   afterEach(async () => {
@@ -24,7 +27,7 @@ describe("dnc-init-job tool", () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
 
-    registerDncInitJobTool(mcpServer);
+    registerDncInitJobTool(mcpServer, repository);
 
     expect(registerToolSpy).toHaveBeenCalledTimes(1);
     const call = registerToolSpy.mock.calls[0];
@@ -34,7 +37,7 @@ describe("dnc-init-job tool", () => {
   it("should create root task with valid job_title, goal, and acceptance", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncInitJobTool(mcpServer);
+    registerDncInitJobTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       job_title: string;
       goal: string;
@@ -74,7 +77,7 @@ describe("dnc-init-job tool", () => {
   it("should return error when job_title is invalid (uppercase)", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncInitJobTool(mcpServer);
+    registerDncInitJobTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       job_title: string;
       goal: string;
@@ -94,7 +97,7 @@ describe("dnc-init-job tool", () => {
   it("should return error when job_title exceeds 10 words", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncInitJobTool(mcpServer);
+    registerDncInitJobTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       job_title: string;
       goal: string;
@@ -114,7 +117,7 @@ describe("dnc-init-job tool", () => {
   it("should return error when goal is missing", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncInitJobTool(mcpServer);
+    registerDncInitJobTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       job_title: string;
       goal?: string;
@@ -134,7 +137,7 @@ describe("dnc-init-job tool", () => {
   it("should return error when acceptance is missing", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncInitJobTool(mcpServer);
+    registerDncInitJobTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       job_title: string;
       goal: string;
@@ -154,7 +157,7 @@ describe("dnc-init-job tool", () => {
   it("should return error when job already exists", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncInitJobTool(mcpServer);
+    registerDncInitJobTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       job_title: string;
       goal: string;

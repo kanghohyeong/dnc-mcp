@@ -1,16 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod";
-import {
-  readTask,
-  writeTask,
-  updateTaskInTree,
-  validateTaskStatus,
-  validateTaskId,
-  taskExists,
-  type TaskStatus,
-} from "../utils/dnc-utils.js";
+import { updateTaskInTree, validateTaskStatus, validateTaskId } from "../utils/dnc-utils.js";
+import type { IDncTaskRepository, TaskStatus } from "../repositories/index.js";
 
-export function registerDncUpdateJobTool(mcpServer: McpServer) {
+export function registerDncUpdateJobTool(mcpServer: McpServer, repository: IDncTaskRepository) {
   mcpServer.registerTool(
     "dnc_update_job",
     {
@@ -91,7 +84,7 @@ export function registerDncUpdateJobTool(mcpServer: McpServer) {
         }
 
         // Root task 존재 확인
-        if (!(await taskExists(root_task_id))) {
+        if (!(await repository.rootTaskExists(root_task_id))) {
           return {
             content: [
               {
@@ -104,7 +97,7 @@ export function registerDncUpdateJobTool(mcpServer: McpServer) {
         }
 
         // Root task 읽기
-        const rootTask = await readTask(root_task_id);
+        const rootTask = await repository.findRootTask(root_task_id);
 
         // Task 업데이트
         const updates: { goal?: string; status?: TaskStatus; acceptance?: string } = {};
@@ -127,18 +120,13 @@ export function registerDncUpdateJobTool(mcpServer: McpServer) {
         }
 
         // Root task 저장
-        await writeTask(root_task_id, rootTask);
+        await repository.saveRootTask(root_task_id, rootTask);
 
         return {
           content: [
             {
               type: "text" as const,
-              text: `Task가 성공적으로 업데이트되었습니다!
-
-📋 Root Task: ${root_task_id}
-📋 Updated Task: ${task_id}
-${goal ? `🎯 New Goal: ${goal}\n` : ""}${status ? `📊 New Status: ${status}\n` : ""}${acceptance ? `✅ New Acceptance: ${acceptance}\n` : ""}
-Task 파일이 업데이트되었습니다.`,
+              text: `Task가 성공적으로 업데이트되었습니다!\n\n📋 Root Task: ${root_task_id}\n📋 Updated Task: ${task_id}\n${goal ? `🎯 New Goal: ${goal}\n` : ""}${status ? `📊 New Status: ${status}\n` : ""}${acceptance ? `✅ New Acceptance: ${acceptance}\n` : ""}\nTask 파일이 업데이트되었습니다.`,
             },
           ],
         };

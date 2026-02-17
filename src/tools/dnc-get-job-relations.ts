@@ -1,8 +1,11 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod";
-import { readTask, taskExists } from "../utils/dnc-utils.js";
+import type { IDncTaskRepository } from "../repositories/index.js";
 
-export function registerDncGetJobRelationsTool(mcpServer: McpServer) {
+export function registerDncGetJobRelationsTool(
+  mcpServer: McpServer,
+  repository: IDncTaskRepository
+) {
   mcpServer.registerTool(
     "dnc_get_job_relations",
     {
@@ -16,7 +19,7 @@ export function registerDncGetJobRelationsTool(mcpServer: McpServer) {
         const { job_title } = args;
 
         // Task 존재 확인
-        if (!(await taskExists(job_title))) {
+        if (!(await repository.rootTaskExists(job_title))) {
           return {
             content: [
               {
@@ -29,7 +32,7 @@ export function registerDncGetJobRelationsTool(mcpServer: McpServer) {
         }
 
         // Task 읽기
-        const task = await readTask(job_title);
+        const task = await repository.findRootTask(job_title);
 
         // JSON 포맷팅
         const formattedJson = JSON.stringify(task, null, 2);
@@ -38,17 +41,7 @@ export function registerDncGetJobRelationsTool(mcpServer: McpServer) {
           content: [
             {
               type: "text" as const,
-              text: `Task 구조:
-
-\`\`\`json
-${formattedJson}
-\`\`\`
-
-📋 Task ID: ${task.id}
-🎯 Goal: ${task.goal}
-✅ Acceptance: ${task.acceptance}
-📊 Status: ${task.status}
-🔢 Subtasks: ${task.tasks.length}`,
+              text: `Task 구조:\n\n\`\`\`json\n${formattedJson}\n\`\`\`\n\n📋 Task ID: ${task.id}\n🎯 Goal: ${task.goal}\n✅ Acceptance: ${task.acceptance}\n📊 Status: ${task.status}\n🔢 Subtasks: ${task.tasks.length}`,
             },
           ],
         };

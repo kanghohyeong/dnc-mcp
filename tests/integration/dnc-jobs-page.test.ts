@@ -3,6 +3,7 @@ import request from "supertest";
 import express, { Express } from "express";
 import { RouteRegistrar } from "../../src/services/route-registrar.js";
 import { ExpressAppConfigurator } from "../../src/services/express-app-configurator.js";
+import { FileSystemDncTaskRepository } from "../../src/repositories/index.js";
 
 describe("DnC Jobs Page Integration Tests", () => {
   let app: Express;
@@ -15,7 +16,8 @@ describe("DnC Jobs Page Integration Tests", () => {
     configurator.configure(app);
 
     // 라우트 등록
-    const routeRegistrar = new RouteRegistrar();
+    const repository = new FileSystemDncTaskRepository();
+    const routeRegistrar = new RouteRegistrar(repository);
     routeRegistrar.registerRoutes(app);
   });
 

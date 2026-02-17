@@ -6,7 +6,8 @@ import os from "os";
 import type { Express } from "express";
 import express from "express";
 import { RouteRegistrar } from "../../src/services/route-registrar.js";
-import type { Task } from "../../src/utils/dnc-utils.js";
+import { FileSystemDncTaskRepository } from "../../src/repositories/index.js";
+import type { Task } from "../../src/repositories/index.js";
 
 interface BatchUpdateResponse {
   success: boolean;
@@ -38,7 +39,8 @@ describe("Batch Update Route - POST /api/tasks/batch-update", () => {
     app = express();
     app.use(express.json()); // JSON 파싱 미들웨어
 
-    const routeRegistrar = new RouteRegistrar();
+    const repository = new FileSystemDncTaskRepository(path.join(tempDir, ".dnc"));
+    const routeRegistrar = new RouteRegistrar(repository);
     routeRegistrar.registerRoutes(app);
   });
 
