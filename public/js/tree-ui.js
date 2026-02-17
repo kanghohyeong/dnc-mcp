@@ -68,7 +68,10 @@ function renderTaskItem(task, depth = 0, rootTaskId = null) {
   if (hasChildren) {
     html += `
       <div class="section">
-        <div class="section-label">Subtasks</div>
+        <div class="subtasks-header" onclick="toggleSubtasks(this)">
+          <div class="section-label">Subtasks</div>
+          <button class="subtasks-toggle-btn" aria-label="subtasks 토글">▼</button>
+        </div>
         <div class="task-children">
     `;
 
@@ -91,8 +94,25 @@ function renderTreeItem(task, depth = 0) {
   return renderTaskItem(task, depth);
 }
 
-// toggleTreeItem과 toggleDetails 함수는 재귀적 섹션 구조에서 제거됨
-// (펼치기/접기 기능 없음)
+/**
+ * Subtasks 섹션 접기/펼치기 토글
+ * @param {HTMLElement} headerEl - 클릭된 .subtasks-header 요소
+ */
+function toggleSubtasks(headerEl) {
+  const section = headerEl.closest('.section');
+  const children = section.querySelector('.task-children');
+  const btn = headerEl.querySelector('.subtasks-toggle-btn');
+
+  if (children.classList.contains('collapsed')) {
+    children.classList.remove('collapsed');
+    btn.classList.remove('collapsed');
+    btn.textContent = '▼';
+  } else {
+    children.classList.add('collapsed');
+    btn.classList.add('collapsed');
+    btn.textContent = '▶';
+  }
+}
 
 /**
  * HTML 이스케이프

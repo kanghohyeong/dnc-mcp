@@ -186,11 +186,11 @@ test.describe.serial("Tree Hierarchy UI", () => {
       await expect(child2SubtasksSection).toHaveCount(0);
     });
 
-    test("모든 자식 task가 항상 표시된다 (펼치기/접기 없음)", async ({ page }) => {
+    test("기본 상태에서 모든 자식 task가 펼쳐진 상태로 표시된다", async ({ page }) => {
       // Given: task 상세 페이지 방문
       await page.goto(`${baseUrl}/${testTaskId}`);
 
-      // Then: 모든 subtask가 즉시 visible
+      // Then: 모든 subtask가 즉시 visible (기본값: 펼침)
       const child1 = page.locator('[data-testid="tree-item-child-1"]');
       const child2 = page.locator('[data-testid="tree-item-child-2"]');
       const grandchild1 = page.locator('[data-testid="tree-item-grandchild-1"]');
@@ -198,6 +198,113 @@ test.describe.serial("Tree Hierarchy UI", () => {
       await expect(child1).toBeVisible();
       await expect(child2).toBeVisible();
       await expect(grandchild1).toBeVisible();
+    });
+  });
+
+  test.describe("Subtasks 토글 기능", () => {
+    test("자식이 있는 task의 Subtasks 헤더에 토글 버튼이 표시된다", async ({ page }) => {
+      // Given: task 상세 페이지 방문
+      await page.goto(`${baseUrl}/${testTaskId}`);
+
+      // Then: 루트 task의 Subtasks 헤더에 토글 버튼이 있음
+      const rootTask = page.locator(`[data-testid="tree-item-${testTaskId}"]`);
+      const toggleBtn = rootTask.locator(".subtasks-header .subtasks-toggle-btn").first();
+      await expect(toggleBtn).toBeVisible();
+      await expect(toggleBtn).toHaveText("▼");
+    });
+
+    test("토글 버튼 클릭 시 subtasks가 접힌다", async ({ page }) => {
+      // Given: task 상세 페이지 방문
+      await page.goto(`${baseUrl}/${testTaskId}`);
+
+      // When: 루트 task의 Subtasks 헤더 클릭
+      const rootTask = page.locator(`[data-testid="tree-item-${testTaskId}"]`);
+      const subtasksHeader = rootTask.locator(".subtasks-header").first();
+      await subtasksHeader.click();
+
+      // Then: .task-children에 collapsed 클래스가 추가됨
+      const taskChildren = rootTask.locator(".task-children").first();
+      await expect(taskChildren).toHaveClass(/collapsed/);
+
+      // Then: 토글 버튼 아이콘이 ▶로 변경
+      const toggleBtn = subtasksHeader.locator(".subtasks-toggle-btn");
+      await expect(toggleBtn).toHaveText("▶");
+
+      // Then: child-1, child-2가 화면에 보이지 않음
+      const child1 = page.locator('[data-testid="tree-item-child-1"]');
+      await expect(child1).not.toBeVisible();
+    });
+
+    test("접힌 상태에서 재클릭 시 subtasks가 다시 펼쳐진다", async ({ page }) => {
+      // Given: task 상세 페이지 방문
+      await page.goto(`${baseUrl}/${testTaskId}`);
+
+      const rootTask = page.locator(`[data-testid="tree-item-${testTaskId}"]`);
+      const subtasksHeader = rootTask.locator(".subtasks-header").first();
+
+      // When: 접기 → 펼치기
+      await subtasksHeader.click();
+      await subtasksHeader.click();
+
+      // Then: .task-children에 collapsed 클래스가 제거됨
+      const taskChildren = rootTask.locator(".task-children").first();
+      await expect(taskChildren).not.toHaveClass(/collapsed/);
+
+      // Then: 토글 버튼 아이콘이 ▼로 복구
+      const toggleBtn = subtasksHeader.locator(".subtasks-toggle-btn");
+      await expect(toggleBtn).toHaveText("▼");
+
+      // Then: child-1이 다시 보임
+      const child1 = page.locator('[data-testid="tree-item-child-1"]');
+      await expect(child1).toBeVisible();
+    });
+
+    test("자식이 없는 task에는 토글 버튼이 없다", async ({ page }) => {
+      // Given: task 상세 페이지 방문
+      await page.goto(`${baseUrl}/${testTaskId}`);
+
+      // Then: child-2(자식 없음)에는 토글 버튼이 없음
+      const child2 = page.locator('[data-testid="tree-item-child-2"]');
+      const toggleBtn = child2.locator(".subtasks-toggle-btn");
+      await expect(toggleBtn).toHaveCount(0);
+    });
+  });
+
+  test.describe("수직선 색상", () => {
+    test("depth 1 task의 수직선이 빨강 계열(#FF4444)이다", async ({ page }) => {
+      // Given: task 상세 페이지 방문
+      await page.goto(`${baseUrl}/${testTaskId}`);
+
+      // Then: depth=1인 child-1의 border-left-color가 #FF4444(rgb(255,68,68))
+      const child1 = page.locator('[data-testid="tree-item-child-1"]');
+      const borderColor = await child1.evaluate((el: HTMLElement) => {
+        return window.getComputedStyle(el).borderLeftColor;
+      });
+      expect(borderColor).toBe("rgb(255, 68, 68)");
+    });
+
+    test("depth 2 task의 수직선이 주황 계열(#FF8C00)이다", async ({ page }) => {
+      // Given: task 상세 페이지 방문
+      await page.goto(`${baseUrl}/${testTaskId}`);
+
+      // Then: depth=2인 grandchild-1의 border-left-color가 #FF8C00(rgb(255,140,0))
+      const grandchild1 = page.locator('[data-testid="tree-item-grandchild-1"]');
+      const borderColor = await grandchild1.evaluate((el: HTMLElement) => {
+        return window.getComputedStyle(el).borderLeftColor;
+      });
+      expect(borderColor).toBe("rgb(255, 140, 0)");
+    });
+
+    test("depth 1 task의 수직선 두께가 4px이다", async ({ page }) => {
+      // Given: task 상세 페이지 방문
+      await page.goto(`${baseUrl}/${testTaskId}`);
+
+      // Then: depth=1인 child-1의 border-left-width가 4px
+      const child1 = page.locator('[data-testid="tree-item-child-1"]');
+      const borderWidth = await child1.evaluate((el: HTMLElement) => {
+        return window.getComputedStyle(el).borderLeftWidth;
+      });
+      expect(borderWidth).toBe("4px");
     });
   });
 
