@@ -32,6 +32,8 @@ function renderTaskItem(task, depth = 0, rootTaskId = null) {
     `<option value="${option.value}" ${task.status === option.value ? 'selected' : ''}>${option.label}</option>`
   ).join('');
 
+  const additionalInstructionsValue = task.additionalInstructions || '';
+
   let html = `
     <div class="task-item" data-depth="${depth}" data-testid="tree-item-${task.id}">
       <!-- Header: ID + Status -->
@@ -61,6 +63,19 @@ function renderTaskItem(task, depth = 0, rootTaskId = null) {
         <div class="section-content">
           ${escapeHtml(task.acceptance || '')}
         </div>
+      </div>
+
+      <!-- 추가 지침 섹션 -->
+      <div class="section">
+        <div class="section-label">추가 지침</div>
+        <textarea
+          class="additional-instructions-textarea"
+          data-testid="additional-instructions-${task.id}"
+          data-task-id="${task.id}"
+          data-root-task-id="${actualRootTaskId}"
+          data-original-value="${escapeHtml(additionalInstructionsValue)}"
+          placeholder="이 task에 대한 추가 지침을 입력하세요..."
+          rows="3">${escapeHtml(additionalInstructionsValue)}</textarea>
       </div>
   `;
 

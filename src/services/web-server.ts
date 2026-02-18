@@ -44,9 +44,6 @@ export class UIWebServer {
     this.configurator = new ExpressAppConfigurator();
     this.routeRegistrar = new RouteRegistrar(repository);
     this.portFinder = new PortFinder(3331, 100);
-
-    // 라우트 등록
-    this.routeRegistrar.registerRoutes(this.app);
   }
 
   /**
@@ -58,8 +55,11 @@ export class UIWebServer {
       return;
     }
 
-    // Express 앱 설정
+    // Express 앱 설정 (JSON 미들웨어 포함) - 라우트 등록보다 먼저 호출
     await this.configurator.configure(this.app);
+
+    // 라우트 등록 (미들웨어 설정 이후에 등록해야 req.body 파싱 정상 동작)
+    this.routeRegistrar.registerRoutes(this.app);
 
     // 포트 검색 및 서버 시작
     const result = await this.portFinder.findAndStart(this.app, (socket) => {

@@ -1,18 +1,28 @@
 /**
  * Status Change Manager
- * 상태 변경사항을 추적하고 일괄 업데이트를 처리합니다.
+ * 상태 변경사항 및 추가 지침 변경사항을 추적하고 일괄 업데이트를 처리합니다.
  */
 
 // 전역 객체로 노출하여 명시적 초기화 가능
 window.StatusChangeManager = (function () {
-  // 변경사항을 추적하는 Map: taskId -> { rootTaskId, newStatus, originalStatus }
-  const changes = new Map();
+  // 상태 변경사항 추적 Map: taskId -> { rootTaskId, newStatus, originalStatus }
+  const statusChanges = new Map();
+
+  // 추가 지침 변경사항 추적 Map: taskId -> { rootTaskId, newValue, originalValue }
+  const instructionChanges = new Map();
 
   // Submit 버튼
   let submitButton = null;
 
   // 초기화 완료 여부
   let initialized = false;
+
+  /**
+   * 변경사항이 있는지 여부
+   */
+  function hasChanges() {
+    return statusChanges.size > 0 || instructionChanges.size > 0;
+  }
 
   /**
    * 상태 변경 처리
@@ -24,19 +34,39 @@ window.StatusChangeManager = (function () {
     const originalStatus = dropdown.dataset.originalStatus;
     const newStatus = dropdown.value;
 
-    // 원래 상태로 돌아갔으면 변경사항에서 제거
     if (newStatus === originalStatus) {
-      changes.delete(taskId);
+      statusChanges.delete(taskId);
     } else {
-      // 변경사항 추가
-      changes.set(taskId, {
+      statusChanges.set(taskId, {
         rootTaskId,
         newStatus,
         originalStatus,
       });
     }
 
-    // Submit 버튼 활성화/비활성화
+    updateSubmitButton();
+  }
+
+  /**
+   * 추가 지침 변경 처리
+   */
+  function handleInstructionChange(event) {
+    const textarea = event.target;
+    const taskId = textarea.dataset.taskId;
+    const rootTaskId = textarea.dataset.rootTaskId;
+    const originalValue = textarea.dataset.originalValue;
+    const newValue = textarea.value;
+
+    if (newValue === originalValue) {
+      instructionChanges.delete(taskId);
+    } else {
+      instructionChanges.set(taskId, {
+        rootTaskId,
+        newValue,
+        originalValue,
+      });
+    }
+
     updateSubmitButton();
   }
 
@@ -45,7 +75,7 @@ window.StatusChangeManager = (function () {
    */
   function updateSubmitButton() {
     if (submitButton) {
-      submitButton.disabled = changes.size === 0;
+      submitButton.disabled = !hasChanges();
     }
   }
 
@@ -53,23 +83,39 @@ window.StatusChangeManager = (function () {
    * Submit 처리
    */
   async function handleSubmit() {
-    if (changes.size === 0) {
+    if (!hasChanges()) {
       return;
     }
 
-    // 변경사항을 API 요청 형식으로 변환
-    const updates = Array.from(changes.entries()).map(([taskId, change]) => ({
-      taskId,
-      rootTaskId: change.rootTaskId,
-      status: change.newStatus,
-    }));
+    // taskId별로 updates 통합
+    const updatesMap = new Map();
+
+    statusChanges.forEach((change, taskId) => {
+      updatesMap.set(taskId, {
+        taskId,
+        rootTaskId: change.rootTaskId,
+        status: change.newStatus,
+      });
+    });
+
+    instructionChanges.forEach((change, taskId) => {
+      if (updatesMap.has(taskId)) {
+        updatesMap.get(taskId).additionalInstructions = change.newValue;
+      } else {
+        updatesMap.set(taskId, {
+          taskId,
+          rootTaskId: change.rootTaskId,
+          additionalInstructions: change.newValue,
+        });
+      }
+    });
+
+    const updates = Array.from(updatesMap.values());
 
     try {
-      // Submit 버튼 비활성화 및 로딩 표시
       submitButton.disabled = true;
       submitButton.textContent = '저장 중...';
 
-      // API 호출
       const response = await fetch('/api/tasks/batch-update', {
         method: 'POST',
         headers: {
@@ -84,40 +130,43 @@ window.StatusChangeManager = (function () {
 
       const result = await response.json();
 
-      // 성공한 항목들의 original status 업데이트
+      // 성공한 항목들의 original 값 업데이트
       result.results.forEach((r) => {
         if (r.success) {
           const dropdown = document.querySelector(
             `.status-dropdown[data-task-id="${r.taskId}"]`
           );
           if (dropdown) {
-            // original status를 새로운 값으로 업데이트
             dropdown.dataset.originalStatus = dropdown.value;
+          }
+
+          const textarea = document.querySelector(
+            `.additional-instructions-textarea[data-task-id="${r.taskId}"]`
+          );
+          if (textarea) {
+            textarea.dataset.originalValue = textarea.value;
           }
         }
       });
 
-      // 변경사항 초기화
-      changes.clear();
+      statusChanges.clear();
+      instructionChanges.clear();
       updateSubmitButton();
 
-      // 버튼 텍스트 복원
       submitButton.textContent = '변경사항 저장';
 
-      // 성공 메시지 표시
       if (window.Toast) {
-        window.Toast.success('상태가 성공적으로 업데이트되었습니다');
+        window.Toast.success('변경사항이 성공적으로 저장되었습니다');
       }
     } catch (error) {
-      console.error('Failed to update statuses:', error);
+      console.error('Failed to update tasks:', error);
       submitButton.textContent = '변경사항 저장';
       submitButton.disabled = false;
 
-      // 에러 메시지 표시
       if (window.Toast) {
-        window.Toast.error('상태 업데이트에 실패했습니다. 다시 시도해주세요.');
+        window.Toast.error('저장에 실패했습니다. 다시 시도해주세요.');
       } else {
-        alert('상태 업데이트에 실패했습니다. 다시 시도해주세요.');
+        alert('저장에 실패했습니다. 다시 시도해주세요.');
       }
     }
   }
@@ -149,11 +198,23 @@ window.StatusChangeManager = (function () {
       dropdown.addEventListener('change', handleStatusChange);
     });
 
+    // 모든 추가 지침 textarea에 input 이벤트 리스너 추가
+    const textareas = document.querySelectorAll('.additional-instructions-textarea');
+    textareas.forEach((textarea) => {
+      textarea.addEventListener('input', handleInstructionChange);
+    });
+
     // Submit 버튼 클릭 이벤트
     submitButton.addEventListener('click', handleSubmit);
 
     initialized = true;
-    console.log('StatusChangeManager initialized with', dropdowns.length, 'dropdowns');
+    console.log(
+      'StatusChangeManager initialized with',
+      dropdowns.length,
+      'dropdowns,',
+      textareas.length,
+      'textareas'
+    );
   }
 
   // Public API

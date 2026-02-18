@@ -14,6 +14,7 @@ export interface Task {
   acceptance: string;
   status: TaskStatus;
   tasks: Task[];
+  additionalInstructions?: string;
 }
 
 export interface IDncTaskRepository {

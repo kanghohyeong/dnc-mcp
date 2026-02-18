@@ -10,7 +10,8 @@ interface BatchUpdateRequest {
   updates: Array<{
     taskId: string;
     rootTaskId: string;
-    status: string;
+    status?: string;
+    additionalInstructions?: string;
   }>;
 }
 
@@ -86,15 +87,22 @@ export class RouteRegistrar {
 
         // 2. 각 update 항목 검증
         for (const update of updates) {
-          if (!update.taskId || !update.rootTaskId || !update.status) {
+          if (!update.taskId || !update.rootTaskId) {
             res.status(400).json({
-              error: "Each update must have taskId, rootTaskId, and status",
+              error: "Each update must have taskId and rootTaskId",
             });
             return;
           }
 
-          // 3. status 값 검증
-          if (!validateTaskStatus(update.status)) {
+          if (!update.status && update.additionalInstructions === undefined) {
+            res.status(400).json({
+              error: "Each update must have at least status or additionalInstructions",
+            });
+            return;
+          }
+
+          // 3. status 값 검증 (status가 제공된 경우에만)
+          if (update.status && !validateTaskStatus(update.status)) {
             res.status(400).json({
               error: `Invalid status value: ${update.status}`,
             });
@@ -103,7 +111,10 @@ export class RouteRegistrar {
         }
 
         // 4. rootTaskId별로 업데이트 그룹화 (race condition 방지)
-        const updatesByRoot = new Map<string, Array<{ taskId: string; status: string }>>();
+        const updatesByRoot = new Map<
+          string,
+          Array<{ taskId: string; status?: string; additionalInstructions?: string }>
+        >();
         for (const update of updates) {
           if (!updatesByRoot.has(update.rootTaskId)) {
             updatesByRoot.set(update.rootTaskId, []);
@@ -111,6 +122,7 @@ export class RouteRegistrar {
           updatesByRoot.get(update.rootTaskId)!.push({
             taskId: update.taskId,
             status: update.status,
+            additionalInstructions: update.additionalInstructions,
           });
         }
 
@@ -134,9 +146,10 @@ export class RouteRegistrar {
             }
 
             // 같은 root task의 모든 업데이트를 한 번에 적용
-            for (const { taskId, status } of taskUpdates) {
+            for (const { taskId, status, additionalInstructions } of taskUpdates) {
               const updated = updateTaskInTree(rootTask, taskId, {
-                status: status as TaskStatus,
+                ...(status !== undefined && { status: status as TaskStatus }),
+                ...(additionalInstructions !== undefined && { additionalInstructions }),
               });
 
               results.push({

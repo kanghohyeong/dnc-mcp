@@ -23,19 +23,20 @@ export function registerDncUpdateJobTool(mcpServer: McpServer, repository: IDncT
             '새로운 상태 (선택, "init" | "accept" | "in-progress" | "done" | "delete" | "hold" | "split")'
           ),
         acceptance: z.string().optional().describe("새로운 완료 기준 (선택)"),
+        additionalInstructions: z.string().optional().describe("추가 지침 (선택)"),
       },
     },
     async (args) => {
       try {
-        const { root_task_id, task_id, goal, status, acceptance } = args;
+        const { root_task_id, task_id, goal, status, acceptance, additionalInstructions } = args;
 
         // 최소 하나의 업데이트 필드 검증
-        if (!goal && !status && !acceptance) {
+        if (!goal && !status && !acceptance && additionalInstructions === undefined) {
           return {
             content: [
               {
                 type: "text" as const,
-                text: "오류: goal, status, acceptance 중 최소 하나는 제공되어야 합니다.",
+                text: "오류: goal, status, acceptance, additionalInstructions 중 최소 하나는 제공되어야 합니다.",
               },
             ],
             isError: true,
@@ -100,10 +101,17 @@ export function registerDncUpdateJobTool(mcpServer: McpServer, repository: IDncT
         const rootTask = await repository.findRootTask(root_task_id);
 
         // Task 업데이트
-        const updates: { goal?: string; status?: TaskStatus; acceptance?: string } = {};
+        const updates: {
+          goal?: string;
+          status?: TaskStatus;
+          acceptance?: string;
+          additionalInstructions?: string;
+        } = {};
         if (goal) updates.goal = goal;
         if (status) updates.status = status;
         if (acceptance) updates.acceptance = acceptance;
+        if (additionalInstructions !== undefined)
+          updates.additionalInstructions = additionalInstructions;
 
         const success = updateTaskInTree(rootTask, task_id, updates);
 
@@ -126,7 +134,7 @@ export function registerDncUpdateJobTool(mcpServer: McpServer, repository: IDncT
           content: [
             {
               type: "text" as const,
-              text: `Task가 성공적으로 업데이트되었습니다!\n\n📋 Root Task: ${root_task_id}\n📋 Updated Task: ${task_id}\n${goal ? `🎯 New Goal: ${goal}\n` : ""}${status ? `📊 New Status: ${status}\n` : ""}${acceptance ? `✅ New Acceptance: ${acceptance}\n` : ""}\nTask 파일이 업데이트되었습니다.`,
+              text: `Task가 성공적으로 업데이트되었습니다!\n\n📋 Root Task: ${root_task_id}\n📋 Updated Task: ${task_id}\n${goal ? `🎯 New Goal: ${goal}\n` : ""}${status ? `📊 New Status: ${status}\n` : ""}${acceptance ? `✅ New Acceptance: ${acceptance}\n` : ""}${additionalInstructions !== undefined ? `📝 New Additional Instructions: ${additionalInstructions}\n` : ""}\nTask 파일이 업데이트되었습니다.`,
             },
           ],
         };

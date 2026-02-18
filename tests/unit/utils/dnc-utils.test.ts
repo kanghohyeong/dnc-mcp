@@ -392,6 +392,79 @@ describe("dnc-utils", () => {
       const updated = updateTaskInTree(task, "non-existent", { goal: "New" });
       expect(updated).toBe(false);
     });
+
+    it("should update additionalInstructions on root task", () => {
+      const task: Task = {
+        id: "root-task",
+        goal: "Root",
+        acceptance: "Done",
+        status: "init",
+        tasks: [],
+      };
+
+      const updated = updateTaskInTree(task, "root-task", {
+        additionalInstructions: "추가 지침 내용입니다.",
+      });
+      expect(updated).toBe(true);
+      expect(task.additionalInstructions).toBe("추가 지침 내용입니다.");
+    });
+
+    it("should update additionalInstructions on child task", () => {
+      const task: Task = {
+        id: "root-task",
+        goal: "Root",
+        acceptance: "Done",
+        status: "init",
+        tasks: [
+          {
+            id: "child-task",
+            goal: "Child",
+            acceptance: "Child done",
+            status: "init",
+            tasks: [],
+          },
+        ],
+      };
+
+      const updated = updateTaskInTree(task, "child-task", {
+        additionalInstructions: "서브태스크 추가 지침",
+      });
+      expect(updated).toBe(true);
+      expect(task.tasks[0].additionalInstructions).toBe("서브태스크 추가 지침");
+    });
+
+    it("should not change additionalInstructions when not provided", () => {
+      const task: Task = {
+        id: "root-task",
+        goal: "Root",
+        acceptance: "Done",
+        status: "init",
+        additionalInstructions: "기존 지침",
+        tasks: [],
+      };
+
+      const updated = updateTaskInTree(task, "root-task", { goal: "New Goal" });
+      expect(updated).toBe(true);
+      expect(task.additionalInstructions).toBe("기존 지침");
+    });
+
+    it("should update status and additionalInstructions together", () => {
+      const task: Task = {
+        id: "root-task",
+        goal: "Root",
+        acceptance: "Done",
+        status: "init",
+        tasks: [],
+      };
+
+      const updated = updateTaskInTree(task, "root-task", {
+        status: "in-progress",
+        additionalInstructions: "동시 업데이트 지침",
+      });
+      expect(updated).toBe(true);
+      expect(task.status).toBe("in-progress");
+      expect(task.additionalInstructions).toBe("동시 업데이트 지침");
+    });
   });
 
   describe("deleteTaskInTree", () => {

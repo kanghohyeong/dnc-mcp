@@ -14,6 +14,7 @@ export interface Task {
   acceptance: string;
   status: TaskStatus;
   tasks: Task[];
+  additionalInstructions?: string;
 }
 
 /**
@@ -154,7 +155,12 @@ export function findTaskInTree(task: Task, targetTaskId: string): Task | null {
 export function updateTaskInTree(
   task: Task,
   targetTaskId: string,
-  updates: { goal?: string; status?: TaskStatus; acceptance?: string }
+  updates: {
+    goal?: string;
+    status?: TaskStatus;
+    acceptance?: string;
+    additionalInstructions?: string;
+  }
 ): boolean {
   if (task.id === targetTaskId) {
     if (updates.goal !== undefined) {
@@ -165,6 +171,9 @@ export function updateTaskInTree(
     }
     if (updates.acceptance !== undefined) {
       task.acceptance = updates.acceptance;
+    }
+    if (updates.additionalInstructions !== undefined) {
+      task.additionalInstructions = updates.additionalInstructions;
     }
     return true;
   }

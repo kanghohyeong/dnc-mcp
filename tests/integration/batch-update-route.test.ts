@@ -355,4 +355,109 @@ describe("Batch Update Route - POST /api/tasks/batch-update", () => {
       expect(body.results.every((r) => r.success)).toBe(true);
     });
   });
+
+  describe("additionalInstructions 저장", () => {
+    it("should save additionalInstructions only", async () => {
+      const dncDir = path.join(tempDir, ".dnc");
+      const rootDir = path.join(dncDir, "root-task");
+      await fs.mkdir(rootDir, { recursive: true });
+
+      const rootTask: Task = {
+        id: "root-task",
+        goal: "Root task",
+        acceptance: "Root acceptance",
+        status: "init",
+        tasks: [],
+      };
+      await fs.writeFile(path.join(rootDir, "task.json"), JSON.stringify(rootTask, null, 2));
+
+      const response = await request(app)
+        .post("/api/tasks/batch-update")
+        .send({
+          updates: [
+            {
+              taskId: "root-task",
+              rootTaskId: "root-task",
+              additionalInstructions: "추가 지침 내용",
+            },
+          ],
+        });
+
+      expect(response.status).toBe(200);
+      const body = response.body as BatchUpdateResponse;
+      expect(body.results[0].success).toBe(true);
+
+      const updatedTask = JSON.parse(
+        await fs.readFile(path.join(rootDir, "task.json"), "utf-8")
+      ) as Task;
+      expect(updatedTask.additionalInstructions).toBe("추가 지침 내용");
+      expect(updatedTask.status).toBe("init");
+    });
+
+    it("should save status and additionalInstructions together", async () => {
+      const dncDir = path.join(tempDir, ".dnc");
+      const rootDir = path.join(dncDir, "root-task");
+      await fs.mkdir(rootDir, { recursive: true });
+
+      const rootTask: Task = {
+        id: "root-task",
+        goal: "Root task",
+        acceptance: "Root acceptance",
+        status: "init",
+        tasks: [],
+      };
+      await fs.writeFile(path.join(rootDir, "task.json"), JSON.stringify(rootTask, null, 2));
+
+      const response = await request(app)
+        .post("/api/tasks/batch-update")
+        .send({
+          updates: [
+            {
+              taskId: "root-task",
+              rootTaskId: "root-task",
+              status: "in-progress",
+              additionalInstructions: "동시 업데이트 지침",
+            },
+          ],
+        });
+
+      expect(response.status).toBe(200);
+      const updatedTask = JSON.parse(
+        await fs.readFile(path.join(rootDir, "task.json"), "utf-8")
+      ) as Task;
+      expect(updatedTask.status).toBe("in-progress");
+      expect(updatedTask.additionalInstructions).toBe("동시 업데이트 지침");
+    });
+
+    it("should persist additionalInstructions after reload", async () => {
+      const dncDir = path.join(tempDir, ".dnc");
+      const rootDir = path.join(dncDir, "root-task");
+      await fs.mkdir(rootDir, { recursive: true });
+
+      const rootTask: Task = {
+        id: "root-task",
+        goal: "Root task",
+        acceptance: "Root acceptance",
+        status: "init",
+        tasks: [],
+      };
+      await fs.writeFile(path.join(rootDir, "task.json"), JSON.stringify(rootTask, null, 2));
+
+      await request(app)
+        .post("/api/tasks/batch-update")
+        .send({
+          updates: [
+            {
+              taskId: "root-task",
+              rootTaskId: "root-task",
+              additionalInstructions: "저장 후 유지 확인",
+            },
+          ],
+        });
+
+      const repository = new FileSystemDncTaskRepository(dncDir);
+      const reloadedTask = await repository.findRootTask("root-task");
+      expect(reloadedTask.additionalInstructions).toBe("저장 후 유지 확인");
+    });
+  });
 });

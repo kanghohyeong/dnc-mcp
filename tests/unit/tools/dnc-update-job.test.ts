@@ -553,4 +553,107 @@ describe("dnc-update-job tool", () => {
 
     expect(updatedRoot.tasks[0].tasks[0].tasks[0].goal).toBe("Updated");
   });
+
+  describe("additionalInstructions 지원", () => {
+    it("should update additionalInstructions only", async () => {
+      const task: Task = {
+        id: "job-to-update",
+        goal: "Test Goal",
+        acceptance: "Test acceptance",
+        status: "init",
+        tasks: [],
+      };
+
+      await repository.saveRootTask("job-to-update", task);
+
+      const mcpServer = createTestMcpServer();
+      const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
+      registerDncUpdateJobTool(mcpServer, repository);
+      const handler = registerToolSpy.mock.calls[0][2] as (args: {
+        root_task_id: string;
+        task_id: string;
+        additionalInstructions?: string;
+      }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
+
+      const result = await handler({
+        root_task_id: "job-to-update",
+        task_id: "job-to-update",
+        additionalInstructions: "추가 지침만 단독 업데이트",
+      });
+
+      expect(result.isError).toBeUndefined();
+      expect(result.content[0].text).toContain("업데이트되었습니다");
+
+      const taskContent = await fs.readFile(".dnc/job-to-update/task.json", "utf-8");
+      const updatedTask = JSON.parse(taskContent) as Task;
+
+      expect(updatedTask.additionalInstructions).toBe("추가 지침만 단독 업데이트");
+      expect(updatedTask.goal).toBe("Test Goal");
+    });
+
+    it("should update goal and additionalInstructions together", async () => {
+      const task: Task = {
+        id: "job-to-update",
+        goal: "Old Goal",
+        acceptance: "Test acceptance",
+        status: "init",
+        tasks: [],
+      };
+
+      await repository.saveRootTask("job-to-update", task);
+
+      const mcpServer = createTestMcpServer();
+      const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
+      registerDncUpdateJobTool(mcpServer, repository);
+      const handler = registerToolSpy.mock.calls[0][2] as (args: {
+        root_task_id: string;
+        task_id: string;
+        goal?: string;
+        additionalInstructions?: string;
+      }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
+
+      const result = await handler({
+        root_task_id: "job-to-update",
+        task_id: "job-to-update",
+        goal: "New Goal",
+        additionalInstructions: "혼합 업데이트 지침",
+      });
+
+      expect(result.isError).toBeUndefined();
+
+      const taskContent = await fs.readFile(".dnc/job-to-update/task.json", "utf-8");
+      const updatedTask = JSON.parse(taskContent) as Task;
+
+      expect(updatedTask.goal).toBe("New Goal");
+      expect(updatedTask.additionalInstructions).toBe("혼합 업데이트 지침");
+    });
+
+    it("should return error when no parameter provided including additionalInstructions", async () => {
+      const task: Task = {
+        id: "job-to-update",
+        goal: "Test Goal",
+        acceptance: "Test acceptance",
+        status: "init",
+        tasks: [],
+      };
+
+      await repository.saveRootTask("job-to-update", task);
+
+      const mcpServer = createTestMcpServer();
+      const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
+      registerDncUpdateJobTool(mcpServer, repository);
+      const handler = registerToolSpy.mock.calls[0][2] as (args: {
+        root_task_id: string;
+        task_id: string;
+      }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
+
+      const result = await handler({
+        root_task_id: "job-to-update",
+        task_id: "job-to-update",
+      });
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("오류");
+    });
+  });
 });
