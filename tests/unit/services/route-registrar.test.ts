@@ -20,7 +20,7 @@ describe("RouteRegistrar", () => {
 
     // EJS 설정
     app.set("view engine", "ejs");
-    app.set("views", new URL("../../../views", import.meta.url).pathname);
+    app.set("views", new URL("../../../src/views", import.meta.url).pathname);
 
     routeRegistrar = new RouteRegistrar(repository);
   });

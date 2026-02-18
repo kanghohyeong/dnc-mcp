@@ -8,7 +8,7 @@
     "interlock_mcp": "./build/index.js"
   },
   "scripts": {
-    "build": "tsc && cp -r views public build/",
+    "build": "tsc && cp -r src/views build/",
     "watch": "tsc --watch",
     "start": "node build/index.js",
     "lint": "eslint . --ext .ts",

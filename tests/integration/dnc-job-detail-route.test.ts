@@ -25,7 +25,7 @@ describe("DnC Job Detail Route", () => {
     // Express 앱 설정
     app = express();
     app.set("view engine", "ejs");
-    app.set("views", path.join(originalCwd, "views"));
+    app.set("views", path.join(originalCwd, "src", "views"));
 
     const repository = new FileSystemDncTaskRepository(path.join(tempDir, ".dnc"));
     const routeRegistrar = new RouteRegistrar(repository);

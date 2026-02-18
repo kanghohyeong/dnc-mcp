@@ -26,15 +26,15 @@ export class ExpressAppConfigurator {
     const isTest = process.env.NODE_ENV === "test";
 
     const builtViewsPath = path.join(__dirname, "../views");
-    const srcViewsPath = path.join(__dirname, "../../views");
+    const srcViewsPath = path.join(__dirname, "../../src/views");
     const viewsPath = isTest
       ? srcViewsPath
       : fs.existsSync(builtViewsPath)
         ? builtViewsPath
         : srcViewsPath;
 
-    const builtPublicPath = path.join(__dirname, "../public");
-    const srcPublicPath = path.join(__dirname, "../../public");
+    const builtPublicPath = path.join(__dirname, "../views/public");
+    const srcPublicPath = path.join(__dirname, "../../src/views/public");
     const publicPath = isTest
       ? srcPublicPath
       : fs.existsSync(builtPublicPath)
