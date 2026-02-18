@@ -1,11 +1,25 @@
 import { test, expect } from "@playwright/test";
+import { UIWebServer } from "../../src/services/web-server.js";
 import fs from "fs/promises";
 import path from "path";
 
-test.describe("Status Change UI", () => {
+test.describe.serial("Status Change UI", () => {
   const dncDir = path.join(process.cwd(), ".dnc");
   let testJobId: string;
   let testJobDir: string;
+  let webServer: UIWebServer;
+  let baseUrl: string;
+
+  test.beforeAll(async () => {
+    webServer = new UIWebServer({ autoOpenBrowser: false });
+    await webServer.start();
+    const port = webServer.getPort();
+    baseUrl = `http://localhost:${port}`;
+  });
+
+  test.afterAll(async () => {
+    await webServer.stop();
+  });
 
   test.beforeEach(async ({ page: _page }, testInfo) => {
     // 각 테스트마다 고유한 ID 생성 (테스트 간 격리)
@@ -48,7 +62,7 @@ test.describe("Status Change UI", () => {
 
   test.describe("✅ UI 렌더링 테스트", () => {
     test("should display status dropdown for each task", async ({ page }) => {
-      await page.goto(`/${testJobId}`);
+      await page.goto(`${baseUrl}/${testJobId}`);
 
       // Root task dropdown (동적 testJobId 사용)
       const rootDropdown = page.locator(`[data-testid="status-dropdown-${testJobId}"]`);
@@ -67,7 +81,7 @@ test.describe("Status Change UI", () => {
     });
 
     test("should display all status options in dropdown", async ({ page }) => {
-      await page.goto(`/${testJobId}`);
+      await page.goto(`${baseUrl}/${testJobId}`);
 
       const dropdown = page.locator(`[data-testid="status-dropdown-${testJobId}"]`);
       await dropdown.waitFor({ state: "visible" });
@@ -89,7 +103,7 @@ test.describe("Status Change UI", () => {
     });
 
     test("should display submit button at the bottom", async ({ page }) => {
-      await page.goto(`/${testJobId}`);
+      await page.goto(`${baseUrl}/${testJobId}`);
 
       const submitButton = page.locator('[data-testid="submit-status-changes"]');
       await submitButton.waitFor({ state: "visible", timeout: 10000 });
@@ -103,7 +117,7 @@ test.describe("Status Change UI", () => {
 
   test.describe("🔄 상태 변경 및 추적 테스트", () => {
     test("should enable submit button when status changes", async ({ page }) => {
-      await page.goto(`/${testJobId}`);
+      await page.goto(`${baseUrl}/${testJobId}`);
 
       const submitButton = page.locator('[data-testid="submit-status-changes"]');
       const rootDropdown = page.locator(`[data-testid="status-dropdown-${testJobId}"]`);
@@ -119,7 +133,7 @@ test.describe("Status Change UI", () => {
     });
 
     test("should track multiple task changes", async ({ page }) => {
-      await page.goto(`/${testJobId}`);
+      await page.goto(`${baseUrl}/${testJobId}`);
 
       const submitButton = page.locator('[data-testid="submit-status-changes"]');
       const rootDropdown = page.locator(`[data-testid="status-dropdown-${testJobId}"]`);
@@ -134,7 +148,7 @@ test.describe("Status Change UI", () => {
     });
 
     test("should disable submit button when reverted to original state", async ({ page }) => {
-      await page.goto(`/${testJobId}`);
+      await page.goto(`${baseUrl}/${testJobId}`);
 
       const submitButton = page.locator('[data-testid="submit-status-changes"]');
       const rootDropdown = page.locator(`[data-testid="status-dropdown-${testJobId}"]`);
@@ -151,7 +165,7 @@ test.describe("Status Change UI", () => {
 
   test.describe("📡 API 호출 및 피드백 테스트", () => {
     test("should call API when submit button is clicked", async ({ page }) => {
-      await page.goto(`/${testJobId}`);
+      await page.goto(`${baseUrl}/${testJobId}`);
 
       const rootDropdown = page.locator(`[data-testid="status-dropdown-${testJobId}"]`);
       const submitButton = page.locator('[data-testid="submit-status-changes"]');
@@ -183,7 +197,7 @@ test.describe("Status Change UI", () => {
     });
 
     test.skip("should update UI after successful API response", async ({ page }) => {
-      await page.goto(`/${testJobId}`);
+      await page.goto(`${baseUrl}/${testJobId}`);
 
       const rootDropdown = page.locator(`[data-testid="status-dropdown-${testJobId}"]`);
       const submitButton = page.locator('[data-testid="submit-status-changes"]');
@@ -202,7 +216,7 @@ test.describe("Status Change UI", () => {
     });
 
     test("should send multiple updates in batch", async ({ page }) => {
-      await page.goto(`/${testJobId}`);
+      await page.goto(`${baseUrl}/${testJobId}`);
 
       const rootDropdown = page.locator(`[data-testid="status-dropdown-${testJobId}"]`);
       const child1Dropdown = page.locator('[data-testid="status-dropdown-child-1"]');
