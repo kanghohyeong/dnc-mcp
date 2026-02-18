@@ -3,17 +3,17 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerGetKstTimeTool } from "./tools/get-kst-time.js";
-import { registerDncInitJobTool } from "./tools/dnc-init-job.js";
-import { registerDncAppendDividedJobTool } from "./tools/dnc-append-divided-job.js";
-import { registerDncDeleteJobTool } from "./tools/dnc-delete-job.js";
-import { registerDncUpdateJobTool } from "./tools/dnc-update-job.js";
-import { registerDncGetJobRelationsTool } from "./tools/dnc-get-job-relations.js";
-import { registerDncListRootJobsTool } from "./tools/dnc-list-root-jobs.js";
+import { registerDncInitTaskTool } from "./tools/dnc-init-task.js";
+import { registerDncAppendDividedTaskTool } from "./tools/dnc-append-divided-task.js";
+import { registerDncDeleteTaskTool } from "./tools/dnc-delete-task.js";
+import { registerDncUpdateTaskTool } from "./tools/dnc-update-task.js";
+import { registerDncGetTaskRelationsTool } from "./tools/dnc-get-task-relations.js";
+import { registerDncListRootTasksTool } from "./tools/dnc-list-root-tasks.js";
 import { UIWebServer } from "./services/web-server.js";
 import { FileSystemDncTaskRepository } from "./repositories/index.js";
 
 /**
- * MCP Server for interlock_mcp
+ * MCP Server for dnc-mcp
  *
  * This is a basic template for an MCP server using the STDIO transport.
  * IMPORTANT: When using STDIO transport, always log to stderr using console.error(),
@@ -22,7 +22,7 @@ import { FileSystemDncTaskRepository } from "./repositories/index.js";
 
 // Initialize the MCP server
 const mcpServer = new McpServer({
-  name: "interlock_mcp",
+  name: "dnc-mcp",
   version: "1.0.0",
 });
 
@@ -41,13 +41,13 @@ const webServer = new UIWebServer({ repository });
  */
 registerGetKstTimeTool(mcpServer);
 
-// DnC (Divide and Conquer) job 관리 도구들
-registerDncInitJobTool(mcpServer, repository);
-registerDncAppendDividedJobTool(mcpServer, repository);
-registerDncDeleteJobTool(mcpServer, repository);
-registerDncUpdateJobTool(mcpServer, repository);
-registerDncGetJobRelationsTool(mcpServer, repository);
-registerDncListRootJobsTool(mcpServer, repository);
+// DnC (Divide and Conquer) task 관리 도구들
+registerDncInitTaskTool(mcpServer, repository);
+registerDncAppendDividedTaskTool(mcpServer, repository);
+registerDncDeleteTaskTool(mcpServer, repository);
+registerDncUpdateTaskTool(mcpServer, repository);
+registerDncGetTaskRelationsTool(mcpServer, repository);
+registerDncListRootTasksTool(mcpServer, repository);
 
 /**
  * Setup client connection handler
@@ -93,7 +93,7 @@ mcpServer.server.onclose = () => {
 async function main() {
   const transport = new StdioServerTransport();
   await mcpServer.connect(transport);
-  console.error("interlock_mcp MCP server running on stdio");
+  console.error("dnc-mcp MCP server running on stdio");
 }
 
 main().catch((error) => {

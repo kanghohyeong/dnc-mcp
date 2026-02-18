@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "fs/promises";
 import * as path from "path";
-import { registerDncDeleteJobTool } from "../../../src/tools/dnc-delete-job.js";
+import { registerDncDeleteTaskTool } from "../../../src/tools/dnc-delete-task.js";
 import { createTestMcpServer } from "../../helpers/test-utils.js";
 
 import { FileSystemDncTaskRepository } from "../../../src/repositories/index.js";
 import type { Task } from "../../../src/repositories/index.js";
 
-describe("dnc-delete-job tool", () => {
+describe("dnc-delete-task tool", () => {
   let repository: FileSystemDncTaskRepository;
   const testRoot = path.join(process.cwd(), ".dnc-test-delete");
   const originalCwd = process.cwd();
@@ -28,10 +28,10 @@ describe("dnc-delete-job tool", () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
 
-    registerDncDeleteJobTool(mcpServer, repository);
+    registerDncDeleteTaskTool(mcpServer, repository);
 
     expect(registerToolSpy).toHaveBeenCalledTimes(1);
-    expect(registerToolSpy.mock.calls[0][0]).toBe("dnc_delete_job");
+    expect(registerToolSpy.mock.calls[0][0]).toBe("dnc_delete_task");
   });
 
   it("should delete root job and all files", async () => {
@@ -47,7 +47,7 @@ describe("dnc-delete-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncDeleteJobTool(mcpServer, repository);
+    registerDncDeleteTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       task_id: string;
@@ -86,7 +86,7 @@ describe("dnc-delete-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncDeleteJobTool(mcpServer, repository);
+    registerDncDeleteTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       task_id: string;
@@ -134,7 +134,7 @@ describe("dnc-delete-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncDeleteJobTool(mcpServer, repository);
+    registerDncDeleteTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       task_id: string;
@@ -155,7 +155,7 @@ describe("dnc-delete-job tool", () => {
   it("should return error when job not found", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncDeleteJobTool(mcpServer, repository);
+    registerDncDeleteTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       task_id: string;
@@ -168,10 +168,10 @@ describe("dnc-delete-job tool", () => {
     expect(result.content[0].text).toContain("존재하지 않습니다");
   });
 
-  it("should return error when job_title is missing", async () => {
+  it("should return error when task_title is missing", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncDeleteJobTool(mcpServer, repository);
+    registerDncDeleteTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id?: string;
       task_id: string;
@@ -187,7 +187,7 @@ describe("dnc-delete-job tool", () => {
   it("should return error when task_id is invalid", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncDeleteJobTool(mcpServer, repository);
+    registerDncDeleteTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       task_id: string;
@@ -221,7 +221,7 @@ describe("dnc-delete-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncDeleteJobTool(mcpServer, repository);
+    registerDncDeleteTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       task_id: string;
@@ -271,7 +271,7 @@ describe("dnc-delete-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncDeleteJobTool(mcpServer, repository);
+    registerDncDeleteTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       task_id: string;

@@ -1,11 +1,11 @@
 {
-  "name": "interlock_mcp",
+  "name": "dnc-mcp",
   "version": "1.0.0",
   "description": "MCP server built with TypeScript",
   "type": "module",
   "main": "./build/index.js",
   "bin": {
-    "interlock_mcp": "./build/index.js"
+    "dnc-mcp": "./build/index.js"
   },
   "scripts": {
     "build": "tsc && cp -r src/views build/",

@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DnC Jobs - Task Management</title>
+  <title>DnC Tasks - Task Management</title>
   <link rel="stylesheet" href="/css/jira-style.css">
   <style>
     body {
@@ -25,13 +25,13 @@
       font-size: var(--font-size-md);
     }
 
-    .job-list {
+    .task-list {
       display: flex;
       flex-direction: column;
       gap: var(--spacing-md);
     }
 
-    .job-card {
+    .task-card {
       background: var(--bg-primary);
       border-radius: var(--radius-md);
       border: 1px solid var(--border-color);
@@ -40,32 +40,32 @@
       cursor: pointer;
     }
 
-    .job-card:hover {
+    .task-card:hover {
       border-color: var(--color-primary);
       box-shadow: var(--shadow-md);
     }
 
-    .job-card-header {
+    .task-card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: var(--spacing-md);
     }
 
-    .job-id {
+    .task-id {
       font-family: 'Courier New', monospace;
       font-size: var(--font-size-lg);
       font-weight: var(--font-weight-semibold);
       color: var(--color-primary);
     }
 
-    .job-goal {
+    .task-goal {
       color: var(--text-primary);
       line-height: 1.6;
       margin-bottom: var(--spacing-md);
     }
 
-    .job-link {
+    .task-link {
       color: var(--color-primary);
       text-decoration: none;
       font-weight: var(--font-weight-medium);
@@ -73,7 +73,7 @@
       transition: color var(--transition-fast);
     }
 
-    .job-link:hover {
+    .task-link:hover {
       color: var(--color-primary-hover);
     }
 
@@ -92,13 +92,13 @@
         padding: var(--spacing-lg) var(--spacing-md);
       }
 
-      .job-card-header {
+      .task-card-header {
         flex-direction: column;
         align-items: flex-start;
         gap: var(--spacing-sm);
       }
 
-      .job-id {
+      .task-id {
         font-size: var(--font-size-md);
       }
     }
@@ -109,37 +109,37 @@
   <div class="container">
     <div class="page-header">
       <h1 class="page-title">Task Management</h1>
-      <p class="page-subtitle">DnC (Divide and Conquer) Job List</p>
+      <p class="page-subtitle">DnC (Divide and Conquer) Task List</p>
     </div>
 
     <!-- Tab Bar -->
     <div class="tab-bar">
       <button class="tab-btn active" data-target="tab-panel-active">
         In Progress
-        <span class="tab-count"><%= activeJobs.length %></span>
+        <span class="tab-count"><%= activeTasks.length %></span>
       </button>
       <button class="tab-btn" data-target="tab-panel-done">
         Done
-        <span class="tab-count"><%= doneJobs.length %></span>
+        <span class="tab-count"><%= doneTasks.length %></span>
       </button>
     </div>
 
     <!-- In Progress Panel -->
     <div id="tab-panel-active" class="tab-panel">
-      <% if (activeJobs.length === 0) { %>
+      <% if (activeTasks.length === 0) { %>
         <div class="section-empty fade-in">No active tasks</div>
       <% } else { %>
-        <div class="job-list fade-in" data-testid="job-list-active">
-          <% activeJobs.forEach(job => { %>
-            <div class="job-card" onclick="location.href='/<%= job.id %>'" data-testid="job-item">
-              <div class="job-card-header">
-                <div class="job-id"><%= job.id %></div>
-                <div class="status-badge status-<%= job.status %>" data-testid="job-status">
-                  <%= job.status %>
+        <div class="task-list fade-in" data-testid="task-list-active">
+          <% activeTasks.forEach(task => { %>
+            <div class="task-card" onclick="location.href='/<%= task.id %>'" data-testid="task-item">
+              <div class="task-card-header">
+                <div class="task-id"><%= task.id %></div>
+                <div class="status-badge status-<%= task.status %>" data-testid="task-status">
+                  <%= task.status %>
                 </div>
               </div>
-              <div class="job-goal"><%= job.goal %></div>
-              <a href="/<%= job.id %>" class="job-link" onclick="event.stopPropagation()">
+              <div class="task-goal"><%= task.goal %></div>
+              <a href="/<%= task.id %>" class="task-link" onclick="event.stopPropagation()">
                 View Details →
               </a>
             </div>
@@ -150,20 +150,20 @@
 
     <!-- Done Panel -->
     <div id="tab-panel-done" class="tab-panel" style="display:none;">
-      <% if (doneJobs.length === 0) { %>
+      <% if (doneTasks.length === 0) { %>
         <div class="section-empty fade-in">No completed tasks</div>
       <% } else { %>
-        <div class="job-list fade-in" data-testid="job-list-done">
-          <% doneJobs.forEach(job => { %>
-            <div class="job-card job-card--done" onclick="location.href='/<%= job.id %>'" data-testid="job-item">
-              <div class="job-card-header">
-                <div class="job-id"><%= job.id %></div>
-                <div class="status-badge status-<%= job.status %>" data-testid="job-status">
-                  <%= job.status %>
+        <div class="task-list fade-in" data-testid="task-list-done">
+          <% doneTasks.forEach(task => { %>
+            <div class="task-card task-card--done" onclick="location.href='/<%= task.id %>'" data-testid="task-item">
+              <div class="task-card-header">
+                <div class="task-id"><%= task.id %></div>
+                <div class="status-badge status-<%= task.status %>" data-testid="task-status">
+                  <%= task.status %>
                 </div>
               </div>
-              <div class="job-goal"><%= job.goal %></div>
-              <a href="/<%= job.id %>" class="job-link" onclick="event.stopPropagation()">
+              <div class="task-goal"><%= task.goal %></div>
+              <a href="/<%= task.id %>" class="task-link" onclick="event.stopPropagation()">
                 View Details →
               </a>
             </div>

@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "fs/promises";
 import * as path from "path";
-import { registerDncInitJobTool } from "../../../src/tools/dnc-init-job.js";
+import { registerDncInitTaskTool } from "../../../src/tools/dnc-init-task.js";
 import { createTestMcpServer } from "../../helpers/test-utils.js";
 import { FileSystemDncTaskRepository } from "../../../src/repositories/index.js";
 import type { Task } from "../../../src/repositories/index.js";
 
-describe("dnc-init-job tool", () => {
+describe("dnc-init-task tool", () => {
   const testRoot = path.join(process.cwd(), ".dnc-test-init");
   const originalCwd = process.cwd();
   let repository: FileSystemDncTaskRepository;
@@ -27,25 +27,25 @@ describe("dnc-init-job tool", () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
 
-    registerDncInitJobTool(mcpServer, repository);
+    registerDncInitTaskTool(mcpServer, repository);
 
     expect(registerToolSpy).toHaveBeenCalledTimes(1);
     const call = registerToolSpy.mock.calls[0];
-    expect(call[0]).toBe("dnc_init_job");
+    expect(call[0]).toBe("dnc_init_task");
   });
 
-  it("should create root task with valid job_title, goal, and acceptance", async () => {
+  it("should create root task with valid task_title, goal, and acceptance", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncInitJobTool(mcpServer, repository);
+    registerDncInitTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
+      task_title: string;
       goal: string;
       acceptance: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_title: "implement-auth",
+      task_title: "implement-auth",
       goal: "Implement Authentication",
       acceptance: "All authentication tests pass",
     });
@@ -74,18 +74,18 @@ describe("dnc-init-job tool", () => {
     expect(task.tasks).toEqual([]);
   });
 
-  it("should return error when job_title is invalid (uppercase)", async () => {
+  it("should return error when task_title is invalid (uppercase)", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncInitJobTool(mcpServer, repository);
+    registerDncInitTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
+      task_title: string;
       goal: string;
       acceptance: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_title: "Implement-Auth",
+      task_title: "Implement-Auth",
       goal: "Implement Authentication",
       acceptance: "Tests pass",
     });
@@ -94,18 +94,18 @@ describe("dnc-init-job tool", () => {
     expect(result.content[0].text).toContain("lowercase");
   });
 
-  it("should return error when job_title exceeds 10 words", async () => {
+  it("should return error when task_title exceeds 10 words", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncInitJobTool(mcpServer, repository);
+    registerDncInitTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
+      task_title: string;
       goal: string;
       acceptance: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_title: "one-two-three-four-five-six-seven-eight-nine-ten-eleven",
+      task_title: "one-two-three-four-five-six-seven-eight-nine-ten-eleven",
       goal: "Test Goal",
       acceptance: "Done",
     });
@@ -117,15 +117,15 @@ describe("dnc-init-job tool", () => {
   it("should return error when goal is missing", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncInitJobTool(mcpServer, repository);
+    registerDncInitTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
+      task_title: string;
       goal?: string;
       acceptance: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_title: "test-job",
+      task_title: "test-job",
       goal: "",
       acceptance: "Done",
     });
@@ -137,15 +137,15 @@ describe("dnc-init-job tool", () => {
   it("should return error when acceptance is missing", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncInitJobTool(mcpServer, repository);
+    registerDncInitTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
+      task_title: string;
       goal: string;
       acceptance?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     const result = await handler({
-      job_title: "test-job",
+      task_title: "test-job",
       goal: "Test Goal",
       acceptance: "",
     });
@@ -157,23 +157,23 @@ describe("dnc-init-job tool", () => {
   it("should return error when job already exists", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncInitJobTool(mcpServer, repository);
+    registerDncInitTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
+      task_title: string;
       goal: string;
       acceptance: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
     // 첫 번째 생성
     await handler({
-      job_title: "test-job",
+      task_title: "test-job",
       goal: "Test Goal",
       acceptance: "Done",
     });
 
     // 중복 생성 시도
     const result = await handler({
-      job_title: "test-job",
+      task_title: "test-job",
       goal: "Test Goal",
       acceptance: "Done",
     });

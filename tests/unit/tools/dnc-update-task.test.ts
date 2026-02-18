@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "fs/promises";
 import * as path from "path";
-import { registerDncUpdateJobTool } from "../../../src/tools/dnc-update-job.js";
+import { registerDncUpdateTaskTool } from "../../../src/tools/dnc-update-task.js";
 import { createTestMcpServer } from "../../helpers/test-utils.js";
 
 import { FileSystemDncTaskRepository } from "../../../src/repositories/index.js";
 import type { Task } from "../../../src/repositories/index.js";
 
-describe("dnc-update-job tool", () => {
+describe("dnc-update-task tool", () => {
   let repository: FileSystemDncTaskRepository;
   const testRoot = path.join(process.cwd(), ".dnc-test-update");
   const originalCwd = process.cwd();
@@ -28,10 +28,10 @@ describe("dnc-update-job tool", () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
 
-    registerDncUpdateJobTool(mcpServer, repository);
+    registerDncUpdateTaskTool(mcpServer, repository);
 
     expect(registerToolSpy).toHaveBeenCalledTimes(1);
-    expect(registerToolSpy.mock.calls[0][0]).toBe("dnc_update_job");
+    expect(registerToolSpy.mock.calls[0][0]).toBe("dnc_update_task");
   });
 
   it("should update task goal", async () => {
@@ -47,7 +47,7 @@ describe("dnc-update-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncUpdateJobTool(mcpServer, repository);
+    registerDncUpdateTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       task_id: string;
@@ -86,7 +86,7 @@ describe("dnc-update-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncUpdateJobTool(mcpServer, repository);
+    registerDncUpdateTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       task_id: string;
@@ -120,7 +120,7 @@ describe("dnc-update-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncUpdateJobTool(mcpServer, repository);
+    registerDncUpdateTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       task_id: string;
@@ -154,7 +154,7 @@ describe("dnc-update-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncUpdateJobTool(mcpServer, repository);
+    registerDncUpdateTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       task_id: string;
@@ -202,7 +202,7 @@ describe("dnc-update-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncUpdateJobTool(mcpServer, repository);
+    registerDncUpdateTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       task_id: string;
@@ -242,7 +242,7 @@ describe("dnc-update-job tool", () => {
 
         const mcpServer = createTestMcpServer();
         const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-        registerDncUpdateJobTool(mcpServer, repository);
+        registerDncUpdateTaskTool(mcpServer, repository);
         const handler = registerToolSpy.mock.calls[0][2] as (args: {
           root_task_id: string;
           task_id: string;
@@ -279,7 +279,7 @@ describe("dnc-update-job tool", () => {
 
       const mcpServer = createTestMcpServer();
       const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-      registerDncUpdateJobTool(mcpServer, repository);
+      registerDncUpdateTaskTool(mcpServer, repository);
       const handler = registerToolSpy.mock.calls[0][2] as (args: {
         root_task_id: string;
         task_id: string;
@@ -310,7 +310,7 @@ describe("dnc-update-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncUpdateJobTool(mcpServer, repository);
+    registerDncUpdateTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       task_id: string;
@@ -330,7 +330,7 @@ describe("dnc-update-job tool", () => {
   it("should return error when task not found", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncUpdateJobTool(mcpServer, repository);
+    registerDncUpdateTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       task_id: string;
@@ -361,7 +361,7 @@ describe("dnc-update-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncUpdateJobTool(mcpServer, repository);
+    registerDncUpdateTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       task_id: string;
@@ -373,10 +373,10 @@ describe("dnc-update-job tool", () => {
     expect(result.content[0].text).toContain("최소 하나");
   });
 
-  it("should return error when job_title is missing", async () => {
+  it("should return error when task_title is missing", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncUpdateJobTool(mcpServer, repository);
+    registerDncUpdateTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id?: string;
       task_id: string;
@@ -393,7 +393,7 @@ describe("dnc-update-job tool", () => {
   it("should return error when task_id is invalid", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncUpdateJobTool(mcpServer, repository);
+    registerDncUpdateTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       task_id: string;
@@ -428,7 +428,7 @@ describe("dnc-update-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncUpdateJobTool(mcpServer, repository);
+    registerDncUpdateTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       task_id: string;
@@ -475,7 +475,7 @@ describe("dnc-update-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncUpdateJobTool(mcpServer, repository);
+    registerDncUpdateTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       task_id: string;
@@ -533,7 +533,7 @@ describe("dnc-update-job tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncUpdateJobTool(mcpServer, repository);
+    registerDncUpdateTaskTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
       root_task_id: string;
       task_id: string;
@@ -568,7 +568,7 @@ describe("dnc-update-job tool", () => {
 
       const mcpServer = createTestMcpServer();
       const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-      registerDncUpdateJobTool(mcpServer, repository);
+      registerDncUpdateTaskTool(mcpServer, repository);
       const handler = registerToolSpy.mock.calls[0][2] as (args: {
         root_task_id: string;
         task_id: string;
@@ -604,7 +604,7 @@ describe("dnc-update-job tool", () => {
 
       const mcpServer = createTestMcpServer();
       const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-      registerDncUpdateJobTool(mcpServer, repository);
+      registerDncUpdateTaskTool(mcpServer, repository);
       const handler = registerToolSpy.mock.calls[0][2] as (args: {
         root_task_id: string;
         task_id: string;
@@ -641,7 +641,7 @@ describe("dnc-update-job tool", () => {
 
       const mcpServer = createTestMcpServer();
       const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-      registerDncUpdateJobTool(mcpServer, repository);
+      registerDncUpdateTaskTool(mcpServer, repository);
       const handler = registerToolSpy.mock.calls[0][2] as (args: {
         root_task_id: string;
         task_id: string;

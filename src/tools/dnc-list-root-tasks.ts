@@ -5,12 +5,12 @@ import type { IDncTaskRepository } from "../repositories/index.js";
  * DNC 루트 task 목록 조회 도구를 등록합니다.
  * @param mcpServer - MCP 서버 인스턴스
  */
-export function registerDncListRootJobsTool(
+export function registerDncListRootTasksTool(
   mcpServer: McpServer,
   repository: IDncTaskRepository
 ): void {
   mcpServer.registerTool(
-    "dnc_list_root_jobs",
+    "dnc_list_root_tasks",
     {
       description: "루트 Task 목록 조회 DNC MCP Tool 구현 계획",
       inputSchema: {},
@@ -26,7 +26,7 @@ export function registerDncListRootJobsTool(
             content: [
               {
                 type: "text",
-                text: "No root tasks found. Create a root task using dnc_init_job.",
+                text: "No root tasks found. Create a root task using dnc_init_task.",
               },
             ],
           };

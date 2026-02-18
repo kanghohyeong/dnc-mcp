@@ -1,5 +1,5 @@
 {
-  "interlock_mcp": {
+  "dnc-mcp": {
     "command": "node",
     "args": ["/Users/hohyeongkang/Project/interlock_mcp/build/index.js"],
     "env": {

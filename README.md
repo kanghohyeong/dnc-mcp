@@ -1,4 +1,4 @@
-# interlock_mcp
+# dnc-mcp
 
 TypeScript로 작성된 Model Context Protocol용 MCP 서버입니다.
 
@@ -169,7 +169,7 @@ npm run test:playwright:debug
 ## 프로젝트 구조
 
 ```
-interlock_mcp/
+dnc-mcp/
 ├── src/              # TypeScript 소스 파일
 │   ├── index.ts      # 메인 서버 진입점
 │   ├── tools/        # MCP 도구 구현 디렉토리

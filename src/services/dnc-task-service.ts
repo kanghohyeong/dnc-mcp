@@ -1,7 +1,7 @@
 import { findTaskInTree } from "../utils/dnc-utils.js";
 import type { IDncTaskRepository, Task } from "../repositories/index.js";
 
-export class DncJobService {
+export class DncTaskService {
   constructor(private readonly repository: IDncTaskRepository) {}
 
   /**
@@ -27,11 +27,11 @@ export class DncJobService {
   /**
    * 모든 root task를 done / active 로 분리하여 반환합니다.
    */
-  async getAllRootTasksSplit(): Promise<{ doneJobs: Task[]; activeJobs: Task[] }> {
+  async getAllRootTasksSplit(): Promise<{ doneTasks: Task[]; activeTasks: Task[] }> {
     const tasks = await this.getAllRootTasks();
     return {
-      doneJobs: tasks.filter((t) => t.status === "done"),
-      activeJobs: tasks.filter((t) => t.status !== "done"),
+      doneTasks: tasks.filter((t) => t.status === "done"),
+      activeTasks: tasks.filter((t) => t.status !== "done"),
     };
   }
 

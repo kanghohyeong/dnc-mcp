@@ -3,13 +3,13 @@ import * as z from "zod";
 import { validateTaskId } from "../utils/dnc-utils.js";
 import type { IDncTaskRepository, Task } from "../repositories/index.js";
 
-export function registerDncInitJobTool(mcpServer: McpServer, repository: IDncTaskRepository) {
+export function registerDncInitTaskTool(mcpServer: McpServer, repository: IDncTaskRepository) {
   mcpServer.registerTool(
-    "dnc_init_job",
+    "dnc_init_task",
     {
       description: "DnC 워크플로우의 최상위 작업(root task)을 생성합니다.",
       inputSchema: {
-        job_title: z
+        task_title: z
           .string()
           .describe(
             "작업의 고유 식별자 (필수, 영문 10단어 이하, kebab-case, 예: implement-user-auth)"
@@ -20,10 +20,10 @@ export function registerDncInitJobTool(mcpServer: McpServer, repository: IDncTas
     },
     async (args) => {
       try {
-        const { job_title, goal, acceptance } = args;
+        const { task_title, goal, acceptance } = args;
 
-        // job_title 검증
-        const validation = validateTaskId(job_title);
+        // task_title 검증
+        const validation = validateTaskId(task_title);
         if (!validation.isValid) {
           return {
             content: [
@@ -63,12 +63,12 @@ export function registerDncInitJobTool(mcpServer: McpServer, repository: IDncTas
         }
 
         // 중복 확인
-        if (await repository.rootTaskExists(job_title)) {
+        if (await repository.rootTaskExists(task_title)) {
           return {
             content: [
               {
                 type: "text" as const,
-                text: `오류: job_title "${job_title}"이(가) 이미 존재합니다.`,
+                text: `오류: task_title "${task_title}"이(가) 이미 존재합니다.`,
               },
             ],
             isError: true,
@@ -77,7 +77,7 @@ export function registerDncInitJobTool(mcpServer: McpServer, repository: IDncTas
 
         // task 데이터 생성
         const task: Task = {
-          id: job_title,
+          id: task_title,
           goal: goal,
           acceptance: acceptance,
           status: "init",
@@ -85,13 +85,13 @@ export function registerDncInitJobTool(mcpServer: McpServer, repository: IDncTas
         };
 
         // task 파일 저장 (디렉토리 생성 포함)
-        await repository.saveRootTask(job_title, task);
+        await repository.saveRootTask(task_title, task);
 
         return {
           content: [
             {
               type: "text" as const,
-              text: `Root task가 성공적으로 생성되었습니다!\n\n📋 Task ID: ${job_title}\n🎯 Goal: ${goal}\n✅ Acceptance: ${acceptance}\n📄 Task File: .dnc/${job_title}/task.json\n\n다음 단계: dnc_append_divided_job 명령으로 하위 작업을 분할하세요.`,
+              text: `Root task가 성공적으로 생성되었습니다!\n\n📋 Task ID: ${task_title}\n🎯 Goal: ${goal}\n✅ Acceptance: ${acceptance}\n📄 Task File: .dnc/${task_title}/task.json\n\n다음 단계: dnc_append_divided_task 명령으로 하위 작업을 분할하세요.`,
             },
           ],
         };

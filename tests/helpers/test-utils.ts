@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { vi } from "vitest";
 import { UIWebServer } from "../../src/services/web-server.js";
-import { DncJobService } from "../../src/services/dnc-job-service.js";
+import { DncTaskService } from "../../src/services/dnc-task-service.js";
 
 /**
  * MCP 서버 테스트 인스턴스 생성
@@ -14,7 +14,7 @@ export function createTestMcpServer() {
 }
 
 export interface TestWebServerOptions {
-  dncJobService?: DncJobService;
+  dncJobService?: DncTaskService;
 }
 
 /**

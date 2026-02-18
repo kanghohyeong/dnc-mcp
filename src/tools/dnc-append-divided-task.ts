@@ -3,24 +3,24 @@ import * as z from "zod";
 import { findTaskInTree, validateTaskId } from "../utils/dnc-utils.js";
 import type { IDncTaskRepository, Task } from "../repositories/index.js";
 
-export function registerDncAppendDividedJobTool(
+export function registerDncAppendDividedTaskTool(
   mcpServer: McpServer,
   repository: IDncTaskRepository
 ) {
   mcpServer.registerTool(
-    "dnc_append_divided_job",
+    "dnc_append_divided_task",
     {
       description: "부모 task의 tasks 목록에 하위 작업을 추가합니다.",
       inputSchema: {
         root_task_id: z
           .string()
-          .describe("Root task의 job title (필수, 영문 10단어 이하, kebab-case, 예: my-project)"),
+          .describe("Root task의 task title (필수, 영문 10단어 이하, kebab-case, 예: my-project)"),
         parent_task_id: z
           .string()
           .describe(
-            "하위 작업을 추가할 부모 task의 job title (필수, 영문 10단어 이하, kebab-case, 예: setup-database)"
+            "하위 작업을 추가할 부모 task의 task title (필수, 영문 10단어 이하, kebab-case, 예: setup-database)"
           ),
-        child_job_title: z
+        child_task_title: z
           .string()
           .describe(
             "하위 작업의 고유 식별자 (필수, 영문 10단어 이하, kebab-case, 예: create-tables)"
@@ -31,7 +31,7 @@ export function registerDncAppendDividedJobTool(
     },
     async (args) => {
       try {
-        const { root_task_id, parent_task_id, child_job_title, child_goal, acceptance } = args;
+        const { root_task_id, parent_task_id, child_task_title, child_goal, acceptance } = args;
 
         // root_task_id 검증
         const rootValidation = validateTaskId(root_task_id);
@@ -61,14 +61,14 @@ export function registerDncAppendDividedJobTool(
           };
         }
 
-        // child_job_title 검증
-        const childValidation = validateTaskId(child_job_title);
+        // child_task_title 검증
+        const childValidation = validateTaskId(child_task_title);
         if (!childValidation.isValid) {
           return {
             content: [
               {
                 type: "text" as const,
-                text: `오류: child_job_title이 유효하지 않습니다. ${childValidation.error}`,
+                text: `오류: child_task_title이 유효하지 않습니다. ${childValidation.error}`,
               },
             ],
             isError: true,
@@ -132,13 +132,13 @@ export function registerDncAppendDividedJobTool(
         }
 
         // 중복 확인
-        const existingChild = findTaskInTree(parentTask, child_job_title);
+        const existingChild = findTaskInTree(parentTask, child_task_title);
         if (existingChild) {
           return {
             content: [
               {
                 type: "text" as const,
-                text: `오류: child_job_title "${child_job_title}"이(가) 이미 존재합니다.`,
+                text: `오류: child_task_title "${child_task_title}"이(가) 이미 존재합니다.`,
               },
             ],
             isError: true,
@@ -147,7 +147,7 @@ export function registerDncAppendDividedJobTool(
 
         // Child task 생성
         const childTask: Task = {
-          id: child_job_title,
+          id: child_task_title,
           goal: child_goal,
           acceptance: acceptance,
           status: "init",
@@ -164,7 +164,7 @@ export function registerDncAppendDividedJobTool(
           content: [
             {
               type: "text" as const,
-              text: `하위 작업이 성공적으로 추가되었습니다!\n\n📋 Root Task: ${root_task_id}\n📋 Parent Task: ${parent_task_id}\n  ↳ 📋 Child Task: ${child_job_title}\n  🎯 Goal: ${child_goal}\n  ✅ Acceptance: ${acceptance}\n\n다음 단계: 필요시 dnc_append_divided_job로 추가 하위 작업을 분할하거나, dnc_update_job로 상태를 업데이트하세요.`,
+              text: `하위 작업이 성공적으로 추가되었습니다!\n\n📋 Root Task: ${root_task_id}\n📋 Parent Task: ${parent_task_id}\n  ↳ 📋 Child Task: ${child_task_title}\n  🎯 Goal: ${child_goal}\n  ✅ Acceptance: ${acceptance}\n\n다음 단계: 필요시 dnc_append_divided_task로 추가 하위 작업을 분할하거나, dnc_update_task로 상태를 업데이트하세요.`,
             },
           ],
         };

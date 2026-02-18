@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "fs/promises";
 import * as path from "path";
-import { registerDncGetJobRelationsTool } from "../../../src/tools/dnc-get-job-relations.js";
+import { registerDncGetTaskRelationsTool } from "../../../src/tools/dnc-get-task-relations.js";
 import { createTestMcpServer } from "../../helpers/test-utils.js";
 
 import { FileSystemDncTaskRepository } from "../../../src/repositories/index.js";
 import type { Task } from "../../../src/repositories/index.js";
 
-describe("dnc-get-job-relations tool", () => {
+describe("dnc-get-task-relations tool", () => {
   let repository: FileSystemDncTaskRepository;
   const testRoot = path.join(process.cwd(), ".dnc-test-get");
   const originalCwd = process.cwd();
@@ -28,10 +28,10 @@ describe("dnc-get-job-relations tool", () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
 
-    registerDncGetJobRelationsTool(mcpServer, repository);
+    registerDncGetTaskRelationsTool(mcpServer, repository);
 
     expect(registerToolSpy).toHaveBeenCalledTimes(1);
-    expect(registerToolSpy.mock.calls[0][0]).toBe("dnc_get_job_relations");
+    expect(registerToolSpy.mock.calls[0][0]).toBe("dnc_get_task_relations");
   });
 
   it("should return simple task without subtasks", async () => {
@@ -47,12 +47,12 @@ describe("dnc-get-job-relations tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncGetJobRelationsTool(mcpServer, repository);
+    registerDncGetTaskRelationsTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
+      task_title: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_title: "job-simple" });
+    const result = await handler({ task_title: "job-simple" });
 
     expect(result.isError).toBeUndefined();
     expect(result.content[0].text).toContain("job-simple");
@@ -89,12 +89,12 @@ describe("dnc-get-job-relations tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncGetJobRelationsTool(mcpServer, repository);
+    registerDncGetTaskRelationsTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
+      task_title: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_title: "job-parent" });
+    const result = await handler({ task_title: "job-parent" });
 
     expect(result.isError).toBeUndefined();
     const text = result.content[0].text;
@@ -140,12 +140,12 @@ describe("dnc-get-job-relations tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncGetJobRelationsTool(mcpServer, repository);
+    registerDncGetTaskRelationsTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
+      task_title: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_title: "job-root" });
+    const result = await handler({ task_title: "job-root" });
 
     expect(result.isError).toBeUndefined();
     const text = result.content[0].text;
@@ -161,26 +161,26 @@ describe("dnc-get-job-relations tool", () => {
   it("should return error when task not found", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncGetJobRelationsTool(mcpServer, repository);
+    registerDncGetTaskRelationsTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
+      task_title: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_title: "non-existent" });
+    const result = await handler({ task_title: "non-existent" });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain("존재하지 않습니다");
   });
 
-  it("should return error when job_title is missing", async () => {
+  it("should return error when task_title is missing", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncGetJobRelationsTool(mcpServer, repository);
+    registerDncGetTaskRelationsTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title?: string;
+      task_title?: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_title: "" });
+    const result = await handler({ task_title: "" });
 
     expect(result.isError).toBe(true);
   });
@@ -191,12 +191,12 @@ describe("dnc-get-job-relations tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncGetJobRelationsTool(mcpServer, repository);
+    registerDncGetTaskRelationsTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
+      task_title: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_title: "job-corrupted" });
+    const result = await handler({ task_title: "job-corrupted" });
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain("오류");
@@ -215,12 +215,12 @@ describe("dnc-get-job-relations tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncGetJobRelationsTool(mcpServer, repository);
+    registerDncGetTaskRelationsTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as (args: {
-      job_title: string;
+      task_title: string;
     }) => Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 
-    const result = await handler({ job_title: "job-format" });
+    const result = await handler({ task_title: "job-format" });
 
     expect(result.isError).toBeUndefined();
 

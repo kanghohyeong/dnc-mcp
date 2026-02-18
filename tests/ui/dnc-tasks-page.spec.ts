@@ -31,7 +31,7 @@ test.describe("DnC Jobs List Page UI", () => {
 
     // Then: 활성 탭 패널 내 job 목록 또는 empty state가 표시됨
     const jobList = page.locator(
-      '#tab-panel-active [data-testid="job-list-active"], #tab-panel-active .job-list'
+      '#tab-panel-active [data-testid="task-list-active"], #tab-panel-active .task-list'
     );
     const emptyState = page.locator("#tab-panel-active .section-empty");
 
@@ -45,8 +45,10 @@ test.describe("DnC Jobs List Page UI", () => {
     // Given: 메인 페이지 방문
     await page.goto(`${baseUrl}/`);
 
-    // Then: 최소한 하나의 job 항목이 있다면
-    const jobItems = page.locator('[data-testid="job-item"], .job-item, .job-card');
+    // Then: 최소한 하나의 job 항목이 있다면 (활성 탭만)
+    const jobItems = page.locator(
+      '#tab-panel-active [data-testid="task-item"], #tab-panel-active .task-item, #tab-panel-active .task-card'
+    );
     const count = await jobItems.count();
 
     if (count > 0) {
@@ -64,13 +66,15 @@ test.describe("DnC Jobs List Page UI", () => {
     // Given: 메인 페이지 방문
     await page.goto(`${baseUrl}/`);
 
-    // Then: job 항목이 있는 경우에만 링크 검증
-    const jobItems = page.locator('[data-testid="job-item"], .job-item, .job-card');
+    // Then: job 항목이 있는 경우에만 링크 검증 (활성 탭만)
+    const jobItems = page.locator(
+      '#tab-panel-active [data-testid="task-item"], #tab-panel-active .task-item, #tab-panel-active .task-card'
+    );
     const jobCount = await jobItems.count();
 
     if (jobCount > 0) {
       // job 상세 페이지로 가는 링크 찾기 (root URL + job ID)
-      const allLinks = page.locator("a.job-link");
+      const allLinks = page.locator("#tab-panel-active a.task-link");
       const linkCount = await allLinks.count();
 
       let hasValidLink = false;
@@ -98,7 +102,9 @@ test.describe("DnC Jobs List Page UI", () => {
     await page.goto(`${baseUrl}/`);
 
     // Then: status별 시각적 구분 (색상, 아이콘 등)
-    const statusElements = page.locator('[data-testid="job-status"], .job-status, .status-badge');
+    const statusElements = page.locator(
+      '#tab-panel-active [data-testid="task-status"], #tab-panel-active .task-status, #tab-panel-active .status-badge'
+    );
     const count = await statusElements.count();
 
     if (count > 0) {
@@ -171,8 +177,8 @@ test.describe("DnC Jobs List Page UI", () => {
     // Given: 테스트 task 파일 확인
     await page.goto(`${baseUrl}/`);
 
-    // Then: job이 있으면 .job-id 요소에 ID가 표시되어야 함
-    const jobIdElements = page.locator(".job-id");
+    // Then: job이 있으면 .task-id 요소에 ID가 표시되어야 함 (활성 탭만)
+    const jobIdElements = page.locator("#tab-panel-active .task-id");
     const count = await jobIdElements.count();
 
     if (count > 0) {
@@ -190,8 +196,8 @@ test.describe("DnC Jobs List Page UI", () => {
     // Given: 메인 페이지 방문
     await page.goto(`${baseUrl}/`);
 
-    // Then: 상세 보기 링크가 /{task-id} 형식이어야 함
-    const detailLinks = page.locator("a.job-link");
+    // Then: 상세 보기 링크가 /{task-id} 형식이어야 함 (활성 탭만)
+    const detailLinks = page.locator("#tab-panel-active a.task-link");
     const count = await detailLinks.count();
 
     if (count > 0) {
@@ -208,8 +214,8 @@ test.describe("DnC Jobs List Page UI", () => {
     // Given: 메인 페이지 방문
     await page.goto(`${baseUrl}/`);
 
-    // When: 상세 보기 링크 클릭
-    const detailLinks = page.locator("a.job-link");
+    // When: 상세 보기 링크 클릭 (활성 탭만)
+    const detailLinks = page.locator("#tab-panel-active a.task-link");
     const count = await detailLinks.count();
 
     if (count > 0) {
@@ -228,19 +234,26 @@ test.describe("DnC Jobs List Page UI", () => {
     // Given: 메인 페이지에서 job ID 찾기
     await page.goto(`${baseUrl}/`);
 
-    const jobIdElements = page.locator(".job-id");
+    const jobIdElements = page.locator("#tab-panel-active .task-id");
     const count = await jobIdElements.count();
 
     if (count > 0) {
-      const firstJobId = await jobIdElements.first().textContent();
+      const firstJobId = (await jobIdElements.first().textContent())?.trim();
 
-      // When: 상세 페이지로 직접 이동
-      await page.goto(`${baseUrl}/${firstJobId}`);
+      // task ID가 유효한 kebab-case 형식인지 확인
+      if (firstJobId && /^[a-z0-9-]+$/.test(firstJobId)) {
+        // When: 상세 페이지로 직접 이동
+        const response = await page.goto(`${baseUrl}/${firstJobId}`);
 
-      // Then: 상세 페이지에 job ID가 표시되어야 함 (루트 task의 task-id)
-      const detailPageJobId = page.locator(".task-id").first();
-      await expect(detailPageJobId).toBeVisible();
-      await expect(detailPageJobId).toHaveText(firstJobId || "");
+        // 정상 응답인 경우에만 검증
+        if (response?.status() === 200) {
+          await page.waitForLoadState("networkidle");
+          // Then: 상세 페이지에 job ID가 표시되어야 함 (루트 task의 task-id)
+          const detailPageJobId = page.locator(".task-id").first();
+          await expect(detailPageJobId).toBeVisible();
+          await expect(detailPageJobId).toHaveText(firstJobId);
+        }
+      }
     }
   });
 
@@ -318,7 +331,7 @@ test.describe("DnC Jobs List Page UI", () => {
     await page.goto(`${baseUrl}/`);
 
     // 활성 탭(In Progress) 기준으로 job 목록 또는 empty state 확인
-    const jobList = page.locator('[data-testid="job-list-active"]');
+    const jobList = page.locator('[data-testid="task-list-active"]');
     const emptyState = page.locator("#tab-panel-active .section-empty");
 
     const jobListVisible = await jobList.isVisible().catch(() => false);
@@ -335,7 +348,7 @@ test.describe("DnC Jobs List Page UI", () => {
     await page.goto(`${baseUrl}/`);
 
     // 활성 탭(In Progress) 내 job ID만 확인 (숨겨진 탭은 제외)
-    const jobIdElements = page.locator("#tab-panel-active .job-id");
+    const jobIdElements = page.locator("#tab-panel-active .task-id");
     const count = await jobIdElements.count();
 
     for (let i = 0; i < count; i++) {

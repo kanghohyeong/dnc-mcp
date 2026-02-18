@@ -2,29 +2,29 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod";
 import type { IDncTaskRepository } from "../repositories/index.js";
 
-export function registerDncGetJobRelationsTool(
+export function registerDncGetTaskRelationsTool(
   mcpServer: McpServer,
   repository: IDncTaskRepository
 ) {
   mcpServer.registerTool(
-    "dnc_get_job_relations",
+    "dnc_get_task_relations",
     {
       description: "task의 분할 관계(트리 구조)를 조회합니다.",
       inputSchema: {
-        job_title: z.string().describe("조회할 job title (필수, 영문 10단어 이하, kebab-case)"),
+        task_title: z.string().describe("조회할 job title (필수, 영문 10단어 이하, kebab-case)"),
       },
     },
     async (args) => {
       try {
-        const { job_title } = args;
+        const { task_title } = args;
 
         // Task 존재 확인
-        if (!(await repository.rootTaskExists(job_title))) {
+        if (!(await repository.rootTaskExists(task_title))) {
           return {
             content: [
               {
                 type: "text" as const,
-                text: `오류: job_title "${job_title}"이(가) 존재하지 않습니다.`,
+                text: `오류: task_title "${task_title}"이(가) 존재하지 않습니다.`,
               },
             ],
             isError: true,
@@ -32,7 +32,7 @@ export function registerDncGetJobRelationsTool(
         }
 
         // Task 읽기
-        const task = await repository.findRootTask(job_title);
+        const task = await repository.findRootTask(task_title);
 
         // JSON 포맷팅
         const formattedJson = JSON.stringify(task, null, 2);

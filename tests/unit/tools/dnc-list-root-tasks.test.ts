@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "fs/promises";
 import * as path from "path";
-import { registerDncListRootJobsTool } from "../../../src/tools/dnc-list-root-jobs.js";
+import { registerDncListRootTasksTool } from "../../../src/tools/dnc-list-root-tasks.js";
 import { createTestMcpServer } from "../../helpers/test-utils.js";
 
 import { FileSystemDncTaskRepository } from "../../../src/repositories/index.js";
 import type { Task } from "../../../src/repositories/index.js";
 
-describe("dnc-list-root-jobs tool", () => {
+describe("dnc-list-root-tasks tool", () => {
   let repository: FileSystemDncTaskRepository;
   const testRoot = path.join(process.cwd(), ".dnc-test-list-root");
   const originalCwd = process.cwd();
@@ -28,16 +28,16 @@ describe("dnc-list-root-jobs tool", () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
 
-    registerDncListRootJobsTool(mcpServer, repository);
+    registerDncListRootTasksTool(mcpServer, repository);
 
     expect(registerToolSpy).toHaveBeenCalledTimes(1);
-    expect(registerToolSpy.mock.calls[0][0]).toBe("dnc_list_root_jobs");
+    expect(registerToolSpy.mock.calls[0][0]).toBe("dnc_list_root_tasks");
   });
 
   it("should return message when .dnc directory does not exist", async () => {
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncListRootJobsTool(mcpServer, repository);
+    registerDncListRootTasksTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as () => Promise<{
       content: Array<{ type: string; text: string }>;
       isError?: boolean;
@@ -56,7 +56,7 @@ describe("dnc-list-root-jobs tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncListRootJobsTool(mcpServer, repository);
+    registerDncListRootTasksTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as () => Promise<{
       content: Array<{ type: string; text: string }>;
       isError?: boolean;
@@ -82,7 +82,7 @@ describe("dnc-list-root-jobs tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncListRootJobsTool(mcpServer, repository);
+    registerDncListRootTasksTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as () => Promise<{
       content: Array<{ type: string; text: string }>;
       isError?: boolean;
@@ -131,7 +131,7 @@ describe("dnc-list-root-jobs tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncListRootJobsTool(mcpServer, repository);
+    registerDncListRootTasksTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as () => Promise<{
       content: Array<{ type: string; text: string }>;
       isError?: boolean;
@@ -186,7 +186,7 @@ describe("dnc-list-root-jobs tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncListRootJobsTool(mcpServer, repository);
+    registerDncListRootTasksTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as () => Promise<{
       content: Array<{ type: string; text: string }>;
       isError?: boolean;
@@ -240,7 +240,7 @@ describe("dnc-list-root-jobs tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncListRootJobsTool(mcpServer, repository);
+    registerDncListRootTasksTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as () => Promise<{
       content: Array<{ type: string; text: string }>;
       isError?: boolean;
@@ -272,7 +272,7 @@ describe("dnc-list-root-jobs tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncListRootJobsTool(mcpServer, repository);
+    registerDncListRootTasksTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as () => Promise<{
       content: Array<{ type: string; text: string }>;
       isError?: boolean;
@@ -303,7 +303,7 @@ describe("dnc-list-root-jobs tool", () => {
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
-    registerDncListRootJobsTool(mcpServer, repository);
+    registerDncListRootTasksTool(mcpServer, repository);
     const handler = registerToolSpy.mock.calls[0][2] as () => Promise<{
       content: Array<{ type: string; text: string }>;
       isError?: boolean;

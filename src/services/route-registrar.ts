@@ -1,5 +1,5 @@
 import type { Express, Request, Response } from "express";
-import { DncJobService } from "./dnc-job-service.js";
+import { DncTaskService } from "./dnc-task-service.js";
 import { updateTaskInTree, validateTaskStatus } from "../utils/dnc-utils.js";
 import type { IDncTaskRepository, TaskStatus } from "../repositories/index.js";
 
@@ -28,12 +28,12 @@ interface BatchUpdateResult {
  * Express 라우트를 등록하는 클래스
  */
 export class RouteRegistrar {
-  private dncJobService: DncJobService;
+  private dncTaskService: DncTaskService;
   private repository: IDncTaskRepository;
 
   constructor(repository: IDncTaskRepository) {
     this.repository = repository;
-    this.dncJobService = new DncJobService(repository);
+    this.dncTaskService = new DncTaskService(repository);
   }
 
   /**
@@ -43,16 +43,16 @@ export class RouteRegistrar {
     this.registerMainRoute(app);
     this.registerHealthRoute(app);
     this.registerBatchUpdateRoute(app);
-    this.registerDncJobDetailRoute(app);
+    this.registerDncTaskDetailRoute(app);
   }
 
   /**
-   * GET / - 메인 페이지 (DnC Jobs 목록)
+   * GET / - 메인 페이지 (DnC Tasks 목록)
    */
   private registerMainRoute(app: Express): void {
     app.get("/", async (_req: Request, res: Response) => {
-      const { doneJobs, activeJobs } = await this.dncJobService.getAllRootTasksSplit();
-      res.render("dnc-jobs", { doneJobs, activeJobs });
+      const { doneTasks, activeTasks } = await this.dncTaskService.getAllRootTasksSplit();
+      res.render("dnc-tasks", { doneTasks, activeTasks });
     });
   }
 
@@ -187,14 +187,14 @@ export class RouteRegistrar {
   }
 
   /**
-   * GET /:jobTitle - DnC job 상세 페이지
+   * GET /:taskTitle - DnC task 상세 페이지
    */
-  private registerDncJobDetailRoute(app: Express): void {
-    app.get("/:jobTitle", async (req: Request, res: Response) => {
-      const jobTitle = req.params.jobTitle as string;
+  private registerDncTaskDetailRoute(app: Express): void {
+    app.get("/:taskTitle", async (req: Request, res: Response) => {
+      const taskTitle = req.params.taskTitle as string;
 
       try {
-        const task = await this.dncJobService.getTaskById(jobTitle);
+        const task = await this.dncTaskService.getTaskById(taskTitle);
 
         if (!task) {
           res.status(404).render("error", {
@@ -204,8 +204,8 @@ export class RouteRegistrar {
           return;
         }
 
-        res.render("dnc-job-detail", {
-          job: task,
+        res.render("dnc-task-detail", {
+          task: task,
         });
       } catch (error) {
         res.status(500).render("error", {

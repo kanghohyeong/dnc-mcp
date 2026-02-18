@@ -3,19 +3,19 @@ import * as z from "zod";
 import { deleteTaskInTree, validateTaskId } from "../utils/dnc-utils.js";
 import type { IDncTaskRepository } from "../repositories/index.js";
 
-export function registerDncDeleteJobTool(mcpServer: McpServer, repository: IDncTaskRepository) {
+export function registerDncDeleteTaskTool(mcpServer: McpServer, repository: IDncTaskRepository) {
   mcpServer.registerTool(
-    "dnc_delete_job",
+    "dnc_delete_task",
     {
       description:
         "task를 삭제합니다. Root task면 전체 디렉토리를, child task면 트리에서 제거합니다.",
       inputSchema: {
         root_task_id: z
           .string()
-          .describe("Root task의 job title (필수, 영문 10단어 이하, kebab-case)"),
+          .describe("Root task의 task title (필수, 영문 10단어 이하, kebab-case)"),
         task_id: z
           .string()
-          .describe("삭제할 task의 job title (필수, 영문 10단어 이하, kebab-case)"),
+          .describe("삭제할 task의 task title (필수, 영문 10단어 이하, kebab-case)"),
       },
     },
     async (args) => {

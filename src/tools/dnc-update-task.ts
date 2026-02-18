@@ -3,18 +3,18 @@ import * as z from "zod";
 import { updateTaskInTree, validateTaskStatus, validateTaskId } from "../utils/dnc-utils.js";
 import type { IDncTaskRepository, TaskStatus } from "../repositories/index.js";
 
-export function registerDncUpdateJobTool(mcpServer: McpServer, repository: IDncTaskRepository) {
+export function registerDncUpdateTaskTool(mcpServer: McpServer, repository: IDncTaskRepository) {
   mcpServer.registerTool(
-    "dnc_update_job",
+    "dnc_update_task",
     {
       description: "task의 goal, status, acceptance를 업데이트합니다.",
       inputSchema: {
         root_task_id: z
           .string()
-          .describe("Root task의 job title (필수, 영문 10단어 이하, kebab-case)"),
+          .describe("Root task의 task title (필수, 영문 10단어 이하, kebab-case)"),
         task_id: z
           .string()
-          .describe("업데이트할 task의 job title (필수, 영문 10단어 이하, kebab-case)"),
+          .describe("업데이트할 task의 task title (필수, 영문 10단어 이하, kebab-case)"),
         goal: z.string().optional().describe("새로운 목표 (선택)"),
         status: z
           .enum(["init", "accept", "in-progress", "done", "delete", "hold", "split", "modify"])

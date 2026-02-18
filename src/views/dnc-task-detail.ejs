@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= job.id %> - Task Detail</title>
+  <title><%= task.id %> - Task Detail</title>
   <link rel="stylesheet" href="/css/jira-style.css">
   <link rel="stylesheet" href="/css/tree-ui.css">
   <style>
@@ -104,7 +104,7 @@
       margin-bottom: var(--spacing-lg);
     }
 
-    .job-id {
+    .task-id-header {
       font-family: 'Courier New', monospace;
       font-size: var(--font-size-xl);
       font-weight: var(--font-weight-semibold);
@@ -363,7 +363,7 @@
         gap: var(--spacing-sm);
       }
 
-      .job-id {
+      .task-id-header {
         font-size: var(--font-size-lg);
       }
 
@@ -406,12 +406,12 @@
   <script>
     // Initialize recursive task rendering and status manager on page load
     window.addEventListener('DOMContentLoaded', () => {
-      const jobData = <%- JSON.stringify(job) %>;
+      const taskData = <%- JSON.stringify(task) %>;
 
       // 1. Recursively render the entire root task
       const rootTaskContainer = document.getElementById('rootTaskContainer');
       if (rootTaskContainer) {
-        rootTaskContainer.innerHTML = renderTaskItem(jobData, 0);
+        rootTaskContainer.innerHTML = renderTaskItem(taskData, 0);
       }
 
       // 2. Explicitly initialize StatusChangeManager after DOM rendering

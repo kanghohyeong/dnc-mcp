@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as fs from "fs/promises";
 import * as path from "path";
-import { DncJobService } from "../../../src/services/dnc-job-service.js";
+import { DncTaskService } from "../../../src/services/dnc-task-service.js";
 import { FileSystemDncTaskRepository } from "../../../src/repositories/index.js";
 import type { Task } from "../../../src/repositories/index.js";
 
-describe("DncJobService", () => {
+describe("DncTaskService", () => {
   const testRoot = path.join(process.cwd(), ".dnc-test-job-service");
   let repository: FileSystemDncTaskRepository;
-  let service: DncJobService;
+  let service: DncTaskService;
 
   const makeTask = (id: string, overrides: Partial<Task> = {}): Task => ({
     id,
@@ -22,7 +22,7 @@ describe("DncJobService", () => {
   beforeEach(async () => {
     await fs.mkdir(testRoot, { recursive: true });
     repository = new FileSystemDncTaskRepository(testRoot);
-    service = new DncJobService(repository);
+    service = new DncTaskService(repository);
   });
 
   afterEach(async () => {
@@ -50,7 +50,7 @@ describe("DncJobService", () => {
 
     it("should return empty array when dncDir does not exist", async () => {
       const nonExistentRepo = new FileSystemDncTaskRepository("/nonexistent/path");
-      const emptyService = new DncJobService(nonExistentRepo);
+      const emptyService = new DncTaskService(nonExistentRepo);
 
       const tasks = await emptyService.getAllRootTasks();
       expect(tasks).toEqual([]);
@@ -74,7 +74,7 @@ describe("DncJobService", () => {
   });
 
   describe("getAllRootTasksSplit", () => {
-    it("should split tasks into doneJobs and activeJobs", async () => {
+    it("should split tasks into doneTasks and activeTasks", async () => {
       await repository.saveRootTask("task-done", makeTask("task-done", { status: "done" }));
       await repository.saveRootTask(
         "task-active",
@@ -82,12 +82,12 @@ describe("DncJobService", () => {
       );
       await repository.saveRootTask("task-init", makeTask("task-init", { status: "init" }));
 
-      const { doneJobs, activeJobs } = await service.getAllRootTasksSplit();
+      const { doneTasks, activeTasks } = await service.getAllRootTasksSplit();
 
-      expect(doneJobs).toHaveLength(1);
-      expect(doneJobs[0].id).toBe("task-done");
-      expect(activeJobs).toHaveLength(2);
-      const activeIds = activeJobs.map((t) => t.id);
+      expect(doneTasks).toHaveLength(1);
+      expect(doneTasks[0].id).toBe("task-done");
+      expect(activeTasks).toHaveLength(2);
+      const activeIds = activeTasks.map((t) => t.id);
       expect(activeIds).toContain("task-active");
       expect(activeIds).toContain("task-init");
     });
@@ -96,38 +96,38 @@ describe("DncJobService", () => {
       await repository.saveRootTask("task-modify", makeTask("task-modify", { status: "modify" }));
       await repository.saveRootTask("task-done", makeTask("task-done", { status: "done" }));
 
-      const { doneJobs, activeJobs } = await service.getAllRootTasksSplit();
+      const { doneTasks, activeTasks } = await service.getAllRootTasksSplit();
 
-      expect(doneJobs).toHaveLength(1);
-      expect(doneJobs[0].id).toBe("task-done");
-      expect(activeJobs).toHaveLength(1);
-      expect(activeJobs[0].id).toBe("task-modify");
+      expect(doneTasks).toHaveLength(1);
+      expect(doneTasks[0].id).toBe("task-done");
+      expect(activeTasks).toHaveLength(1);
+      expect(activeTasks[0].id).toBe("task-modify");
     });
 
-    it("should return empty doneJobs when no done tasks exist", async () => {
+    it("should return empty doneTasks when no done tasks exist", async () => {
       await repository.saveRootTask("task-a", makeTask("task-a", { status: "in-progress" }));
 
-      const { doneJobs, activeJobs } = await service.getAllRootTasksSplit();
+      const { doneTasks, activeTasks } = await service.getAllRootTasksSplit();
 
-      expect(doneJobs).toHaveLength(0);
-      expect(activeJobs).toHaveLength(1);
+      expect(doneTasks).toHaveLength(0);
+      expect(activeTasks).toHaveLength(1);
     });
 
-    it("should return empty activeJobs when all tasks are done", async () => {
+    it("should return empty activeTasks when all tasks are done", async () => {
       await repository.saveRootTask("task-a", makeTask("task-a", { status: "done" }));
       await repository.saveRootTask("task-b", makeTask("task-b", { status: "done" }));
 
-      const { doneJobs, activeJobs } = await service.getAllRootTasksSplit();
+      const { doneTasks, activeTasks } = await service.getAllRootTasksSplit();
 
-      expect(doneJobs).toHaveLength(2);
-      expect(activeJobs).toHaveLength(0);
+      expect(doneTasks).toHaveLength(2);
+      expect(activeTasks).toHaveLength(0);
     });
 
     it("should return empty arrays when no tasks exist", async () => {
-      const { doneJobs, activeJobs } = await service.getAllRootTasksSplit();
+      const { doneTasks, activeTasks } = await service.getAllRootTasksSplit();
 
-      expect(doneJobs).toHaveLength(0);
-      expect(activeJobs).toHaveLength(0);
+      expect(doneTasks).toHaveLength(0);
+      expect(activeTasks).toHaveLength(0);
     });
   });
 
