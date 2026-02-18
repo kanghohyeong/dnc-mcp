@@ -25,6 +25,17 @@ export class DncJobService {
   }
 
   /**
+   * 모든 root task를 done / active 로 분리하여 반환합니다.
+   */
+  async getAllRootTasksSplit(): Promise<{ doneJobs: Task[]; activeJobs: Task[] }> {
+    const tasks = await this.getAllRootTasks();
+    return {
+      doneJobs: tasks.filter((t) => t.status === "done"),
+      activeJobs: tasks.filter((t) => t.status !== "done"),
+    };
+  }
+
+  /**
    * 특정 ID의 task를 찾아 반환합니다.
    */
   async getTaskById(taskId: string): Promise<Task | null> {

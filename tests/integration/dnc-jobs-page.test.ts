@@ -23,42 +23,33 @@ describe("DnC Jobs Page Integration Tests", () => {
 
   describe("GET /", () => {
     it("should return 200 and render jobs list page", async () => {
-      // When: / 엔드포인트에 GET 요청
       const response = await request(app).get("/");
 
-      // Then: 200 응답 및 HTML 렌더링
       expect(response.status).toBe(200);
       expect(response.type).toBe("text/html");
     });
 
-    it("should include job list data in response", async () => {
-      // When: / 엔드포인트에 GET 요청
+    it("should include page title in response", async () => {
       const response = await request(app).get("/");
 
-      // Then: job 목록 데이터 포함
       expect(response.text).toContain("Task Management");
-      // HTML에 job 정보가 포함되어 있어야 함
     });
 
-    it("should display job ID, goal, and status for each job", async () => {
-      // When: / 엔드포인트에 GET 요청
+    it("should render tab bar with In Progress and Done tabs", async () => {
       const response = await request(app).get("/");
-
-      // Then: job ID, goal, status가 표시됨
-      // 최소한 테이블 헤더나 구조가 있어야 함
       const html = response.text;
-      expect(html).toBeDefined();
-      // job이 있다면 job-로 시작하는 ID가 포함되어야 함
+
+      expect(html).toContain("tab-bar");
+      expect(html).toContain("In Progress");
+      expect(html).toContain("Done");
     });
 
-    it("should include links to detail pages", async () => {
-      // When: / 엔드포인트에 GET 요청
+    it("should render two tab panels for active and done jobs", async () => {
       const response = await request(app).get("/");
-
-      // Then: 상세 페이지 링크 포함
       const html = response.text;
-      // /dnc/jobs/:jobId 형식의 링크가 있어야 함
-      expect(html).toBeDefined();
+
+      expect(html).toContain("tab-panel-active");
+      expect(html).toContain("tab-panel-done");
     });
   });
 });

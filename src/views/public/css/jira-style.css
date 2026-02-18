@@ -284,3 +284,69 @@ h3 {
 .additional-instructions-textarea::placeholder {
   color: var(--text-tertiary);
 }
+
+/* ==================== 탭 UI ==================== */
+.tab-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--border-color);
+  margin-bottom: var(--spacing-lg);
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.tab-btn:hover {
+  color: var(--color-primary);
+}
+
+.tab-btn.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--spacing-xs);
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+}
+
+.tab-btn.active .tab-count {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.tab-panel {
+  display: block;
+}
+
+/* Done 탭 카드 스타일 */
+.job-card--done {
+  background: var(--bg-tertiary);
+  opacity: 0.85;
+}
+
+.job-card--done:hover {
+  opacity: 1;
+}

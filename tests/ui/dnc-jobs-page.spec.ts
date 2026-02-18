@@ -29,11 +29,12 @@ test.describe("DnC Jobs List Page UI", () => {
     // Given: 메인 페이지 방문
     await page.goto(`${baseUrl}/`);
 
-    // Then: job 목록 컨테이너 존재하거나, job이 없을 때 empty state 표시
-    const jobList = page.locator('[data-testid="job-list"], .job-list');
-    const emptyState = page.locator(".empty-state");
+    // Then: 활성 탭 패널 내 job 목록 또는 empty state가 표시됨
+    const jobList = page.locator(
+      '#tab-panel-active [data-testid="job-list-active"], #tab-panel-active .job-list'
+    );
+    const emptyState = page.locator("#tab-panel-active .section-empty");
 
-    // job 목록이 보이거나 empty state가 보여야 함
     const jobListVisible = await jobList.isVisible().catch(() => false);
     const emptyStateVisible = await emptyState.isVisible().catch(() => false);
 
@@ -241,6 +242,60 @@ test.describe("DnC Jobs List Page UI", () => {
     }
   });
 
+  test("should render tab bar with In Progress and Done buttons", async ({ page }) => {
+    await page.goto(`${baseUrl}/`);
+
+    const tabBar = page.locator(".tab-bar");
+    await expect(tabBar).toBeVisible();
+
+    const activeTab = page.locator(".tab-btn", { hasText: "In Progress" });
+    const doneTab = page.locator(".tab-btn", { hasText: "Done" });
+    await expect(activeTab).toBeVisible();
+    await expect(doneTab).toBeVisible();
+  });
+
+  test("should show In Progress tab as active by default", async ({ page }) => {
+    await page.goto(`${baseUrl}/`);
+
+    const activeTab = page.locator(".tab-btn", { hasText: "In Progress" });
+    await expect(activeTab).toHaveClass(/active/);
+
+    const activePanel = page.locator("#tab-panel-active");
+    await expect(activePanel).toBeVisible();
+
+    const donePanel = page.locator("#tab-panel-done");
+    await expect(donePanel).toBeHidden();
+  });
+
+  test("should switch to Done panel when Done tab is clicked", async ({ page }) => {
+    await page.goto(`${baseUrl}/`);
+
+    const doneTab = page.locator(".tab-btn", { hasText: "Done" });
+    await doneTab.click();
+
+    await expect(doneTab).toHaveClass(/active/);
+
+    const donePanel = page.locator("#tab-panel-done");
+    await expect(donePanel).toBeVisible();
+
+    const activePanel = page.locator("#tab-panel-active");
+    await expect(activePanel).toBeHidden();
+  });
+
+  test("should switch back to In Progress panel when tab is clicked again", async ({ page }) => {
+    await page.goto(`${baseUrl}/`);
+
+    const doneTab = page.locator(".tab-btn", { hasText: "Done" });
+    await doneTab.click();
+
+    const activeTab = page.locator(".tab-btn", { hasText: "In Progress" });
+    await activeTab.click();
+
+    await expect(activeTab).toHaveClass(/active/);
+    await expect(page.locator("#tab-panel-active")).toBeVisible();
+    await expect(page.locator("#tab-panel-done")).toBeHidden();
+  });
+
   test("should show 404 for non-existent job", async ({ page }) => {
     // When: 존재하지 않는 job ID로 접근
     const response = await page.goto(`${baseUrl}/non-existent-job-id`);
@@ -258,31 +313,27 @@ test.describe("DnC Jobs List Page UI", () => {
   });
 
   test("should display empty state when no jobs", async ({ page }) => {
-    // Given: job이 하나도 없는 상태 (이 테스트는 .dnc가 비어있을 때만 의미 있음)
     await page.goto(`${baseUrl}/`);
 
-    // Then: job 목록이 없으면 empty state가 표시되어야 함
-    const jobList = page.locator('[data-testid="job-list"]');
-    const emptyState = page.locator(".empty-state");
+    // 활성 탭(In Progress) 기준으로 job 목록 또는 empty state 확인
+    const jobList = page.locator('[data-testid="job-list-active"]');
+    const emptyState = page.locator("#tab-panel-active .section-empty");
 
     const jobListVisible = await jobList.isVisible().catch(() => false);
     const emptyStateVisible = await emptyState.isVisible().catch(() => false);
 
-    // 둘 중 하나는 보여야 함
     expect(jobListVisible || emptyStateVisible).toBeTruthy();
 
-    // job이 없으면 empty state가 보여야 함
     if (!jobListVisible) {
       await expect(emptyState).toBeVisible();
     }
   });
 
   test("should display multiple job IDs correctly", async ({ page }) => {
-    // Given: 메인 페이지 방문
     await page.goto(`${baseUrl}/`);
 
-    // Then: 모든 job ID가 올바른 형식으로 표시되어야 함
-    const jobIdElements = page.locator(".job-id");
+    // 활성 탭(In Progress) 내 job ID만 확인 (숨겨진 탭은 제외)
+    const jobIdElements = page.locator("#tab-panel-active .job-id");
     const count = await jobIdElements.count();
 
     for (let i = 0; i < count; i++) {

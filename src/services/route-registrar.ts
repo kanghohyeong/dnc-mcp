@@ -51,8 +51,8 @@ export class RouteRegistrar {
    */
   private registerMainRoute(app: Express): void {
     app.get("/", async (_req: Request, res: Response) => {
-      const jobs = await this.dncJobService.getAllRootTasks();
-      res.render("dnc-jobs", { jobs });
+      const { doneJobs, activeJobs } = await this.dncJobService.getAllRootTasksSplit();
+      res.render("dnc-jobs", { doneJobs, activeJobs });
     });
   }
 

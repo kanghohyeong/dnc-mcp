@@ -73,6 +73,52 @@ describe("DncJobService", () => {
     });
   });
 
+  describe("getAllRootTasksSplit", () => {
+    it("should split tasks into doneJobs and activeJobs", async () => {
+      await repository.saveRootTask("task-done", makeTask("task-done", { status: "done" }));
+      await repository.saveRootTask(
+        "task-active",
+        makeTask("task-active", { status: "in-progress" })
+      );
+      await repository.saveRootTask("task-init", makeTask("task-init", { status: "init" }));
+
+      const { doneJobs, activeJobs } = await service.getAllRootTasksSplit();
+
+      expect(doneJobs).toHaveLength(1);
+      expect(doneJobs[0].id).toBe("task-done");
+      expect(activeJobs).toHaveLength(2);
+      const activeIds = activeJobs.map((t) => t.id);
+      expect(activeIds).toContain("task-active");
+      expect(activeIds).toContain("task-init");
+    });
+
+    it("should return empty doneJobs when no done tasks exist", async () => {
+      await repository.saveRootTask("task-a", makeTask("task-a", { status: "in-progress" }));
+
+      const { doneJobs, activeJobs } = await service.getAllRootTasksSplit();
+
+      expect(doneJobs).toHaveLength(0);
+      expect(activeJobs).toHaveLength(1);
+    });
+
+    it("should return empty activeJobs when all tasks are done", async () => {
+      await repository.saveRootTask("task-a", makeTask("task-a", { status: "done" }));
+      await repository.saveRootTask("task-b", makeTask("task-b", { status: "done" }));
+
+      const { doneJobs, activeJobs } = await service.getAllRootTasksSplit();
+
+      expect(doneJobs).toHaveLength(2);
+      expect(activeJobs).toHaveLength(0);
+    });
+
+    it("should return empty arrays when no tasks exist", async () => {
+      const { doneJobs, activeJobs } = await service.getAllRootTasksSplit();
+
+      expect(doneJobs).toHaveLength(0);
+      expect(activeJobs).toHaveLength(0);
+    });
+  });
+
   describe("getTaskById", () => {
     it("should return task by ID from root tasks", async () => {
       await repository.saveRootTask("my-task", makeTask("my-task"));

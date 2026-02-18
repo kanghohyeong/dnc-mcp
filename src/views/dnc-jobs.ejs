@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 
 <head>
   <meta charset="UTF-8">
@@ -7,13 +7,11 @@
   <title>DnC Jobs - Task Management</title>
   <link rel="stylesheet" href="/css/jira-style.css">
   <style>
-    /* 페이지 레이아웃 */
     body {
       min-height: 100vh;
       padding: var(--spacing-xl) var(--spacing-lg);
     }
 
-    /* 헤더 */
     .page-header {
       margin-bottom: var(--spacing-xl);
     }
@@ -27,7 +25,6 @@
       font-size: var(--font-size-md);
     }
 
-    /* Job 목록 */
     .job-list {
       display: flex;
       flex-direction: column;
@@ -80,34 +77,16 @@
       color: var(--color-primary-hover);
     }
 
-    /* 빈 상태 */
-    .empty-state {
+    .section-empty {
       background: var(--bg-primary);
       border-radius: var(--radius-md);
       border: 2px dashed var(--border-color);
-      padding: var(--spacing-xl) * 2;
+      padding: var(--spacing-xl);
       text-align: center;
-    }
-
-    .empty-state-icon {
-      font-size: 48px;
-      margin-bottom: var(--spacing-lg);
-      opacity: 0.3;
-    }
-
-    .empty-state-title {
-      font-size: var(--font-size-xl);
-      font-weight: var(--font-weight-semibold);
-      color: var(--text-secondary);
-      margin-bottom: var(--spacing-sm);
-    }
-
-    .empty-state-description {
       color: var(--text-tertiary);
       font-size: var(--font-size-md);
     }
 
-    /* 반응형 */
     @media (max-width: 768px) {
       body {
         padding: var(--spacing-lg) var(--spacing-md);
@@ -130,18 +109,28 @@
   <div class="container">
     <div class="page-header">
       <h1 class="page-title">Task Management</h1>
-      <p class="page-subtitle">DnC (Divide and Conquer) 작업 목록</p>
+      <p class="page-subtitle">DnC (Divide and Conquer) Job List</p>
     </div>
 
-    <% if (jobs.length===0) { %>
-      <div class="empty-state fade-in">
-        <div class="empty-state-icon">📋</div>
-        <div class="empty-state-title">아직 생성된 작업이 없습니다</div>
-        <div class="empty-state-description">새로운 작업을 생성하여 시작하세요</div>
-      </div>
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+      <button class="tab-btn active" data-target="tab-panel-active">
+        In Progress
+        <span class="tab-count"><%= activeJobs.length %></span>
+      </button>
+      <button class="tab-btn" data-target="tab-panel-done">
+        Done
+        <span class="tab-count"><%= doneJobs.length %></span>
+      </button>
+    </div>
+
+    <!-- In Progress Panel -->
+    <div id="tab-panel-active" class="tab-panel">
+      <% if (activeJobs.length === 0) { %>
+        <div class="section-empty fade-in">No active tasks</div>
       <% } else { %>
-        <div class="job-list fade-in" data-testid="job-list">
-          <% jobs.forEach(job=> { %>
+        <div class="job-list fade-in" data-testid="job-list-active">
+          <% activeJobs.forEach(job => { %>
             <div class="job-card" onclick="location.href='/<%= job.id %>'" data-testid="job-item">
               <div class="job-card-header">
                 <div class="job-id"><%= job.id %></div>
@@ -149,17 +138,60 @@
                   <%= job.status %>
                 </div>
               </div>
-              <div class="job-goal">
-                <%= job.goal %>
-              </div>
+              <div class="job-goal"><%= job.goal %></div>
               <a href="/<%= job.id %>" class="job-link" onclick="event.stopPropagation()">
-                상세 보기 →
+                View Details →
               </a>
             </div>
-            <% }) %>
+          <% }) %>
         </div>
-        <% } %>
+      <% } %>
+    </div>
+
+    <!-- Done Panel -->
+    <div id="tab-panel-done" class="tab-panel" style="display:none;">
+      <% if (doneJobs.length === 0) { %>
+        <div class="section-empty fade-in">No completed tasks</div>
+      <% } else { %>
+        <div class="job-list fade-in" data-testid="job-list-done">
+          <% doneJobs.forEach(job => { %>
+            <div class="job-card job-card--done" onclick="location.href='/<%= job.id %>'" data-testid="job-item">
+              <div class="job-card-header">
+                <div class="job-id"><%= job.id %></div>
+                <div class="status-badge status-<%= job.status %>" data-testid="job-status">
+                  <%= job.status %>
+                </div>
+              </div>
+              <div class="job-goal"><%= job.goal %></div>
+              <a href="/<%= job.id %>" class="job-link" onclick="event.stopPropagation()">
+                View Details →
+              </a>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
   </div>
+
+  <script>
+    (function () {
+      const tabBtns = document.querySelectorAll('.tab-btn');
+      const tabPanels = document.querySelectorAll('.tab-panel');
+
+      tabBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          const targetId = btn.getAttribute('data-target');
+
+          tabBtns.forEach(function (b) { b.classList.remove('active'); });
+          tabPanels.forEach(function (p) { p.style.display = 'none'; });
+
+          btn.classList.add('active');
+          const target = document.getElementById(targetId);
+          if (target) target.style.display = 'block';
+        });
+      });
+    })();
+  </script>
 </body>
 
 </html>
