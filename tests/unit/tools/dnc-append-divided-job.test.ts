@@ -3,7 +3,6 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { registerDncAppendDividedJobTool } from "../../../src/tools/dnc-append-divided-job.js";
 import { createTestMcpServer } from "../../helpers/test-utils.js";
-import { writeTask, ensureDncDirectory } from "../../../src/utils/dnc-utils.js";
 import { FileSystemDncTaskRepository } from "../../../src/repositories/index.js";
 import type { Task } from "../../../src/repositories/index.js";
 
@@ -43,8 +42,7 @@ describe("dnc-append-divided-job tool", () => {
       tasks: [],
     };
 
-    await ensureDncDirectory("parent-job");
-    await writeTask("parent-job", parentTask);
+    await repository.saveRootTask("parent-job", parentTask);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -120,8 +118,7 @@ describe("dnc-append-divided-job tool", () => {
       ],
     };
 
-    await ensureDncDirectory("parent-job");
-    await writeTask("parent-job", parentTask);
+    await repository.saveRootTask("parent-job", parentTask);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -179,8 +176,7 @@ describe("dnc-append-divided-job tool", () => {
       tasks: [],
     };
 
-    await ensureDncDirectory("parent-job");
-    await writeTask("parent-job", parentTask);
+    await repository.saveRootTask("parent-job", parentTask);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -258,8 +254,7 @@ describe("dnc-append-divided-job tool", () => {
         tasks: [],
       };
 
-      await ensureDncDirectory("root");
-      await writeTask("root", rootTask);
+      await repository.saveRootTask("root", rootTask);
 
       const mcpServer = createTestMcpServer();
       const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -308,8 +303,7 @@ describe("dnc-append-divided-job tool", () => {
         tasks: [],
       };
 
-      await ensureDncDirectory("root");
-      await writeTask("root", rootTask);
+      await repository.saveRootTask("root", rootTask);
 
       const mcpServer = createTestMcpServer();
       const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -374,8 +368,7 @@ describe("dnc-append-divided-job tool", () => {
       ],
     };
 
-    await ensureDncDirectory("root");
-    await writeTask("root", rootTask);
+    await repository.saveRootTask("root", rootTask);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -410,8 +403,7 @@ describe("dnc-append-divided-job tool", () => {
       tasks: [],
     };
 
-    await ensureDncDirectory("my-root");
-    await writeTask("my-root", rootTask);
+    await repository.saveRootTask("my-root", rootTask);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");

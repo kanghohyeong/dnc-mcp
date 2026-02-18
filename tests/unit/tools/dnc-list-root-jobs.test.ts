@@ -3,7 +3,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { registerDncListRootJobsTool } from "../../../src/tools/dnc-list-root-jobs.js";
 import { createTestMcpServer } from "../../helpers/test-utils.js";
-import { writeTask, ensureDncDirectory } from "../../../src/utils/dnc-utils.js";
+
 import { FileSystemDncTaskRepository } from "../../../src/repositories/index.js";
 import type { Task } from "../../../src/repositories/index.js";
 
@@ -78,8 +78,7 @@ describe("dnc-list-root-jobs tool", () => {
       tasks: [],
     };
 
-    await ensureDncDirectory("test-job");
-    await writeTask("test-job", task);
+    await repository.saveRootTask("test-job", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -126,12 +125,9 @@ describe("dnc-list-root-jobs tool", () => {
       tasks: [],
     };
 
-    await ensureDncDirectory("job-alpha");
-    await writeTask("job-alpha", task1);
-    await ensureDncDirectory("job-beta");
-    await writeTask("job-beta", task2);
-    await ensureDncDirectory("job-gamma");
-    await writeTask("job-gamma", task3);
+    await repository.saveRootTask("job-alpha", task1);
+    await repository.saveRootTask("job-beta", task2);
+    await repository.saveRootTask("job-gamma", task3);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -184,12 +180,9 @@ describe("dnc-list-root-jobs tool", () => {
       tasks: [],
     };
 
-    await ensureDncDirectory("z-task");
-    await writeTask("z-task", taskZ);
-    await ensureDncDirectory("a-task");
-    await writeTask("a-task", taskA);
-    await ensureDncDirectory("m-task");
-    await writeTask("m-task", taskM);
+    await repository.saveRootTask("z-task", taskZ);
+    await repository.saveRootTask("a-task", taskA);
+    await repository.saveRootTask("m-task", taskM);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -241,12 +234,9 @@ describe("dnc-list-root-jobs tool", () => {
       tasks: [],
     };
 
-    await ensureDncDirectory("pending-task");
-    await writeTask("pending-task", taskPending);
-    await ensureDncDirectory("in-progress-task");
-    await writeTask("in-progress-task", taskInProgress);
-    await ensureDncDirectory("done-task");
-    await writeTask("done-task", taskDone);
+    await repository.saveRootTask("pending-task", taskPending);
+    await repository.saveRootTask("in-progress-task", taskInProgress);
+    await repository.saveRootTask("done-task", taskDone);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -274,11 +264,10 @@ describe("dnc-list-root-jobs tool", () => {
       tasks: [],
     };
 
-    await ensureDncDirectory("valid-task");
-    await writeTask("valid-task", validTask);
+    await repository.saveRootTask("valid-task", validTask);
 
     // Create corrupted task file
-    await ensureDncDirectory("corrupted-task");
+    await fs.mkdir(path.join(".dnc", "corrupted-task"), { recursive: true });
     await fs.writeFile(path.join(".dnc", "corrupted-task", "task.json"), "{ invalid json }");
 
     const mcpServer = createTestMcpServer();
@@ -310,8 +299,7 @@ describe("dnc-list-root-jobs tool", () => {
       tasks: [],
     };
 
-    await ensureDncDirectory("empty-goal");
-    await writeTask("empty-goal", task);
+    await repository.saveRootTask("empty-goal", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");

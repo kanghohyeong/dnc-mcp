@@ -1,5 +1,3 @@
-import * as fs from "fs/promises";
-
 export type TaskStatus =
   | "pending"
   | "init"
@@ -126,64 +124,6 @@ export function validateTaskId(taskId: string): {
 }
 
 /**
- * task 파일 경로를 반환합니다.
- * @param taskId - task ID
- * @returns .dnc/{taskId}/task.json 경로
- */
-export function getTaskPath(taskId: string): string {
-  return `.dnc/${taskId}/task.json`;
-}
-
-/**
- * .dnc 디렉토리 구조를 생성합니다.
- * @param taskId - task ID
- */
-export async function ensureDncDirectory(taskId: string): Promise<void> {
-  await fs.mkdir(".dnc", { recursive: true });
-  await fs.mkdir(`.dnc/${taskId}`, { recursive: true });
-}
-
-/**
- * task를 파일에 씁니다.
- * @param taskId - task ID
- * @param task - task 데이터
- */
-export async function writeTask(taskId: string, task: Task): Promise<void> {
-  const taskPath = getTaskPath(taskId);
-  await fs.writeFile(taskPath, JSON.stringify(task, null, 2), "utf-8");
-}
-
-/**
- * task를 파일에서 읽습니다.
- * @param taskId - task ID
- * @returns task 데이터
- */
-export async function readTask(taskId: string): Promise<Task> {
-  const taskPath = getTaskPath(taskId);
-  const content = await fs.readFile(taskPath, "utf-8");
-  const task = JSON.parse(content) as Task;
-
-  // 자동 마이그레이션: pending → init
-  migratePendingToInit(task);
-
-  return task;
-}
-
-/**
- * task가 존재하는지 확인합니다.
- * @param taskId - task ID
- * @returns 존재하면 true
- */
-export async function taskExists(taskId: string): Promise<boolean> {
-  try {
-    await fs.access(getTaskPath(taskId));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
  * task를 재귀적으로 찾습니다.
  * @param task - 탐색할 task
  * @param targetTaskId - 찾을 task ID
@@ -267,46 +207,4 @@ export function deleteTaskInTree(task: Task, targetTaskId: string): boolean {
   }
 
   return false;
-}
-
-/**
- * 모든 루트 task ID 목록을 조회합니다.
- * @returns 알파벳순으로 정렬된 루트 task ID 배열
- */
-export async function listRootTaskIds(): Promise<string[]> {
-  try {
-    const entries = await fs.readdir(".dnc", { withFileTypes: true });
-    const taskIds = entries
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => entry.name)
-      .sort();
-    return taskIds;
-  } catch (error) {
-    // .dnc 디렉토리가 없으면 빈 배열 반환
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return [];
-    }
-    throw error;
-  }
-}
-
-/**
- * 루트 task의 요약 정보를 조회합니다.
- * @param taskId - task ID
- * @returns task 요약 정보 (id, goal, status) 또는 null (실패 시)
- */
-export async function getRootTaskSummary(
-  taskId: string
-): Promise<{ id: string; goal: string; status: TaskStatus } | null> {
-  try {
-    const task = await readTask(taskId);
-    return {
-      id: task.id,
-      goal: task.goal,
-      status: task.status,
-    };
-  } catch {
-    // 손상된 파일이나 읽기 실패 시 null 반환
-    return null;
-  }
 }

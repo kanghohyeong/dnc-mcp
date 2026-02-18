@@ -8,12 +8,12 @@ import { FileSystemDncTaskRepository } from "../../src/repositories/index.js";
 describe("DnC Jobs Page Integration Tests", () => {
   let app: Express;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     app = express();
 
     // Express 앱 설정
     const configurator = new ExpressAppConfigurator();
-    configurator.configure(app);
+    await configurator.configure(app);
 
     // 라우트 등록
     const repository = new FileSystemDncTaskRepository();

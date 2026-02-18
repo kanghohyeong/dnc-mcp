@@ -3,7 +3,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { registerDncUpdateJobTool } from "../../../src/tools/dnc-update-job.js";
 import { createTestMcpServer } from "../../helpers/test-utils.js";
-import { writeTask, ensureDncDirectory } from "../../../src/utils/dnc-utils.js";
+
 import { FileSystemDncTaskRepository } from "../../../src/repositories/index.js";
 import type { Task } from "../../../src/repositories/index.js";
 
@@ -43,8 +43,7 @@ describe("dnc-update-job tool", () => {
       tasks: [],
     };
 
-    await ensureDncDirectory("job-to-update");
-    await writeTask("job-to-update", task);
+    await repository.saveRootTask("job-to-update", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -83,8 +82,7 @@ describe("dnc-update-job tool", () => {
       tasks: [],
     };
 
-    await ensureDncDirectory("job-to-update");
-    await writeTask("job-to-update", task);
+    await repository.saveRootTask("job-to-update", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -118,8 +116,7 @@ describe("dnc-update-job tool", () => {
       tasks: [],
     };
 
-    await ensureDncDirectory("job-to-update");
-    await writeTask("job-to-update", task);
+    await repository.saveRootTask("job-to-update", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -153,8 +150,7 @@ describe("dnc-update-job tool", () => {
       tasks: [],
     };
 
-    await ensureDncDirectory("job-to-update");
-    await writeTask("job-to-update", task);
+    await repository.saveRootTask("job-to-update", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -202,8 +198,7 @@ describe("dnc-update-job tool", () => {
       ],
     };
 
-    await ensureDncDirectory("job-parent");
-    await writeTask("job-parent", parentTask);
+    await repository.saveRootTask("job-parent", parentTask);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -243,8 +238,7 @@ describe("dnc-update-job tool", () => {
           tasks: [],
         };
 
-        await ensureDncDirectory("test-job");
-        await writeTask("test-job", task);
+        await repository.saveRootTask("test-job", task);
 
         const mcpServer = createTestMcpServer();
         const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -281,8 +275,7 @@ describe("dnc-update-job tool", () => {
         tasks: [],
       };
 
-      await ensureDncDirectory("test-job");
-      await writeTask("test-job", task);
+      await repository.saveRootTask("test-job", task);
 
       const mcpServer = createTestMcpServer();
       const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -313,8 +306,7 @@ describe("dnc-update-job tool", () => {
       tasks: [],
     };
 
-    await ensureDncDirectory("job-to-update");
-    await writeTask("job-to-update", task);
+    await repository.saveRootTask("job-to-update", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -365,8 +357,7 @@ describe("dnc-update-job tool", () => {
       tasks: [],
     };
 
-    await ensureDncDirectory("job-to-update");
-    await writeTask("job-to-update", task);
+    await repository.saveRootTask("job-to-update", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -433,8 +424,7 @@ describe("dnc-update-job tool", () => {
       ],
     };
 
-    await ensureDncDirectory("job-root");
-    await writeTask("job-root", task);
+    await repository.saveRootTask("job-root", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -481,8 +471,7 @@ describe("dnc-update-job tool", () => {
       ],
     };
 
-    await ensureDncDirectory("job-root");
-    await writeTask("job-root", task);
+    await repository.saveRootTask("job-root", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -540,8 +529,7 @@ describe("dnc-update-job tool", () => {
       ],
     };
 
-    await ensureDncDirectory("job-root");
-    await writeTask("job-root", task);
+    await repository.saveRootTask("job-root", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");

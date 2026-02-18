@@ -2,10 +2,19 @@ import type { Express } from "express";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import fs from "fs";
+import { promises as fs } from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+async function pathExists(p: string): Promise<boolean> {
+  try {
+    await fs.access(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Express 앱의 기본 설정을 담당하는 클래스
@@ -14,7 +23,7 @@ export class ExpressAppConfigurator {
   /**
    * Express 앱에 view engine 및 static files 설정 적용
    */
-  configure(app: Express): void {
+  async configure(app: Express): Promise<void> {
     // EJS view engine 설정
     app.set("view engine", "ejs");
 
@@ -29,7 +38,7 @@ export class ExpressAppConfigurator {
     const srcViewsPath = path.join(__dirname, "../../src/views");
     const viewsPath = isTest
       ? srcViewsPath
-      : fs.existsSync(builtViewsPath)
+      : (await pathExists(builtViewsPath))
         ? builtViewsPath
         : srcViewsPath;
 
@@ -37,7 +46,7 @@ export class ExpressAppConfigurator {
     const srcPublicPath = path.join(__dirname, "../../src/views/public");
     const publicPath = isTest
       ? srcPublicPath
-      : fs.existsSync(builtPublicPath)
+      : (await pathExists(builtPublicPath))
         ? builtPublicPath
         : srcPublicPath;
 

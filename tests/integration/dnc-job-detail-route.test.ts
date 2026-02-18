@@ -81,11 +81,7 @@ describe("DnC Job Detail Route", () => {
       // Arrange: pending, in-progress, done 상태의 task 생성
       const dncDir = path.join(tempDir, ".dnc");
 
-      const statuses: Array<"init" | "in-progress" | "done"> = [
-        "init",
-        "in-progress",
-        "done",
-      ];
+      const statuses: Array<"init" | "in-progress" | "done"> = ["init", "in-progress", "done"];
 
       for (const status of statuses) {
         const jobDir = path.join(dncDir, `job-${status}`);

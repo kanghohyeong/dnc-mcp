@@ -45,9 +45,6 @@ export class UIWebServer {
     this.routeRegistrar = new RouteRegistrar(repository);
     this.portFinder = new PortFinder(3331, 100);
 
-    // Express 앱 설정
-    this.configurator.configure(this.app);
-
     // 라우트 등록
     this.routeRegistrar.registerRoutes(this.app);
   }
@@ -60,6 +57,9 @@ export class UIWebServer {
       console.error("Web server is already running");
       return;
     }
+
+    // Express 앱 설정
+    await this.configurator.configure(this.app);
 
     // 포트 검색 및 서버 시작
     const result = await this.portFinder.findAndStart(this.app, (socket) => {

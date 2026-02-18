@@ -18,14 +18,14 @@ describe("ExpressAppConfigurator", () => {
   });
 
   describe("정상 케이스", () => {
-    it("1. view engine을 ejs로 설정", () => {
-      configurator.configure(app);
+    it("1. view engine을 ejs로 설정", async () => {
+      await configurator.configure(app);
 
       expect(app.get("view engine")).toBe("ejs");
     });
 
-    it("2. views 디렉토리 경로 설정", () => {
-      configurator.configure(app);
+    it("2. views 디렉토리 경로 설정", async () => {
+      await configurator.configure(app);
 
       const viewsPath = app.get("views") as string;
       expect(viewsPath).toBeDefined();
@@ -33,7 +33,7 @@ describe("ExpressAppConfigurator", () => {
     });
 
     it("3. JSON body 파싱 미들웨어 설정 - application/json 요청 파싱", async () => {
-      configurator.configure(app);
+      await configurator.configure(app);
       app.post("/test-json", (req, res) => {
         res.json({ received: req.body as unknown });
       });
@@ -47,8 +47,8 @@ describe("ExpressAppConfigurator", () => {
       expect(response.body).toEqual({ received: { key: "value" } });
     });
 
-    it("4. static files 미들웨어 설정", () => {
-      configurator.configure(app);
+    it("4. static files 미들웨어 설정", async () => {
+      await configurator.configure(app);
 
       // configure가 에러 없이 완료되면 미들웨어가 설정된 것
       expect(app.get("view engine")).toBe("ejs");
@@ -57,8 +57,8 @@ describe("ExpressAppConfigurator", () => {
       expect(() => app.get("views") as unknown).not.toThrow();
     });
 
-    it("5. public 디렉토리 경로 설정", () => {
-      configurator.configure(app);
+    it("5. public 디렉토리 경로 설정", async () => {
+      await configurator.configure(app);
 
       // configure가 에러 없이 완료되면 경로가 설정된 것
       const viewsPath = app.get("views") as string;
@@ -69,17 +69,17 @@ describe("ExpressAppConfigurator", () => {
   });
 
   describe("에러 케이스", () => {
-    it("6. views 경로 누락 처리", () => {
+    it("6. views 경로 누락 처리", async () => {
       // views 경로가 없어도 에러가 발생하지 않아야 함
-      expect(() => configurator.configure(app)).not.toThrow();
+      await expect(configurator.configure(app)).resolves.not.toThrow();
 
       // view engine은 설정되어야 함
       expect(app.get("view engine")).toBe("ejs");
     });
 
-    it("7. public 경로 누락 처리", () => {
+    it("7. public 경로 누락 처리", async () => {
       // public 경로가 없어도 에러가 발생하지 않아야 함
-      expect(() => configurator.configure(app)).not.toThrow();
+      await expect(configurator.configure(app)).resolves.not.toThrow();
 
       // view engine이 설정되었으면 미들웨어도 설정되었다고 가정
       expect(app.get("view engine")).toBe("ejs");
@@ -87,14 +87,14 @@ describe("ExpressAppConfigurator", () => {
   });
 
   describe("경계값 케이스", () => {
-    it("8. 기존 view engine 덮어쓰지 않음 (idempotent)", () => {
+    it("8. 기존 view engine 덮어쓰지 않음 (idempotent)", async () => {
       // 첫 번째 설정
-      configurator.configure(app);
+      await configurator.configure(app);
       const firstViewEngine = app.get("view engine") as string;
       const firstViewsPath = app.get("views") as string;
 
       // 두 번째 설정
-      configurator.configure(app);
+      await configurator.configure(app);
       const secondViewEngine = app.get("view engine") as string;
       const secondViewsPath = app.get("views") as string;
 
@@ -103,13 +103,13 @@ describe("ExpressAppConfigurator", () => {
       expect(secondViewsPath).toBe(firstViewsPath);
     });
 
-    it("9. 이미 설정된 Express 앱에도 동작", () => {
+    it("9. 이미 설정된 Express 앱에도 동작", async () => {
       // 다른 설정이 있는 앱
       app.set("some-setting", "some-value");
       app.use(express.json());
 
       // configurator 적용
-      configurator.configure(app);
+      await configurator.configure(app);
 
       // 기존 설정은 유지
       expect(app.get("some-setting")).toBe("some-value");

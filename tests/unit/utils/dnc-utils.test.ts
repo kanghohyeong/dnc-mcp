@@ -1,16 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import * as fs from "fs/promises";
-import * as path from "path";
+import { describe, it, expect } from "vitest";
 import {
-  readTask,
-  writeTask,
-  ensureDncDirectory,
-  getTaskPath,
   validateTaskStatus,
   validateStatusTransition,
   migratePendingToInit,
   validateTaskId,
-  taskExists,
   findTaskInTree,
   updateTaskInTree,
   deleteTaskInTree,
@@ -18,22 +11,6 @@ import {
 } from "../../../src/utils/dnc-utils.js";
 
 describe("dnc-utils", () => {
-  const testRoot = path.join(process.cwd(), ".dnc-test");
-  const originalCwd = process.cwd();
-
-  beforeEach(async () => {
-    // 테스트용 임시 디렉토리 생성
-    await fs.mkdir(testRoot, { recursive: true });
-    process.chdir(testRoot);
-  });
-
-  afterEach(async () => {
-    // 테스트 디렉토리 정리
-    process.chdir(originalCwd);
-    await fs.rm(testRoot, { recursive: true, force: true });
-    vi.restoreAllMocks();
-  });
-
   describe("validateTaskStatus", () => {
     it("should return true for all valid statuses", () => {
       expect(validateTaskStatus("init")).toBe(true);
@@ -276,122 +253,6 @@ describe("dnc-utils", () => {
       const result = validateTaskId("implement--auth");
       expect(result.isValid).toBe(false);
       expect(result.error).toContain("consecutive hyphens");
-    });
-  });
-
-  describe("getTaskPath", () => {
-    it("should return correct task path", () => {
-      const taskId = "test-task";
-      const taskPath = getTaskPath(taskId);
-      expect(taskPath).toBe(".dnc/test-task/task.json");
-    });
-  });
-
-  describe("ensureDncDirectory", () => {
-    it("should create .dnc directory structure without specs", async () => {
-      const taskId = "test-task";
-      await ensureDncDirectory(taskId);
-
-      const dncExists = await fs
-        .access(".dnc")
-        .then(() => true)
-        .catch(() => false);
-      const taskDirExists = await fs
-        .access(`.dnc/${taskId}`)
-        .then(() => true)
-        .catch(() => false);
-      const specsDirExists = await fs
-        .access(`.dnc/${taskId}/specs`)
-        .then(() => true)
-        .catch(() => false);
-
-      expect(dncExists).toBe(true);
-      expect(taskDirExists).toBe(true);
-      expect(specsDirExists).toBe(false); // specs 디렉토리는 생성되지 않아야 함
-    });
-
-    it("should not throw if directories already exist", async () => {
-      const taskId = "test-task";
-      await ensureDncDirectory(taskId);
-      await expect(ensureDncDirectory(taskId)).resolves.not.toThrow();
-    });
-  });
-
-  describe("writeTask and readTask", () => {
-    it("should write and read task correctly", async () => {
-      const task: Task = {
-        id: "test-task",
-        goal: "Test Goal",
-        acceptance: "Task completed successfully",
-        status: "init",
-        tasks: [],
-      };
-
-      await ensureDncDirectory("test-task");
-      await writeTask("test-task", task);
-
-      const readTaskData = await readTask("test-task");
-      expect(readTaskData).toEqual(task);
-    });
-
-    it("should throw error when reading non-existent task", async () => {
-      await expect(readTask("non-existent")).rejects.toThrow();
-    });
-
-    it("should handle task with nested tasks", async () => {
-      const task: Task = {
-        id: "parent-task",
-        goal: "Parent Task",
-        acceptance: "Parent completed",
-        status: "in-progress",
-        tasks: [
-          {
-            id: "child-task",
-            goal: "Child Task",
-            acceptance: "Child completed",
-            status: "pending",
-            tasks: [],
-          },
-        ],
-      };
-
-      await ensureDncDirectory("parent-task");
-      await writeTask("parent-task", task);
-
-      const readTaskData = await readTask("parent-task");
-      expect(readTaskData.tasks).toHaveLength(1);
-      expect(readTaskData.tasks[0].id).toBe("child-task");
-    });
-
-    it("should throw error on invalid JSON", async () => {
-      const taskId = "invalid-task";
-      await ensureDncDirectory(taskId);
-      await fs.writeFile(getTaskPath(taskId), "invalid json", "utf-8");
-
-      await expect(readTask(taskId)).rejects.toThrow();
-    });
-  });
-
-  describe("taskExists", () => {
-    it("should return true for existing task", async () => {
-      const task: Task = {
-        id: "existing-task",
-        goal: "Test",
-        acceptance: "Done",
-        status: "pending",
-        tasks: [],
-      };
-
-      await ensureDncDirectory("existing-task");
-      await writeTask("existing-task", task);
-
-      const exists = await taskExists("existing-task");
-      expect(exists).toBe(true);
-    });
-
-    it("should return false for non-existent task", async () => {
-      const exists = await taskExists("non-existent-task");
-      expect(exists).toBe(false);
     });
   });
 

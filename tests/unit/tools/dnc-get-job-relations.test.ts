@@ -3,7 +3,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { registerDncGetJobRelationsTool } from "../../../src/tools/dnc-get-job-relations.js";
 import { createTestMcpServer } from "../../helpers/test-utils.js";
-import { writeTask, ensureDncDirectory } from "../../../src/utils/dnc-utils.js";
+
 import { FileSystemDncTaskRepository } from "../../../src/repositories/index.js";
 import type { Task } from "../../../src/repositories/index.js";
 
@@ -43,8 +43,7 @@ describe("dnc-get-job-relations tool", () => {
       tasks: [],
     };
 
-    await ensureDncDirectory("job-simple");
-    await writeTask("job-simple", task);
+    await repository.saveRootTask("job-simple", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -86,8 +85,7 @@ describe("dnc-get-job-relations tool", () => {
       ],
     };
 
-    await ensureDncDirectory("job-parent");
-    await writeTask("job-parent", task);
+    await repository.saveRootTask("job-parent", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -138,8 +136,7 @@ describe("dnc-get-job-relations tool", () => {
       ],
     };
 
-    await ensureDncDirectory("job-root");
-    await writeTask("job-root", task);
+    await repository.saveRootTask("job-root", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
@@ -189,7 +186,7 @@ describe("dnc-get-job-relations tool", () => {
   });
 
   it("should handle corrupted JSON gracefully", async () => {
-    await ensureDncDirectory("job-corrupted");
+    await fs.mkdir(".dnc/job-corrupted", { recursive: true });
     await fs.writeFile(".dnc/job-corrupted/task.json", "invalid json{", "utf-8");
 
     const mcpServer = createTestMcpServer();
@@ -214,8 +211,7 @@ describe("dnc-get-job-relations tool", () => {
       tasks: [],
     };
 
-    await ensureDncDirectory("job-format");
-    await writeTask("job-format", task);
+    await repository.saveRootTask("job-format", task);
 
     const mcpServer = createTestMcpServer();
     const registerToolSpy = vi.spyOn(mcpServer, "registerTool");
