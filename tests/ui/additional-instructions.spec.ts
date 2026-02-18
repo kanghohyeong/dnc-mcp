@@ -65,7 +65,7 @@ test.describe.serial("추가 지침 UI 렌더링", () => {
     await expect(childTextarea).toBeVisible();
   });
 
-  test("'추가 지침' 레이블이 표시된다", async ({ page }) => {
+  test("'Custom Instructions' 레이블이 표시된다", async ({ page }) => {
     const testTask = {
       id: testJobId,
       goal: "Test goal",
@@ -78,7 +78,7 @@ test.describe.serial("추가 지침 UI 렌더링", () => {
     await page.goto(`${baseUrl}/${testJobId}`);
     await page.waitForSelector(".task-item");
 
-    const labels = page.locator(".section-label", { hasText: "추가 지침" });
+    const labels = page.locator(".section-label", { hasText: "Custom Instructions" });
     await expect(labels.first()).toBeVisible();
   });
 

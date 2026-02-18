@@ -352,10 +352,10 @@ test.describe.serial("Tree Hierarchy UI", () => {
       await expect(child1Header.locator('[data-testid="tree-item-title"]')).toContainText(
         "child-1"
       );
-      // Status는 이제 dropdown으로 표시됨
-      const statusDropdown = child1Header.locator('[data-testid="status-dropdown-child-1"]');
-      await expect(statusDropdown).toBeVisible();
-      await expect(statusDropdown).toHaveValue("done");
+      // Status는 이제 current-status badge로 표시됨
+      const statusBadge = child1Header.locator('[data-testid="current-status-child-1"]');
+      await expect(statusBadge).toBeVisible();
+      await expect(statusBadge).toHaveText("done");
     });
   });
 });

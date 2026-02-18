@@ -106,13 +106,13 @@ test.describe("DnC Jobs List Page UI", () => {
       const firstStatus = statusElements.first();
       await expect(firstStatus).toBeVisible();
 
-      // 텍스트가 7가지 상태 중 하나를 포함해야 함
+      // 텍스트가 8가지 상태 중 하나를 포함해야 함
       const text = await firstStatus.textContent();
-      expect(text).toMatch(/init|accept|in-progress|done|delete|hold|split/i);
+      expect(text).toMatch(/init|accept|in-progress|done|delete|hold|split|modify/i);
     }
   });
 
-  test("should display all 7 status badges with correct styles", async ({ page }) => {
+  test("should display all 8 status badges with correct styles", async ({ page }) => {
     // Given: 메인 페이지 방문
     await page.goto(`${baseUrl}/`);
 
@@ -129,7 +129,9 @@ test.describe("DnC Jobs List Page UI", () => {
           const status = text.trim().toLowerCase();
 
           if (
-            ["init", "accept", "in-progress", "done", "delete", "hold", "split"].includes(status)
+            ["init", "accept", "in-progress", "done", "delete", "hold", "split", "modify"].includes(
+              status
+            )
           ) {
             // 각 상태에 해당하는 CSS 클래스가 있어야 함
             const className = await badge.getAttribute("class");

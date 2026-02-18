@@ -33,7 +33,7 @@ describe("웹 서버 HTTP 엔드포인트", () => {
     it("should have correct HTML structure", async () => {
       const response = await request(app).get("/");
 
-      expect(response.text).toMatch(/<html lang="ko">/);
+      expect(response.text).toMatch(/<html lang="en">/);
       expect(response.text).toMatch(/<meta charset="UTF-8">/);
       expect(response.text).toMatch(/<h1[^>]*>Task Management<\/h1>/);
     });

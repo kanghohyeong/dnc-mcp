@@ -6,7 +6,8 @@ export type TaskStatus =
   | "done"
   | "delete"
   | "hold"
-  | "split";
+  | "split"
+  | "modify";
 
 export interface Task {
   id: string;

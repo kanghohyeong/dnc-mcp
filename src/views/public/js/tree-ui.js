@@ -1,10 +1,10 @@
 /**
- * 트리 UI 렌더러
- * 계층적 작업 구조를 디렉토리 탐색 UI처럼 표현
+ * Tree UI renderer
+ * Displays hierarchical task structure as a directory-explorer-style UI
  */
 
 /**
- * 상태 옵션 목록
+ * Status option list
  */
 const STATUS_OPTIONS = [
   { value: 'init', label: 'init' },
@@ -13,15 +13,16 @@ const STATUS_OPTIONS = [
   { value: 'done', label: 'done' },
   { value: 'delete', label: 'delete' },
   { value: 'hold', label: 'hold' },
-  { value: 'split', label: 'split' }
+  { value: 'split', label: 'split' },
+  { value: 'modify', label: 'modify' }
 ];
 
 /**
- * 재귀적 섹션 구조로 task 아이템 렌더링
- * @param {Object} task - 작업 객체
- * @param {number} depth - 트리 깊이
+ * Renders a task item as a recursive section structure
+ * @param {Object} task - Task object
+ * @param {number} depth - Tree depth
  * @param {string} rootTaskId - Root task ID
- * @returns {string} HTML 문자열
+ * @returns {string} HTML string
  */
 function renderTaskItem(task, depth = 0, rootTaskId = null) {
   const hasChildren = task.tasks && task.tasks.length > 0;
@@ -30,7 +31,7 @@ function renderTaskItem(task, depth = 0, rootTaskId = null) {
   const isLocked = task.status === 'in-progress' || task.status === 'done';
   const disabledAttr = isLocked ? ' disabled' : '';
 
-  const SELECTABLE_STATUSES = ['accept', 'delete', 'hold', 'split'];
+  const SELECTABLE_STATUSES = ['accept', 'delete', 'hold', 'split', 'modify'];
 
   // 라디오 버튼 그룹 생성
   const radioButtons = SELECTABLE_STATUSES.map(status => {
@@ -81,16 +82,16 @@ function renderTaskItem(task, depth = 0, rootTaskId = null) {
         </div>
       </div>
 
-      <!-- 추가 지침 섹션 -->
+      <!-- Custom Instructions section -->
       <div class="section">
-        <div class="section-label">추가 지침</div>
+        <div class="section-label">Custom Instructions</div>
         <textarea
           class="additional-instructions-textarea"
           data-testid="additional-instructions-${task.id}"
           data-task-id="${task.id}"
           data-root-task-id="${actualRootTaskId}"
           data-original-value="${escapeHtml(additionalInstructionsValue)}"
-          placeholder="이 task에 대한 추가 지침을 입력하세요..."
+          placeholder="Enter custom instructions for this task..."
           rows="3"${disabledAttr}>${escapeHtml(additionalInstructionsValue)}</textarea>
       </div>
   `;
@@ -101,7 +102,7 @@ function renderTaskItem(task, depth = 0, rootTaskId = null) {
       <div class="section">
         <div class="subtasks-header" onclick="toggleSubtasks(this)">
           <div class="section-label">Subtasks</div>
-          <button class="subtasks-toggle-btn" aria-label="subtasks 토글">▼</button>
+          <button class="subtasks-toggle-btn" aria-label="toggle subtasks">▼</button>
         </div>
         <div class="task-children">
     `;
@@ -120,14 +121,14 @@ function renderTaskItem(task, depth = 0, rootTaskId = null) {
   return html;
 }
 
-// 하위 호환성을 위해 renderTreeItem을 renderTaskItem으로 aliasing
+// Alias renderTreeItem to renderTaskItem for backward compatibility
 function renderTreeItem(task, depth = 0) {
   return renderTaskItem(task, depth);
 }
 
 /**
- * Subtasks 섹션 접기/펼치기 토글
- * @param {HTMLElement} headerEl - 클릭된 .subtasks-header 요소
+ * Toggles the subtasks section collapsed/expanded
+ * @param {HTMLElement} headerEl - The clicked .subtasks-header element
  */
 function toggleSubtasks(headerEl) {
   const section = headerEl.closest('.section');
@@ -146,9 +147,9 @@ function toggleSubtasks(headerEl) {
 }
 
 /**
- * HTML 이스케이프
- * @param {string} text - 이스케이프할 텍스트
- * @returns {string} 이스케이프된 텍스트
+ * Escapes HTML special characters
+ * @param {string} text - Text to escape
+ * @returns {string} Escaped text
  */
 function escapeHtml(text) {
   const div = document.createElement('div');
@@ -156,13 +157,13 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// expandAll과 collapseAll 함수는 재귀적 섹션 구조에서 제거됨
-// (모든 항목이 항상 표시됨)
+// expandAll and collapseAll removed in recursive section structure
+// (all items are always visible)
 
 /**
- * 트리 초기화
- * @param {string} containerId - 컨테이너 ID
- * @param {Object} rootTask - 루트 작업 객체
+ * Initializes the tree
+ * @param {string} containerId - Container element ID
+ * @param {Object} rootTask - Root task object
  */
 function initializeTree(containerId, rootTask) {
   const container = document.getElementById(containerId);

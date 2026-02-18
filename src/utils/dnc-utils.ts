@@ -6,7 +6,8 @@ export type TaskStatus =
   | "done"
   | "delete"
   | "hold"
-  | "split";
+  | "split"
+  | "modify";
 
 export interface Task {
   id: string;
@@ -23,7 +24,9 @@ export interface Task {
  * @returns 유효하면 true
  */
 export function validateTaskStatus(status: string): status is TaskStatus {
-  return ["init", "accept", "in-progress", "done", "delete", "hold", "split"].includes(status);
+  return ["init", "accept", "in-progress", "done", "delete", "hold", "split", "modify"].includes(
+    status
+  );
 }
 
 /**
@@ -38,13 +41,14 @@ export function validateStatusTransition(
 ): { isValid: boolean; warning?: string } {
   const allowedTransitions: Record<TaskStatus, TaskStatus[]> = {
     pending: [],
-    init: ["accept", "delete", "hold", "split"],
-    accept: ["in-progress", "hold"],
+    init: ["accept", "delete", "hold", "split", "modify"],
+    accept: ["in-progress", "hold", "modify"],
     "in-progress": ["done", "hold"],
     done: [],
     delete: [],
-    hold: ["init", "accept"],
+    hold: ["init", "accept", "modify"],
     split: ["init"],
+    modify: ["accept", "delete", "hold", "split"],
   };
 
   const allowed = allowedTransitions[fromStatus] || [];

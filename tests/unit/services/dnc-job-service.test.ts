@@ -92,6 +92,18 @@ describe("DncJobService", () => {
       expect(activeIds).toContain("task-init");
     });
 
+    it("should treat modify status as active job", async () => {
+      await repository.saveRootTask("task-modify", makeTask("task-modify", { status: "modify" }));
+      await repository.saveRootTask("task-done", makeTask("task-done", { status: "done" }));
+
+      const { doneJobs, activeJobs } = await service.getAllRootTasksSplit();
+
+      expect(doneJobs).toHaveLength(1);
+      expect(doneJobs[0].id).toBe("task-done");
+      expect(activeJobs).toHaveLength(1);
+      expect(activeJobs[0].id).toBe("task-modify");
+    });
+
     it("should return empty doneJobs when no done tasks exist", async () => {
       await repository.saveRootTask("task-a", makeTask("task-a", { status: "in-progress" }));
 
