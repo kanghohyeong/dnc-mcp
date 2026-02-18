@@ -1,340 +1,301 @@
-# dnc-mcp
+# DnC MCP — Divide and Conquer MCP Server
 
-TypeScript로 작성된 Model Context Protocol용 MCP 서버입니다.
+![Node.js](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen) ![TypeScript](https://img.shields.io/badge/language-TypeScript-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![MCP](https://img.shields.io/badge/protocol-MCP-purple)
 
-## 설명
+An MCP (Model Context Protocol) server that applies the **Divide and Conquer paradigm** to AI-driven task management. Just like a D&C algorithm, you declare a complex goal, break it into smaller sub-tasks, review and adjust the plan, and then let the agent execute automatically.
 
-Node.js와 TypeScript를 사용한 MCP (Model Context Protocol) 서버 구현체입니다. Model Context Protocol은 LLM을 외부 데이터 소스 및 도구에 연결하기 위한 Anthropic의 표준 프로토콜입니다.
+---
 
-## 사전 요구사항
+## The Workflow
 
-- Node.js >= 16.0.0
-- npm 또는 yarn
+The DnC workflow is built around a structured loop: **Declare → Divide → Review → Adjust → Conquer**.
 
-## 설치
+```
+┌─────────────────────────────────────────────────────────┐
+│                    DnC Workflow                          │
+│                                                          │
+│  1. User: "Plan this goal"                               │
+│       ↓                                                  │
+│  2. Agent: /init-root-task                               │
+│     - Analyzes codebase                                  │
+│     - Calls dnc_init_task + dnc_append_divided_task      │
+│     - Builds task tree (L1/L2/L3 depth)                 │
+│       ↓                                                  │
+│  3. User: Review task plan (via Web UI)                  │
+│     - Mark tasks as accept / modify / split / delete     │
+│     - Add custom instructions per task                   │
+│       ↓                                                  │
+│  4. Agent: /adjust-tasks                                 │
+│     - Reads review results                               │
+│     - Applies modify / split / delete changes            │
+│       ↓                                                  │
+│  ◀── [Review ↔ Adjust loop repeats until plan is solid] ─┤
+│       ↓                                                  │
+│  5. User: "Conquer the tasks"                            │
+│       ↓                                                  │
+│  6. Agent: /conquer-tasks                                │
+│     - Validates all tasks are past init status           │
+│     - Executes leaf tasks sequentially                   │
+│     - Updates status in real-time                        │
+│       ↓                                                  │
+│  7. Done ✓                                               │
+└─────────────────────────────────────────────────────────┘
+```
+
+> The **Review ↔ Adjust loop** is the key quality gate. The agent will not proceed to execution until all tasks have been reviewed and confirmed.
+
+---
+
+## Web UI
+
+When Claude connects to the DnC MCP server, a Web UI automatically starts and opens in your browser at `http://localhost:3331` (port auto-assigned).
+
+The Web UI provides a Jira-style task management dashboard:
+
+- **Task card dashboard** — Overview of all root tasks and their current status
+- **Tree visualization** — Hierarchical view of parent/child task relationships
+- **Batch status update** — Mark multiple tasks at once (accept, modify, split, delete, hold)
+- **Color-coded status badges** — At-a-glance status for every task
+- **Custom instructions input** — Add per-task instructions for the agent to follow during `/adjust-tasks`
+
+The Web UI is the primary interface for the **Review** phase of the workflow.
+
+---
+
+## Skills — The Critical Integration
+
+Skills are what bridge natural language commands ("plan this project", "conquer the tasks") to the underlying MCP tool calls. **Without skills installed, the workflow requires manual tool invocation.** The three skills below automate the entire DnC lifecycle.
+
+### `/init-root-task`
+
+**Trigger phrases:** "plan this goal", "break down tasks", "create a roadmap for my goal"
+
+Analyzes the current codebase and transforms a vague goal into a structured, executable task tree.
+
+**Execution steps:**
+1. **Contextual scan** — Reads the codebase to understand architecture and dependencies
+2. **Goal clarification** — Refines the objective and asks for user confirmation before proceeding
+3. **Root task creation** — Calls `dnc_init_task` to register the root task
+4. **Depth selection** — Prompts for decomposition depth:
+   - **Level 1 (Direct):** 1–2 depth, flat high-level milestones
+   - **Level 2 (Standard):** 3–4 depth, balanced nested tree
+   - **Level 3 (Granular):** 5–7 depth, micro-unit tasks for maximum precision
+5. **Recursive decomposition** — Calls `dnc_append_divided_task` recursively to build the full task hierarchy
+
+---
+
+### `/adjust-tasks`
+
+**Trigger phrases:** "adjust tasks based on the review results", "update the plan", "modify tasks as discussed"
+
+Reads the current review results from the Web UI and applies all changes to the task plan.
+
+**Execution steps:**
+1. Identifies the target root task (`dnc_list_root_tasks` if ambiguous)
+2. Reads the current task structure and review statuses (`dnc_get_task_relations`)
+3. Validates: halts if any tasks remain in `init` status (must be reviewed first)
+4. Collects technical context; **custom instructions take the highest priority**
+5. Applies changes based on status:
+   - `modify` → updates goal/acceptance via `dnc_update_task`
+   - `split` → decomposes into sub-tasks via `dnc_append_divided_task`
+   - `delete` → removes from the tree via `dnc_delete_task`
+
+---
+
+### `/conquer-tasks`
+
+**Trigger phrases:** "conquer the tasks", "execute the plan", "start working on the tasks"
+
+Autonomously executes the finalized task plan from the first leaf task to the last.
+
+**Execution steps:**
+1. Identifies the target root task
+2. Fetches the full task tree (`dnc_get_task_relations`)
+3. **Feasibility check:**
+   - Already `done` → notifies user, exits
+   - Any `init` tasks remaining → requests further review, halts
+   - Any `modify`/`split`/`delete` tasks → directs user to run `/adjust-tasks` first
+4. Executes leaf tasks sequentially; each task goes through an internal planning phase before action
+5. Updates status in real-time: `in-progress` → `done` as each task completes; parent tasks updated accordingly
+
+---
+
+## Installing Skills
+
+Skills must be copied into the `.claude/skills/` directory of **the project where you want to use them**:
 
 ```bash
-npm install
+# From the interlock_mcp directory
+cp -r .claude/skills/init-root-task  /your-project/.claude/skills/
+cp -r .claude/skills/adjust-tasks    /your-project/.claude/skills/
+cp -r .claude/skills/conquer-tasks   /your-project/.claude/skills/
 ```
 
-## 개발 명령어
+After copying, the skills are available in Claude Code via `/init-root-task`, `/adjust-tasks`, and `/conquer-tasks`.
 
-### 빌드
+---
 
-TypeScript를 JavaScript로 컴파일:
+## MCP Tools Reference
 
-```bash
-npm run build
-```
+| Tool | Description |
+|------|-------------|
+| `dnc_init_task` | Create a root task — the entry point for a new goal |
+| `dnc_append_divided_task` | Add a child task under a parent node in the task tree |
+| `dnc_update_task` | Update a task's goal, status, or acceptance criteria |
+| `dnc_delete_task` | Delete a task (root = entire tree, child = node only) |
+| `dnc_get_task_relations` | Retrieve the full task tree structure for a root task |
+| `dnc_list_root_tasks` | List all root tasks currently registered |
+| `get_kst_time` | Get the current time in KST (UTC+9) |
 
-### 감시 모드
+---
 
-개발 중 파일 변경 시 자동으로 재빌드:
-
-```bash
-npm run watch
-```
-
-### 서버 실행
-
-컴파일된 MCP 서버 시작:
-
-```bash
-npm start
-```
-
-참고: 실행하기 전에 먼저 프로젝트를 빌드해야 합니다.
-
-### 코드 품질
-
-#### 린팅
-
-ESLint로 코드 스타일 검사:
-
-```bash
-npm run lint
-```
-
-린팅 이슈 자동 수정:
-
-```bash
-npm run lint:fix
-```
-
-#### 포맷팅
-
-Prettier로 코드 포맷:
-
-```bash
-npm run format
-```
-
-파일 수정 없이 포맷팅 검사 (CI에 유용):
-
-```bash
-npm run format:check
-```
-
-#### 타입 검사
-
-파일 생성 없이 TypeScript 타입 검사 실행:
-
-```bash
-npm run typecheck
-```
-
-### 디버깅
-
-대화형 디버깅을 위한 MCP Inspector 실행:
-
-```bash
-npm run inspector
-```
-
-### 테스트
-
-#### 전체 테스트 실행
-
-Vitest와 Playwright 테스트를 모두 실행:
-
-```bash
-npm run test
-```
-
-#### 단위 및 통합 테스트 (Vitest)
-
-단위 테스트만 실행:
-
-```bash
-npm run test:unit
-```
-
-통합 테스트만 실행:
-
-```bash
-npm run test:integration
-```
-
-Watch 모드로 실행 (파일 변경 시 자동 재실행):
-
-```bash
-npm run test:watch
-```
-
-브라우저 UI 모드로 실행:
-
-```bash
-npm run test:vitest:ui
-```
-
-커버리지 리포트 생성:
-
-```bash
-npm run test:coverage
-```
-
-#### E2E 테스트 (Playwright)
-
-모든 Playwright 테스트 실행:
-
-```bash
-npm run test:playwright
-```
-
-UI 테스트만 실행:
-
-```bash
-npm run test:ui
-```
-
-E2E 테스트만 실행:
-
-```bash
-npm run test:e2e
-```
-
-Playwright UI 모드로 실행:
-
-```bash
-npm run test:playwright:ui
-```
-
-디버그 모드로 실행:
-
-```bash
-npm run test:playwright:debug
-```
-
-
-## 프로젝트 구조
+## Task Status Lifecycle
 
 ```
-dnc-mcp/
-├── src/              # TypeScript 소스 파일
-│   ├── index.ts      # 메인 서버 진입점
-│   ├── tools/        # MCP 도구 구현 디렉토리
-│   │   └── get-kst-time.ts  # KST 시간 조회 도구
-│   ├── services/     # 서비스 계층 (웹 서버 등)
-│   └── utils/        # 유틸리티 함수
-├── tests/            # 테스트 파일
-│   ├── unit/         # 단위 테스트
-│   ├── integration/  # 통합 테스트
-│   ├── ui/           # UI 테스트 (Playwright)
-│   ├── e2e/          # E2E 테스트 (Playwright)
-│   └── helpers/      # 테스트 헬퍼 유틸리티
-├── build/            # 컴파일된 JavaScript 출력 (git 무시됨)
-├── coverage/         # 테스트 커버리지 리포트 (git 무시됨)
-├── test-results/     # Playwright 테스트 결과 (git 무시됨)
-├── playwright-report/ # Playwright HTML 리포트 (git 무시됨)
-├── node_modules/     # 의존성 (git 무시됨)
-├── package.json      # 프로젝트 메타데이터 및 의존성
-├── tsconfig.json     # TypeScript 설정
-├── tsconfig.test.json # 테스트용 TypeScript 설정
-├── vitest.config.ts  # Vitest 테스트 설정
-├── playwright.config.ts # Playwright 테스트 설정
-├── test-setup.ts     # 글로벌 테스트 설정
-├── .eslintrc.json    # ESLint 설정
-├── .prettierrc       # Prettier 설정
-├── CLAUDE.md         # AI 코딩 어시스턴트용 프로젝트 지침
-└── README.md         # 이 파일
+         ┌─────────────────────┐
+         │        init         │  ← Task just created, awaiting review
+         └──────────┬──────────┘
+                    │  (user review)
+         ┌──────────▼──────────┐
+    ┌───▶│       accept        │  ← Approved, ready to execute
+    │    └──────────┬──────────┘
+    │               │
+    │    ┌──────────▼──────────┐
+    │    │     in-progress     │  ← Agent is currently working on it
+    │    └──────────┬──────────┘
+    │               │
+    │    ┌──────────▼──────────┐
+    │    │        done         │  ← Completed
+    │    └─────────────────────┘
+    │
+    │    ┌─────────────────────┐
+    │    │        hold         │  ← Paused, pending dependency or decision
+    └────┤        modify       │  ← Needs goal/acceptance update → re-review
+         │        split        │  ← Needs further decomposition → re-review
+         │        delete       │  ← Marked for removal
+         └─────────────────────┘
 ```
 
-## 개발 워크플로우
+---
 
-### 일반 개발
+## Task Data Structure
 
-1. **빌드**: `npm run build`로 TypeScript 코드 컴파일
-2. **테스트**: `npm run test`로 모든 테스트 실행
-3. **포맷**: `npm run format`으로 코드 포맷 적용
-4. **린트**: `npm run lint`로 코드 품질 검사
-5. **타입 검사**: `npm run typecheck`로 타입 오류 확인
+Each task is stored as a JSON file in the `.dnc/` directory of your project:
 
-활발한 개발을 위해서는 `npm run watch`를 사용하여 변경 시 자동으로 재빌드하세요.
-
-### TDD (Test-Driven Development) 워크플로우
-
-1. **Red**: 실패하는 테스트 작성
-   ```bash
-   npm run test:watch  # 실시간 피드백
-   ```
-
-2. **Green**: 테스트를 통과하는 최소 코드 작성
-   - Watch 모드가 자동으로 재실행
-
-3. **Refactor**: 코드 개선
-   ```bash
-   npm run test:coverage  # 커버리지 확인
-   ```
-
-4. **검증**: 모든 검사 통과 확인
-   ```bash
-   npm run typecheck && npm run lint && npm run test
-   ```
-
-## 중요 사항
-
-### STDIO Transport 로깅
-
-이 서버는 MCP 클라이언트와의 통신을 위해 STDIO transport를 사용합니다. **로깅에는 항상 `console.error()`를 사용**해야 하며, 절대 `console.log()`를 사용하지 마세요. `console.log()`를 사용하면 stdout이 MCP 프로토콜 메시지용으로 예약되어 있어 프로토콜 통신에 간섭이 발생합니다.
-
-✅ 올바른 예:
-```typescript
-console.error("Server started");
-```
-
-❌ 잘못된 예:
-```typescript
-console.log("Server started"); // STDIO 통신을 방해합니다
-```
-
-### 스키마 검증
-
-이 프로젝트는 MCP SDK의 필수 피어 의존성인 Zod를 스키마 검증에 사용합니다. 스키마 검증은 도구 인자 및 응답에 대한 타입 안정성을 보장합니다.
-
-### 실행 전 빌드
-
-`npm start`를 실행하기 전에 항상 `npm run build`를 실행하세요. 서버는 TypeScript 소스 파일이 아닌 `build/` 디렉토리의 컴파일된 JavaScript를 실행합니다.
-
-## 도구 추가하기
-
-이 프로젝트는 MCP 도구를 모듈화된 구조로 관리합니다. 새로운 도구를 추가하려면:
-
-### 1. 도구 파일 생성
-
-`src/tools/` 디렉토리에 새로운 도구 파일을 생성합니다:
-
-```typescript
-// src/tools/example-tool.ts
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-
-/**
- * 예제 도구 등록
- */
-export function registerExampleTool(mcpServer: McpServer) {
-  mcpServer.registerTool(
-    "example_tool",
+```json
+{
+  "task_title": "implement-user-auth",
+  "goal": "Implement JWT-based user authentication for the API",
+  "acceptance": "All auth endpoints pass tests; tokens expire in 24h; refresh flow works",
+  "status": "accept",
+  "additionalInstructions": "Use RS256 algorithm, not HS256",
+  "tasks": [
     {
-      description: "도구에 대한 설명",
-      inputSchema: {}, // Zod 스키마나 빈 객체
+      "task_title": "create-auth-middleware",
+      "goal": "Create Express middleware to validate JWT tokens",
+      "acceptance": "Middleware rejects invalid tokens with 401; attaches user to req.user",
+      "status": "accept",
+      "tasks": []
     },
-    (args) => {
-      // 도구 로직 구현
-      return {
-        content: [
-          {
-            type: "text",
-            text: "결과 메시지",
-          },
-        ],
-      };
+    {
+      "task_title": "implement-login-endpoint",
+      "goal": "Implement POST /auth/login endpoint",
+      "acceptance": "Returns access + refresh token on valid credentials; 401 on invalid",
+      "status": "modify",
+      "additionalInstructions": "Also return token expiry timestamp",
+      "tasks": []
     }
-  );
+  ]
 }
 ```
 
-### 2. 메인 파일에서 등록
+---
 
-`src/index.ts`에서 도구를 import하고 등록합니다:
+## Installation & Setup
 
-```typescript
-// import 추가
-import { registerExampleTool } from "./tools/example-tool.js";
+### Prerequisites
 
-// 도구 등록 섹션에 추가
-registerExampleTool(mcpServer);
-```
+- Node.js >= 16.0.0
+- [Claude Code](https://claude.ai/claude-code) CLI installed
 
-### 3. 빌드 및 테스트
+### 1. Clone and build
 
 ```bash
-# 타입 검사
-npm run typecheck
+git clone <repo-url>
+cd interlock_mcp
 
-# 린팅
-npm run lint
-
-# 포맷팅
-npm run format:check
-
-# 빌드
+npm install
 npm run build
+```
 
-# MCP Inspector로 테스트
+### 2. Register the MCP server with Claude Code
+
+```bash
+claude mcp add interlock_dev -- node /absolute/path/to/interlock_mcp/build/index.js
+```
+
+Verify the server is registered:
+
+```bash
+claude mcp list
+```
+
+### 3. Install skills into your project
+
+```bash
+cp -r /path/to/interlock_mcp/.claude/skills/* /your-project/.claude/skills/
+```
+
+### 4. Start using the workflow
+
+Open Claude Code in your project directory and run:
+
+```
+/init-root-task
+```
+
+The Web UI will open automatically at `http://localhost:3331`.
+
+---
+
+## Development
+
+### Build
+
+```bash
+npm run build       # Compile TypeScript + copy views
+npm run watch       # Watch mode
+```
+
+### Code quality
+
+```bash
+npm run typecheck   # TypeScript type check
+npm run lint        # ESLint
+npm run lint:fix    # ESLint with auto-fix
+npm run format      # Prettier format
+npm run format:check
+```
+
+### Testing
+
+```bash
+npm run test              # Full test suite (Vitest + Playwright)
+npm run test:unit         # Unit tests only
+npm run test:integration  # Integration tests only
+npm run test:e2e          # End-to-end tests
+npm run test:coverage     # Coverage report (target: 80%+)
+npm run test:watch        # Watch mode
+```
+
+### Inspect MCP tools interactively
+
+```bash
 npm run inspector
 ```
 
-### 도구 파일 작성 규칙
+---
 
-- **파일명**: kebab-case 사용 (예: `get-kst-time.ts`)
-- **함수명**: `register도구명Tool` 형식 (camelCase)
-- **도구명**: snake_case 사용 (예: `get_kst_time`)
-- **구조**: 각 도구는 독립적인 파일로 관리
-- **export**: 등록 함수 하나만 export
-
-### 예제
-
-기존에 구현된 `src/tools/get-kst-time.ts`를 참고하세요.
-
-## 라이선스
+## License
 
 MIT
