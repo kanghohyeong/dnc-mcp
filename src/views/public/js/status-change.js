@@ -25,14 +25,14 @@ window.StatusChangeManager = (function () {
   }
 
   /**
-   * 상태 변경 처리
+   * 상태 변경 처리 (radio 버튼)
    */
   function handleStatusChange(event) {
-    const dropdown = event.target;
-    const taskId = dropdown.dataset.taskId;
-    const rootTaskId = dropdown.dataset.rootTaskId;
-    const originalStatus = dropdown.dataset.originalStatus;
-    const newStatus = dropdown.value;
+    const radio = event.target;
+    const taskId = radio.dataset.taskId;
+    const rootTaskId = radio.dataset.rootTaskId;
+    const originalStatus = radio.dataset.originalStatus;
+    const newStatus = radio.value;
 
     if (newStatus === originalStatus) {
       statusChanges.delete(taskId);
@@ -133,11 +133,18 @@ window.StatusChangeManager = (function () {
       // 성공한 항목들의 original 값 업데이트
       result.results.forEach((r) => {
         if (r.success) {
-          const dropdown = document.querySelector(
-            `.status-dropdown[data-task-id="${r.taskId}"]`
+          // 해당 taskId의 모든 radio 버튼의 data-original-status 업데이트
+          const radios = document.querySelectorAll(
+            `.status-radio[data-task-id="${r.taskId}"]`
           );
-          if (dropdown) {
-            dropdown.dataset.originalStatus = dropdown.value;
+          const checkedRadio = document.querySelector(
+            `.status-radio[data-task-id="${r.taskId}"]:checked`
+          );
+          const newStatus = checkedRadio ? checkedRadio.value : null;
+          if (newStatus) {
+            radios.forEach((radio) => {
+              radio.dataset.originalStatus = newStatus;
+            });
           }
 
           const textarea = document.querySelector(
@@ -187,15 +194,14 @@ window.StatusChangeManager = (function () {
       return;
     }
 
-    // 모든 status dropdown에 change 이벤트 리스너 추가
-    const dropdowns = document.querySelectorAll('.status-dropdown');
-    if (dropdowns.length === 0) {
-      console.error('No status dropdowns found');
-      return;
+    // 모든 status radio에 change 이벤트 리스너 추가
+    const radios = document.querySelectorAll('.status-radio');
+    if (radios.length === 0) {
+      console.warn('No status radios found');
     }
 
-    dropdowns.forEach((dropdown) => {
-      dropdown.addEventListener('change', handleStatusChange);
+    radios.forEach((radio) => {
+      radio.addEventListener('change', handleStatusChange);
     });
 
     // 모든 추가 지침 textarea에 input 이벤트 리스너 추가
@@ -210,8 +216,8 @@ window.StatusChangeManager = (function () {
     initialized = true;
     console.log(
       'StatusChangeManager initialized with',
-      dropdowns.length,
-      'dropdowns,',
+      radios.length,
+      'radios,',
       textareas.length,
       'textareas'
     );

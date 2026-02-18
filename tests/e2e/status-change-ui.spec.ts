@@ -22,11 +22,9 @@ test.describe.serial("Status Change UI", () => {
   });
 
   test.beforeEach(async ({ page: _page }, testInfo) => {
-    // 각 테스트마다 고유한 ID 생성 (테스트 간 격리)
     testJobId = `test-job-${Date.now()}-${testInfo.testId}`;
     testJobDir = path.join(dncDir, testJobId);
 
-    // 테스트용 task 생성
     await fs.mkdir(testJobDir, { recursive: true });
 
     const testTask = {
@@ -56,50 +54,47 @@ test.describe.serial("Status Change UI", () => {
   });
 
   test.afterEach(async () => {
-    // 테스트용 task 정리
     await fs.rm(testJobDir, { recursive: true, force: true });
   });
 
   test.describe("✅ UI 렌더링 테스트", () => {
-    test("should display status dropdown for each task", async ({ page }) => {
+    test("should display status radio group for each task", async ({ page }) => {
       await page.goto(`${baseUrl}/${testJobId}`);
 
-      // Root task dropdown (동적 testJobId 사용)
-      const rootDropdown = page.locator(`[data-testid="status-dropdown-${testJobId}"]`);
-      await expect(rootDropdown).toBeVisible();
-      await expect(rootDropdown).toHaveValue("init");
+      // Root task radio group
+      const rootRadioGroup = page.locator(`[data-testid="status-radio-group-${testJobId}"]`);
+      await expect(rootRadioGroup).toBeVisible();
 
-      // Child 1 dropdown
-      const child1Dropdown = page.locator('[data-testid="status-dropdown-child-1"]');
-      await expect(child1Dropdown).toBeVisible();
-      await expect(child1Dropdown).toHaveValue("init");
+      // Root task current status badge
+      const rootBadge = page.locator(`[data-testid="current-status-${testJobId}"]`);
+      await expect(rootBadge).toBeVisible();
+      await expect(rootBadge).toHaveText("init");
 
-      // Child 2 dropdown
-      const child2Dropdown = page.locator('[data-testid="status-dropdown-child-2"]');
-      await expect(child2Dropdown).toBeVisible();
-      await expect(child2Dropdown).toHaveValue("accept");
+      // Child 2 badge (accept 상태)
+      const child2Badge = page.locator('[data-testid="current-status-child-2"]');
+      await expect(child2Badge).toBeVisible();
+      await expect(child2Badge).toHaveText("accept");
     });
 
-    test("should display all status options in dropdown", async ({ page }) => {
+    test("should display 4 selectable status radio buttons", async ({ page }) => {
       await page.goto(`${baseUrl}/${testJobId}`);
 
-      const dropdown = page.locator(`[data-testid="status-dropdown-${testJobId}"]`);
-      await dropdown.waitFor({ state: "visible" });
+      const radioGroup = page.locator(`[data-testid="status-radio-group-${testJobId}"]`);
+      await radioGroup.waitFor({ state: "visible" });
 
-      const options = dropdown.locator("option");
+      // accept, delete, hold, split 4개 라디오 버튼 확인
+      await expect(page.locator(`[data-testid="status-radio-${testJobId}-accept"]`)).toBeVisible();
+      await expect(page.locator(`[data-testid="status-radio-${testJobId}-delete"]`)).toBeVisible();
+      await expect(page.locator(`[data-testid="status-radio-${testJobId}-hold"]`)).toBeVisible();
+      await expect(page.locator(`[data-testid="status-radio-${testJobId}-split"]`)).toBeVisible();
+    });
 
-      // 7개 옵션 확인
-      await expect(options).toHaveCount(7);
+    test("should check the matching radio when current status is selectable", async ({ page }) => {
+      await page.goto(`${baseUrl}/${testJobId}`);
 
-      // 각 옵션 값 확인
-      const optionValues = await options.allTextContents();
-      expect(optionValues).toContain("init");
-      expect(optionValues).toContain("accept");
-      expect(optionValues).toContain("in-progress");
-      expect(optionValues).toContain("done");
-      expect(optionValues).toContain("delete");
-      expect(optionValues).toContain("hold");
-      expect(optionValues).toContain("split");
+      // child-2는 accept 상태 → accept radio가 checked
+      const child2AcceptRadio = page.locator('[data-testid="status-radio-child-2-accept"]');
+      await expect(child2AcceptRadio).toBeChecked();
     });
 
     test("should display submit button at the bottom", async ({ page }) => {
@@ -116,17 +111,17 @@ test.describe.serial("Status Change UI", () => {
   });
 
   test.describe("🔄 상태 변경 및 추적 테스트", () => {
-    test("should enable submit button when status changes", async ({ page }) => {
+    test("should enable submit button when radio status changes", async ({ page }) => {
       await page.goto(`${baseUrl}/${testJobId}`);
 
       const submitButton = page.locator('[data-testid="submit-status-changes"]');
-      const rootDropdown = page.locator(`[data-testid="status-dropdown-${testJobId}"]`);
+      const acceptRadio = page.locator(`[data-testid="status-radio-${testJobId}-accept"]`);
 
       // 초기에는 비활성화
       await expect(submitButton).toBeDisabled();
 
       // 상태 변경
-      await rootDropdown.selectOption("done");
+      await acceptRadio.click();
 
       // Submit 버튼 활성화
       await expect(submitButton).toBeEnabled();
@@ -136,12 +131,12 @@ test.describe.serial("Status Change UI", () => {
       await page.goto(`${baseUrl}/${testJobId}`);
 
       const submitButton = page.locator('[data-testid="submit-status-changes"]');
-      const rootDropdown = page.locator(`[data-testid="status-dropdown-${testJobId}"]`);
-      const child1Dropdown = page.locator('[data-testid="status-dropdown-child-1"]');
+      const rootHoldRadio = page.locator(`[data-testid="status-radio-${testJobId}-hold"]`);
+      const child1DeleteRadio = page.locator('[data-testid="status-radio-child-1-delete"]');
 
       // 여러 task 상태 변경
-      await rootDropdown.selectOption("in-progress");
-      await child1Dropdown.selectOption("done");
+      await rootHoldRadio.click();
+      await child1DeleteRadio.click();
 
       // Submit 버튼 활성화
       await expect(submitButton).toBeEnabled();
@@ -151,14 +146,16 @@ test.describe.serial("Status Change UI", () => {
       await page.goto(`${baseUrl}/${testJobId}`);
 
       const submitButton = page.locator('[data-testid="submit-status-changes"]');
-      const rootDropdown = page.locator(`[data-testid="status-dropdown-${testJobId}"]`);
+      // child-2는 accept 상태 → hold로 변경 후 다시 accept로
+      const child2HoldRadio = page.locator('[data-testid="status-radio-child-2-hold"]');
+      const child2AcceptRadio = page.locator('[data-testid="status-radio-child-2-accept"]');
 
       // 상태 변경
-      await rootDropdown.selectOption("done");
+      await child2HoldRadio.click();
       await expect(submitButton).toBeEnabled();
 
       // 다시 원래 상태로
-      await rootDropdown.selectOption("init");
+      await child2AcceptRadio.click();
       await expect(submitButton).toBeDisabled();
     });
   });
@@ -167,11 +164,11 @@ test.describe.serial("Status Change UI", () => {
     test("should call API when submit button is clicked", async ({ page }) => {
       await page.goto(`${baseUrl}/${testJobId}`);
 
-      const rootDropdown = page.locator(`[data-testid="status-dropdown-${testJobId}"]`);
+      const acceptRadio = page.locator(`[data-testid="status-radio-${testJobId}-accept"]`);
       const submitButton = page.locator('[data-testid="submit-status-changes"]');
 
       // 상태 변경
-      await rootDropdown.selectOption("done");
+      await acceptRadio.click();
 
       // API 요청 감지
       const apiRequestPromise = page.waitForRequest(
@@ -192,41 +189,22 @@ test.describe.serial("Status Change UI", () => {
       expect(postData.updates[0]).toEqual({
         taskId: testJobId,
         rootTaskId: testJobId,
-        status: "done",
+        status: "accept",
       });
-    });
-
-    test.skip("should update UI after successful API response", async ({ page }) => {
-      await page.goto(`${baseUrl}/${testJobId}`);
-
-      const rootDropdown = page.locator(`[data-testid="status-dropdown-${testJobId}"]`);
-      const submitButton = page.locator('[data-testid="submit-status-changes"]');
-
-      // 상태 변경
-      await rootDropdown.selectOption("done");
-
-      // Submit 클릭
-      await submitButton.click();
-
-      // API 응답 대기 - 버튼 텍스트가 "저장 중..."에서 "변경사항 저장"으로 변경될 때까지 기다림
-      await expect(submitButton).toHaveText("변경사항 저장", { timeout: 5000 });
-
-      // Submit 버튼이 다시 비활성화됨
-      await expect(submitButton).toBeDisabled();
     });
 
     test("should send multiple updates in batch", async ({ page }) => {
       await page.goto(`${baseUrl}/${testJobId}`);
 
-      const rootDropdown = page.locator(`[data-testid="status-dropdown-${testJobId}"]`);
-      const child1Dropdown = page.locator('[data-testid="status-dropdown-child-1"]');
-      const child2Dropdown = page.locator('[data-testid="status-dropdown-child-2"]');
+      const rootHoldRadio = page.locator(`[data-testid="status-radio-${testJobId}-hold"]`);
+      const child1DeleteRadio = page.locator('[data-testid="status-radio-child-1-delete"]');
+      const child2SplitRadio = page.locator('[data-testid="status-radio-child-2-split"]');
       const submitButton = page.locator('[data-testid="submit-status-changes"]');
 
       // 여러 상태 변경
-      await rootDropdown.selectOption("in-progress");
-      await child1Dropdown.selectOption("done");
-      await child2Dropdown.selectOption("in-progress");
+      await rootHoldRadio.click();
+      await child1DeleteRadio.click();
+      await child2SplitRadio.click();
 
       // API 요청 감지
       const apiRequestPromise = page.waitForRequest(
@@ -248,18 +226,107 @@ test.describe.serial("Status Change UI", () => {
       expect(postData.updates).toContainEqual({
         taskId: testJobId,
         rootTaskId: testJobId,
-        status: "in-progress",
+        status: "hold",
       });
       expect(postData.updates).toContainEqual({
         taskId: "child-1",
         rootTaskId: testJobId,
-        status: "done",
+        status: "delete",
       });
       expect(postData.updates).toContainEqual({
         taskId: "child-2",
         rootTaskId: testJobId,
-        status: "in-progress",
+        status: "split",
       });
+    });
+  });
+
+  test.describe("🔒 Locked 상태 (in-progress/done) 테스트", () => {
+    test("should disable radio buttons when task status is in-progress", async ({ page }) => {
+      const lockedTask = {
+        id: testJobId,
+        goal: "Locked job",
+        acceptance: "Locked acceptance",
+        status: "in-progress",
+        tasks: [],
+      };
+      await fs.writeFile(path.join(testJobDir, "task.json"), JSON.stringify(lockedTask, null, 2));
+
+      await page.goto(`${baseUrl}/${testJobId}`);
+
+      // 4개 radio 버튼 모두 disabled
+      await expect(page.locator(`[data-testid="status-radio-${testJobId}-accept"]`)).toBeDisabled();
+      await expect(page.locator(`[data-testid="status-radio-${testJobId}-delete"]`)).toBeDisabled();
+      await expect(page.locator(`[data-testid="status-radio-${testJobId}-hold"]`)).toBeDisabled();
+      await expect(page.locator(`[data-testid="status-radio-${testJobId}-split"]`)).toBeDisabled();
+    });
+
+    test("should disable radio buttons when task status is done", async ({ page }) => {
+      const doneTask = {
+        id: testJobId,
+        goal: "Done job",
+        acceptance: "Done acceptance",
+        status: "done",
+        tasks: [],
+      };
+      await fs.writeFile(path.join(testJobDir, "task.json"), JSON.stringify(doneTask, null, 2));
+
+      await page.goto(`${baseUrl}/${testJobId}`);
+
+      // 4개 radio 버튼 모두 disabled
+      await expect(page.locator(`[data-testid="status-radio-${testJobId}-accept"]`)).toBeDisabled();
+      await expect(page.locator(`[data-testid="status-radio-${testJobId}-delete"]`)).toBeDisabled();
+      await expect(page.locator(`[data-testid="status-radio-${testJobId}-hold"]`)).toBeDisabled();
+      await expect(page.locator(`[data-testid="status-radio-${testJobId}-split"]`)).toBeDisabled();
+    });
+
+    test("should disable textarea when task status is in-progress", async ({ page }) => {
+      const lockedTask = {
+        id: testJobId,
+        goal: "Locked job",
+        acceptance: "Locked acceptance",
+        status: "in-progress",
+        tasks: [],
+      };
+      await fs.writeFile(path.join(testJobDir, "task.json"), JSON.stringify(lockedTask, null, 2));
+
+      await page.goto(`${baseUrl}/${testJobId}`);
+
+      const textarea = page.locator(`[data-testid="additional-instructions-${testJobId}"]`);
+      await expect(textarea).toBeDisabled();
+    });
+
+    test("should disable textarea when task status is done", async ({ page }) => {
+      const doneTask = {
+        id: testJobId,
+        goal: "Done job",
+        acceptance: "Done acceptance",
+        status: "done",
+        tasks: [],
+      };
+      await fs.writeFile(path.join(testJobDir, "task.json"), JSON.stringify(doneTask, null, 2));
+
+      await page.goto(`${baseUrl}/${testJobId}`);
+
+      const textarea = page.locator(`[data-testid="additional-instructions-${testJobId}"]`);
+      await expect(textarea).toBeDisabled();
+    });
+
+    test("should not enable submit button for locked task", async ({ page }) => {
+      const lockedTask = {
+        id: testJobId,
+        goal: "Locked job",
+        acceptance: "Locked acceptance",
+        status: "in-progress",
+        tasks: [],
+      };
+      await fs.writeFile(path.join(testJobDir, "task.json"), JSON.stringify(lockedTask, null, 2));
+
+      await page.goto(`${baseUrl}/${testJobId}`);
+
+      // submit 버튼은 비활성화 상태 유지
+      const submitButton = page.locator('[data-testid="submit-status-changes"]');
+      await expect(submitButton).toBeDisabled();
     });
   });
 });

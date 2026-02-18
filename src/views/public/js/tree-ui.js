@@ -27,10 +27,28 @@ function renderTaskItem(task, depth = 0, rootTaskId = null) {
   const hasChildren = task.tasks && task.tasks.length > 0;
   const actualRootTaskId = rootTaskId || task.id;
 
-  // 상태 드롭다운 옵션 생성
-  const statusOptions = STATUS_OPTIONS.map(option =>
-    `<option value="${option.value}" ${task.status === option.value ? 'selected' : ''}>${option.label}</option>`
-  ).join('');
+  const isLocked = task.status === 'in-progress' || task.status === 'done';
+  const disabledAttr = isLocked ? ' disabled' : '';
+
+  const SELECTABLE_STATUSES = ['accept', 'delete', 'hold', 'split'];
+
+  // 라디오 버튼 그룹 생성
+  const radioButtons = SELECTABLE_STATUSES.map(status => {
+    const checkedAttr = task.status === status ? ' checked' : '';
+    return `
+      <label class="status-radio-label${isLocked ? ' locked' : ''}">
+        <input
+          type="radio"
+          class="status-radio"
+          data-testid="status-radio-${task.id}-${status}"
+          data-task-id="${task.id}"
+          data-root-task-id="${actualRootTaskId}"
+          data-original-status="${task.status}"
+          name="status-${task.id}"
+          value="${status}"${checkedAttr}${disabledAttr}>
+        <span>${status}</span>
+      </label>`;
+  }).join('');
 
   const additionalInstructionsValue = task.additionalInstructions || '';
 
@@ -39,14 +57,12 @@ function renderTaskItem(task, depth = 0, rootTaskId = null) {
       <!-- Header: ID + Status -->
       <div class="task-header">
         <div class="task-id" data-testid="tree-item-title">${escapeHtml(task.id)}</div>
-        <select
-          class="status-dropdown"
-          data-testid="status-dropdown-${task.id}"
-          data-task-id="${task.id}"
-          data-root-task-id="${actualRootTaskId}"
-          data-original-status="${task.status}">
-          ${statusOptions}
-        </select>
+        <div class="status-control">
+          <span class="current-status-badge status-badge-${task.status}" data-testid="current-status-${task.id}">${task.status}</span>
+          <div class="status-radio-group${isLocked ? ' locked' : ''}" data-testid="status-radio-group-${task.id}">
+            ${radioButtons}
+          </div>
+        </div>
       </div>
 
       <!-- Goal 섹션 -->
@@ -75,7 +91,7 @@ function renderTaskItem(task, depth = 0, rootTaskId = null) {
           data-root-task-id="${actualRootTaskId}"
           data-original-value="${escapeHtml(additionalInstructionsValue)}"
           placeholder="이 task에 대한 추가 지침을 입력하세요..."
-          rows="3">${escapeHtml(additionalInstructionsValue)}</textarea>
+          rows="3"${disabledAttr}>${escapeHtml(additionalInstructionsValue)}</textarea>
       </div>
   `;
 
