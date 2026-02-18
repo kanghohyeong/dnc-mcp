@@ -17,10 +17,10 @@ This skill integrates deeply with **DNC MCP (Model Context Protocol)** tools to 
 
 * **Step 3: DNC Task Initialization** Once the goal is confirmed, the skill utilizes the `dnc-init-job` tool to formalize the **Root Task** within the system and assign a unique tracking ID.
 
-* **Step 4: Granularity Level Selection** The system prompts the **user to select the desired level of decomposition depth**. This ensures the resulting task structure matches the project's complexity and your preferred level of oversight:
+* **Step 4: Decomposition Depth Selection** The system prompts the user to define the **hierarchical depth of the task tree**. Increasing the granularity level does not simply add more tasks at the same level; it drives the decomposition deeper into **nested sub-task layers** (sub-tasks of sub-tasks), ensuring a rigorous breakdown of complex logic:
 
-  - Level 1 (Direct): 1~2 depth (Focus on high-level milestones).
-  - Level 2 (Standard): 3~4 depth (Standard balanced detail).
-  - Level 3 (Granular): 5~7 depth (Highly specific, micro-task units).
+  - Level 1 (Direct): 1–2 Depth (Flat structure focusing on high-level milestones).
+  - Level 2 (Standard): 3–4 Depth (Standard nested tree for balanced logic separation).
+  - Level 3 (Granular): 5–7 Depth (Deeply nested, micro-unit tasks for maximum precision).
 
-* **Step 5: Sub-task Decomposition & Structuring** Based on the user's depth selection, the system employs the `dnc-append-divided-job` tool to break the **Root Task** into independent, manageable **Sub-tasks**. Each task is logically sequenced to create a streamlined execution path.
+* **Step 5: Hierarchical Sub-task Decomposition** Based on the selected depth, the system utilizes the `dnc-append-divided-job` tool recursively to build a **multi-layered task inheritance structure**. This process transforms the Root Task into a vertical tree where each sub-task is further decomposed until the leaf nodes represent immediate, granular actions ready for execution.
