@@ -17,5 +17,10 @@ This skill integrates deeply with **DNC MCP (Model Context Protocol)** tools to 
 
 * **Step 3: DNC Task Initialization** Once the goal is confirmed, the skill utilizes the `dnc-init-job` tool to formalize the **Root Task** within the system and assign a unique tracking ID.
 
-* **Step 4: Sub-task Decomposition & Structuring** Employs the `dnc-append-divided-job` tool to break the main goal into independent, manageable **Sub-tasks**. Each task is logically sequenced to create a streamlined path to completion.
+* **Step 4: Granularity Level Selection** The system prompts the **user to select the desired level of decomposition depth**. This ensures the resulting task structure matches the project's complexity and your preferred level of oversight:
 
+  - Level 1 (Direct): 1~2 depth (Focus on high-level milestones).
+  - Level 2 (Standard): 3~4 depth (Standard balanced detail).
+  - Level 3 (Granular): 5~7 depth (Highly specific, micro-task units).
+
+* **Step 5: Sub-task Decomposition & Structuring** Based on the user's depth selection, the system employs the `dnc-append-divided-job` tool to break the **Root Task** into independent, manageable **Sub-tasks**. Each task is logically sequenced to create a streamlined execution path.
