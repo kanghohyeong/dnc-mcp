@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
-import { IDncTaskRepository, Task } from "./dnc-task-repository.interface.js";
+import type { IDncTaskRepository, Task } from "./dnc-task-repository.interface.js";
 
 export class FileSystemDncTaskRepository implements IDncTaskRepository {
   private readonly dncDir: string;
