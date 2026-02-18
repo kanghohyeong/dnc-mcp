@@ -1,12 +1,13 @@
 {
-  "name": "dnc-mcp",
-  "version": "1.0.0",
-  "description": "MCP server built with TypeScript",
+  "name": "@kanghohyeong/dnc-mcp",
+  "version": "0.1.0",
+  "description": "An MCP (Model Context Protocol) server that applies the **Divide and Conquer paradigm** to AI-driven task management",
   "type": "module",
   "main": "./build/index.js",
   "bin": {
     "dnc-mcp": "./build/index.js"
   },
+  "files": ["./build"],
   "scripts": {
     "build": "tsc && cp -r src/views build/",
     "watch": "tsc --watch",
